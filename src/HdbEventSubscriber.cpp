@@ -674,8 +674,6 @@ void HdbEventSubscriber::attribute_add(Tango::DevString argin)
 
 	//	Add your own code
 	string	signame(argin);
-	fix_tango_host(signame);
-	std::transform(signame.begin(), signame.end(), signame.begin(), (int(*)(int))tolower);		//transform to lowercase
 	hdb_dev->add(signame);
 
 
@@ -696,8 +694,6 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
 
 	//	Add your own code
 	string	signame(argin);
-	fix_tango_host(signame);
-	std::transform(signame.begin(), signame.end(), signame.begin(), (int(*)(int))tolower);		//transform to lowercase
 	hdb_dev->remove(signame);
 
 
@@ -720,15 +716,16 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 
 	//	Add your own code
 	string	signame(argin);
-	fix_tango_host(signame);
-	std::transform(signame.begin(), signame.end(), signame.begin(), (int(*)(int))tolower);		//transform to lowercase
+	hdb_dev->fix_tango_host(signame);
 
 	stringstream attr_status;
 	attr_status << "Event status: "<<hdb_dev->get_sig_status(signame);
 	attr_status << endl;
 	attr_status << "Using ZMQ: "<<(hdb_dev->shared->get_sig_source(signame) ? "true" : "false");
 	attr_status << endl;
+	hdb_dev->shared->lock();
 	attr_status << "Archiving: "<<(hdb_dev->shared->is_running(signame) ? "true" : "false");
+	hdb_dev->shared->unlock();
 	attr_status << endl;
 	attr_status << "Event OK counter: "<<hdb_dev->shared->get_ok_event(signame);
 	attr_status << endl;
@@ -802,9 +799,9 @@ void HdbEventSubscriber::attribute_start(Tango::DevString argin)
 	//	Add your own code
 
 	string	signame(argin);
-	fix_tango_host(signame);
-	std::transform(signame.begin(), signame.end(), signame.begin(), (int(*)(int))tolower);		//transform to lowercase
+	hdb_dev->fix_tango_host(signame);
 
+	hdb_dev->push_shared->start_attr(signame);
 	hdb_dev->shared->start(signame);
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_start
@@ -825,9 +822,9 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 	//	Add your own code
 
 	string	signame(argin);
-	fix_tango_host(signame);
-	std::transform(signame.begin(), signame.end(), signame.begin(), (int(*)(int))tolower);		//transform to lowercase
+	hdb_dev->fix_tango_host(signame);
 
+	hdb_dev->push_shared->stop_attr(signame);
 	hdb_dev->shared->stop(signame);
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_stop
@@ -845,6 +842,7 @@ void HdbEventSubscriber::reset_statistics()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::reset_statistics) ENABLED START -----*/
 	
 	//	Add your own code
+	hdb_dev->reset_statistics();
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::reset_statistics
 }
@@ -852,24 +850,6 @@ void HdbEventSubscriber::reset_statistics()
 /*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_ending) ENABLED START -----*/
 
 	//	Additional Methods
-void HdbEventSubscriber::fix_tango_host(string &attr)
-{
-	string::size_type	start = attr.find("tango://");
-	//if not fqdn, add TANGO_HOST
-	if (start == string::npos)
-	{
-		//TODO: get from device/class/global property
-		char	*env = getenv("TANGO_HOST");
-		if (env==NULL)
-			return;
-		else
-		{
-			string	s(env);
-			attr = string("tango://") + s + "/" + attr;
-			return;
-		}
-	}
-}
 
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::namespace_ending
