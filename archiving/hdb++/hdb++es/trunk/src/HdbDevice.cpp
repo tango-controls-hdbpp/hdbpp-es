@@ -53,6 +53,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include <HdbDevice.h>
 #include <HdbEventSubscriber.h>
 #include <sys/time.h>
+#include <netdb.h> //for getaddrinfo
 
 namespace HdbEventSubscriber_ns
 {
@@ -154,7 +155,10 @@ void HdbDevice::build_signal_vector(vector<string> list)
 			{
 				shared->add(list[i]);
 				if(startArchivingAtStartup)
+				{
+					push_shared->start_attr(list[i]);
 					shared->start(list[i]);
+				}
 			}
 		}
 		catch (Tango::DevFailed &e)
@@ -168,12 +172,14 @@ void HdbDevice::build_signal_vector(vector<string> list)
 //=============================================================================
 void HdbDevice::add(string &signame)
 {
+	fix_tango_host(signame);
 	shared->add(signame, UPDATE_PROP);
 }
 //=============================================================================
 //=============================================================================
 void HdbDevice::remove(string &signame)
 {
+	fix_tango_host(signame);
 	shared->remove(signame);
 	push_shared->remove(signame);
 }
@@ -182,6 +188,7 @@ void HdbDevice::remove(string &signame)
 vector<string> HdbDevice::get_hdb_signal_list()
 {
 	vector<string>	list;
+	vector<string>	tmplist;
 	//	Read device properties from database.
 	//-------------------------------------------------------------
 	Tango::DbData	dev_prop;
@@ -205,13 +212,16 @@ vector<string> HdbDevice::get_hdb_signal_list()
 
 	//	Extract value
 	if (dev_prop[0].is_empty()==false)
-		dev_prop[0]  >>  list;
+		dev_prop[0]  >>  tmplist;
 
-	for (unsigned int i=0 ; i<list.size() ; i++)
+	for (unsigned int i=0 ; i<tmplist.size() ; i++)
 	{
-		fix_tango_host(list[i]);
-		std::transform(list[i].begin(), list[i].end(), list[i].begin(), (int(*)(int))tolower);		//transform to lowercase
-		cout << i << ":	" << list[i] << endl;
+		if(tmplist[i].length() > 0 && tmplist[i][0] != '#')
+		{
+			fix_tango_host(tmplist[i]);
+			list.push_back(tmplist[i]);
+			DEBUG_STREAM << i << ":	" << tmplist[i][i] << endl;
+		}
 	}
 	return list;
 }
@@ -258,7 +268,7 @@ cout << ELAPSED(t0, t1) << " ms" << endl;
 		db->set_timeout_millis(10000);
 		db->put_device_property(_device->get_name(), data);
 		GET_TIME(t1);
-		cout << ELAPSED(t0, t1) << " ms" << endl;
+		DEBUG_STREAM << __func__ << ": saving properties -> " << ELAPSED(t0, t1) << " ms" << endl;
 	}
 	catch(Tango::DevFailed &e)
 	{
@@ -267,7 +277,6 @@ cout << ELAPSED(t0, t1) << " ms" << endl;
 		WARN_STREAM << __FUNCTION__<< o.str();
 	}
 	delete db;
-
 }
 //=============================================================================
 //=============================================================================
@@ -284,32 +293,76 @@ Tango::DevState  HdbDevice::subcribing_state()
 	if (state==Tango::ON)
 		state = shared->state();				//	If OK get signals state
 */
-	Tango::DevState	state =  shared->state();
-	return state;
+	Tango::DevState	evstate =  shared->state();
+	Tango::DevState	dbstate =  push_shared->state();
+	if(evstate == Tango::ALARM || dbstate == Tango::ALARM)
+		return Tango::ALARM;
+	return Tango::ON;
 }
 //=============================================================================
 //=============================================================================
 vector<string>  HdbDevice::get_sig_on_error_list()
 {
-	return shared->get_sig_on_error_list();
+	vector<string> sig_list = shared->get_sig_on_error_list();
+	vector<string> other_list = shared->get_sig_not_on_error_list();
+	//check if signal not in event error is in db error
+	for(vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
+	{
+		if(push_shared->get_sig_state(*it) == Tango::ALARM)
+		{
+			sig_list.push_back(*it);
+		}
+	}
+	return sig_list;
 }
 //=============================================================================
 //=============================================================================
 vector<string>  HdbDevice::get_sig_not_on_error_list()
 {
-	return shared->get_sig_not_on_error_list();
+	vector<string> sig_list = shared->get_sig_not_on_error_list();
+	//check if signal not in event error is in db error
+	for(vector<string>::iterator it=sig_list.begin(); it!=sig_list.end(); it++)
+	{
+		if(push_shared->get_sig_state(*it) == Tango::ALARM)
+		{
+			sig_list.erase(it);
+		}
+	}
+	return sig_list;
 }
 //=============================================================================
 //=============================================================================
 int  HdbDevice::get_sig_on_error_num()
 {
-	return shared->get_sig_on_error_num();
+	int on_ev_err = shared->get_sig_on_error_num();
+
+	vector<string> other_list = shared->get_sig_not_on_error_list();
+	//check if signal not in event error is in db error
+	for(vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
+	{
+		if(push_shared->get_sig_state(*it) == Tango::ALARM)
+		{
+			on_ev_err++;
+		}
+	}
+	return on_ev_err;
 }
 //=============================================================================
 //=============================================================================
 int  HdbDevice::get_sig_not_on_error_num()
 {
-	return shared->get_sig_not_on_error_num();
+	int not_on_ev_err = shared->get_sig_not_on_error_num();
+
+	vector<string> sig_list = shared->get_sig_not_on_error_list();
+	//check if signal not in event error is in db error
+	for(vector<string>::iterator it=sig_list.begin(); it!=sig_list.end(); it++)
+	{
+		if(push_shared->get_sig_state(*it) == Tango::ALARM)
+		{
+			not_on_ev_err--;
+		}
+	}
+	return not_on_ev_err;
 }
 //=============================================================================
 //=============================================================================
@@ -337,6 +390,13 @@ vector<string> HdbDevice::get_sig_list_waiting()
 }
 //=============================================================================
 //=============================================================================
+void  HdbDevice::reset_statistics()
+{
+	shared->reset_statistics();
+	push_shared->reset_statistics();
+}
+//=============================================================================
+//=============================================================================
 
 
 
@@ -354,14 +414,24 @@ void ArchiveCB::push_event(Tango::EventData *data)
 	time_t	t = time(NULL);
 	//cout << __func__<<": Event '"<<data->attr_name<<"'  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
+
+	hdb_dev->shared->lock();
+	HdbSignal	*signal=hdb_dev->shared->get_signal(data->attr_name);
+
+	if(signal==NULL)
+	{
+		cout << __func__<<": Event '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
+		hdb_dev->shared->unlock();
+		return;
+	}
 	//	Check if event is an error event.
 	if (data->err)
 	{
-		signal->state  = Tango::ALARM;
+		signal->evstate  = Tango::ALARM;
 		signal->status.clear();
 		signal->status = data->errors[0].desc;
 
-		cout<< "Exception on " << data->attr_name << endl;
+		cout<< __func__ << ": Exception on " << data->attr_name << endl;
 		cout << data->errors[0].desc  << endl;
 		try
 		{
@@ -372,7 +442,27 @@ void ArchiveCB::push_event(Tango::EventData *data)
 			cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 		}
 
-		hdb_dev->error_attribute(data);
+		try
+		{
+			if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first_err(data->attr_name))
+			{
+				hdb_dev->shared->unlock();
+				return;
+			}
+		}
+		catch(Tango::DevFailed &e)
+		{
+			cout << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+		}
+		try
+		{
+			if(hdb_dev->shared->is_first_err(data->attr_name))
+				hdb_dev->shared->set_first_err(data->attr_name);
+		}
+		catch(Tango::DevFailed &e)
+		{
+			cout << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
+		}
 	}
 	else if ( data->attr_value->get_quality() == Tango::ATTR_INVALID )
 	{
@@ -385,28 +475,49 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		{
 			cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 		}
-		hdb_dev->error_attribute(data);
+//		hdb_dev->error_attribute(data);
 		//	Check if already OK
-		if (signal->state!=Tango::ON)
+		if (signal->evstate!=Tango::ON)
 		{
-			signal->state  = Tango::ON;
+			signal->evstate  = Tango::ON;
 			signal->status = "Subscribed";
+		}
+		try
+		{
+			if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first_err(data->attr_name))
+			{
+				hdb_dev->shared->unlock();
+				return;
+			}
+		}
+		catch(Tango::DevFailed &e)
+		{
+			cout << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+		}
+		try
+		{
+			if(hdb_dev->shared->is_first_err(data->attr_name))
+				hdb_dev->shared->set_first_err(data->attr_name);
+		}
+		catch(Tango::DevFailed &e)
+		{
+			cout << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
 	else
 	{
 		try
 		{
-			hdb_dev->shared->set_ok_event(data->attr_name);
+			hdb_dev->shared->set_ok_event(data->attr_name);	//also reset first_err
 		}
 		catch(Tango::DevFailed &e)
 		{
 			cout << __func__ << " Unable to set_ok_event: " << e.errors[0].desc << "'"<<endl;
 		}
 		//	Check if already OK
-		if (signal->state!=Tango::ON)
+		if (signal->evstate!=Tango::ON)
 		{
-			signal->state  = Tango::ON;
+			signal->evstate  = Tango::ON;
 			signal->status = "Subscribed";
 		}
 
@@ -414,7 +525,10 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		try
 		{
 			if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first(data->attr_name))
+			{
+				hdb_dev->shared->unlock();
 				return;
+			}
 		}
 		catch(Tango::DevFailed &e)
 		{
@@ -429,16 +543,38 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		{
 			cout << __func__ << " Unable to set first: " << e.errors[0].desc << "'"<<endl;
 		}
-
-		//OK with C++11:
-		//Tango::EventData	*cmd = new Tango::EventData(*data);
-		//OK with C++98:
-		Tango::DeviceAttribute *dev_attr_copy = new Tango::DeviceAttribute();
-		dev_attr_copy->deep_copy(*(data->attr_value));
-		Tango::EventData	*cmd = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
-
-		hdb_dev->push_shared->push_back_cmd(cmd);
 	}
+
+	hdb_dev->shared->unlock();
+
+	//OK only with C++11:
+	//Tango::EventData	*cmd = new Tango::EventData(*data);
+	//OK with C++98 and C++11:
+	Tango::DeviceAttribute *dev_attr_copy = new Tango::DeviceAttribute();
+	if (!data->err)
+	{
+		dev_attr_copy->deep_copy(*(data->attr_value));
+	}
+	else
+	{
+#if 0
+		//TODO: set all relevant DeviceAttribute fields
+        //dev_attr_copy->data_type = signal->data_type;
+        dev_attr_copy->data_format = signal->data_format;
+/*		dev_attr_copy->name = data->attr_value->name;
+//		dev_attr_copy->exceptions_flags = data->attr_value->exceptions_flags;	//protected
+		dev_attr_copy->dim_x = data->attr_value->dim_x;
+		dev_attr_copy->dim_y = data->attr_value->dim_y;
+		dev_attr_copy->quality = data->attr_value->quality;
+		dev_attr_copy->data_format = data->attr_value->data_format;
+		dev_attr_copy->time = data->attr_value->time;*/
+#endif
+	}
+	cout << __func__<<": Event '"<<data->attr_name<<"'  copyed EventData 2" << endl;
+	Tango::EventData	*cmd = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
+	cout << __func__<<": Event '"<<data->attr_name<<"'  copyed EventData 3" << endl;
+
+	hdb_dev->push_shared->push_back_cmd(cmd);
 }
 //=============================================================================
 //=============================================================================
@@ -484,6 +620,7 @@ string HdbDevice::get_only_tango_host(string str)
 //=============================================================================
 void HdbDevice::fix_tango_host(string &attr)
 {
+	std::transform(attr.begin(), attr.end(), attr.begin(), (int(*)(int))tolower);		//transform to lowercase
 	string::size_type	start = attr.find("tango://");
 	//if not fqdn, add TANGO_HOST
 	if (start == string::npos)
@@ -491,13 +628,81 @@ void HdbDevice::fix_tango_host(string &attr)
 		//TODO: get from device/class/global property
 		char	*env = getenv("TANGO_HOST");
 		if (env==NULL)
+		{
 			return;
+		}
 		else
 		{
 			string	s(env);
+			add_domain(s);
 			attr = string("tango://") + s + "/" + attr;
 			return;
 		}
+	}
+	string facility = get_only_tango_host(attr);
+	add_domain(facility);
+	string attr_name = get_only_signal_name(attr);
+	attr = string("tango://")+ facility + string("/") + attr_name;
+}
+//=============================================================================
+//=============================================================================
+void HdbDevice::add_domain(string &str)
+{
+	string::size_type	end1 = str.find(".");
+	if (end1 == string::npos)
+	{
+		//get host name without tango://
+		string::size_type	start = str.find("tango://");
+		if (start == string::npos)
+		{
+			start = 0;
+		}
+		else
+		{
+			start = 8;	//tango:// len
+		}
+		string::size_type	end2 = str.find(":", start);
+
+		string th = str.substr(start, end2);
+		string with_domain = str;
+
+		map<string,string>::iterator it_domain = domain_map.find(th);
+		if(it_domain != domain_map.end())
+		{
+			with_domain = it_domain->second;
+			DEBUG_STREAM << __func__ <<": found domain in map -> " << with_domain<<endl;
+			str = with_domain;
+			return;
+		}
+
+		struct addrinfo hints;
+//		hints.ai_family = AF_INET; // use AF_INET6 to force IPv6
+//		hints.ai_flags = AI_CANONNAME|AI_CANONIDN;
+		memset(&hints, 0, sizeof hints);
+		hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags = AI_CANONNAME;
+		struct addrinfo *result, *rp;
+		int ret = getaddrinfo(th.c_str(), NULL, &hints, &result);
+		if (ret != 0)
+		{
+			INFO_STREAM << __func__<< ": getaddrinfo error=" << gai_strerror(ret);
+			return;
+		}
+
+		for (rp = result; rp != NULL; rp = rp->ai_next)
+		{
+			with_domain = string(rp->ai_canonname) + str.substr(end2);
+			DEBUG_STREAM << __func__ <<": found domain -> " << with_domain<<endl;
+			domain_map.insert(make_pair(th, with_domain));
+		}
+		freeaddrinfo(result); // all done with this structure
+		str = with_domain;
+		return;
+	}
+	else
+	{
+		return;
 	}
 }
 //=============================================================================
