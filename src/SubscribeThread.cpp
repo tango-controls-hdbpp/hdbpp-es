@@ -89,7 +89,7 @@ void SharedData::remove(string &signame)
 			if (sig->name==signame)
 			{
 				found = true;
-				cout <<__func__<< ": removing " << signame << endl;
+				cout <<__func__<< "removing " << signame << endl;
 				try
 				{
 					if(sig->event_id != ERR)
@@ -243,7 +243,7 @@ void SharedData::stop_all()
 //=============================================================================
 bool SharedData::is_running(string &signame)
 {
-//	omni_mutex_lock sync(*this);	//TODO: deadlock, called from ArchiveCB::push_event
+	//to be locked if called outside lock in ArchiveCB::push_event
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 		if (signals[i].name==signame)
 			return signals[i].running;
@@ -267,7 +267,7 @@ bool SharedData::is_running(string &signame)
 //=============================================================================
 bool SharedData::is_first(string &signame)
 {
-//	omni_mutex_lock sync(*this);	//TODO: deadlock, called from ArchiveCB::push_event
+	//not to be locked, called only inside lock in ArchiveCB::push_event
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 		if (signals[i].name==signame)
 			return signals[i].first;
@@ -291,7 +291,7 @@ bool SharedData::is_first(string &signame)
 //=============================================================================
 void SharedData::set_first(string &signame)
 {
-//	omni_mutex_lock sync(*this);	//TODO: deadlock, called from ArchiveCB::push_event
+	//not to be locked, called only inside lock in ArchiveCB::push_event
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
@@ -306,6 +306,63 @@ void SharedData::set_first(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].first = false;
+			return;
+		}
+	}
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::set_first()");
+
+}
+//=============================================================================
+/**
+ * Is a signal first consecutive error event arrived?
+ */
+//=============================================================================
+bool SharedData::is_first_err(string &signame)
+{
+	//not to be locked, called only inside lock in ArchiveCB::push_event
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].first_err;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (compare_without_domain(signals[i].name,signame))
+			return signals[i].first_err;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::is_first()");
+
+	return true;
+}
+//=============================================================================
+/**
+ * Set a signal first consecutive error event arrived
+ */
+//=============================================================================
+void SharedData::set_first_err(string &signame)
+{
+	//not to be locked, called only inside lock in ArchiveCB::push_event
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].first_err = false;
+			return;
+		}
+	}
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			signals[i].first_err = false;
 			return;
 		}
 	}
@@ -402,12 +459,13 @@ void SharedData::add(string &signame, int to_do)
 		//	create Attribute proxy
 		signal.attr = new Tango::AttributeProxy(signal.name);
 		signal.event_id = ERR;
-		signal.state    = Tango::ALARM;
+		signal.evstate    = Tango::ALARM;
 		signal.isZMQ    = false;
 		signal.okev_counter = 0;
 		signal.nokev_counter = 0;
 		signal.running = false;
 		signal.first = true;
+		signal.first_err = true;
 
 		cout << "created proxy to " << signame << endl;
 
@@ -417,7 +475,7 @@ void SharedData::add(string &signame, int to_do)
 		action = to_do;
 	}
 	cout << __func__<<": exiting... " << signame << endl;
-	signal();
+	condition.signal();
 }
 //=============================================================================
 /**
@@ -426,25 +484,31 @@ void SharedData::add(string &signame, int to_do)
 //=============================================================================
 void SharedData::subscribe_events()
 {
-	omni_mutex_lock sync(*this);
-
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	//omni_mutex_lock sync(*this);
+	this->lock();
+	vector<HdbSignal>	local_signals(signals);
+	this->unlock();
+	//now using unlocked local copy since subscribe_event call callback that needs to lock signals
+	for (unsigned int i=0 ; i<local_signals.size() ; i++)
 	{
-		HdbSignal	*sig = &signals[i];
+		HdbSignal	*sig = &local_signals[i];
 		if (sig->event_id==ERR)
 		{
-			sig->archive_cb = new ArchiveCB(hdb_dev, sig);
+			sig->archive_cb = new ArchiveCB(hdb_dev);
 			try
 			{
 				cout << "Subscribing for " << sig->name << endl;
 				Tango::AttributeInfo	info = sig->attr->get_config();
 				sig->data_type = info.data_type;
+				sig->data_format = info.data_format;
+				sig->write_type = info.writable;
 				sig->event_id = sig->attr->subscribe_event(
 												Tango::ARCHIVE_EVENT,
 												sig->archive_cb,
 												/*stateless=*/false);
-				sig->state  = Tango::ON;
+				sig->evstate  = Tango::ON;
 				sig->first  = true;
+				sig->first_err  = true;
 				sig->status.clear();
 				sig->status = "Subscribed";
 				cout << sig->name <<  "  Subscribed" << endl;
@@ -466,6 +530,29 @@ void SharedData::subscribe_events()
 			}
 		}
 	}
+	this->lock();
+	for (unsigned int i=0 ; i<local_signals.size() ; i++)
+	{
+		for (unsigned int j=0 ; j<signals.size() ; j++)
+		{
+			//if this signal just subscribed:
+			if (signals[j].name==local_signals[i].name && signals[j].event_id==ERR && local_signals[i].event_id!=ERR)
+			{
+				signals[j].archive_cb = local_signals[i].archive_cb;
+				signals[j].data_type = local_signals[i].data_type;
+				signals[j].data_format = local_signals[i].data_format;
+				signals[j].write_type = local_signals[i].write_type;
+				signals[j].event_id = local_signals[i].event_id;
+				signals[j].evstate  = local_signals[i].evstate;
+				signals[j].first  = local_signals[i].first;
+				signals[j].first_err  = local_signals[i].first_err;
+				signals[j].status.clear();
+				signals[j].status = local_signals[i].status;
+				signals[j].isZMQ = local_signals[i].isZMQ;
+			}
+		}
+	}
+	this->unlock();
 	initialized = true;
 }
 //=============================================================================
@@ -575,7 +662,7 @@ vector<string>  SharedData::get_sig_on_error_list()
 	omni_mutex_lock sync(*this);
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].state==Tango::ALARM)
+		if (signals[i].evstate==Tango::ALARM)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
@@ -592,7 +679,7 @@ int  SharedData::get_sig_on_error_num()
 	omni_mutex_lock sync(*this);
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].state==Tango::ALARM)
+		if (signals[i].evstate==Tango::ALARM)
 		{
 			num++;
 		}
@@ -608,7 +695,7 @@ vector<string>  SharedData::get_sig_not_on_error_list()
 	omni_mutex_lock sync(*this);
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].state==Tango::ON)
+		if (signals[i].evstate==Tango::ON)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
@@ -625,7 +712,7 @@ int  SharedData::get_sig_not_on_error_num()
 	omni_mutex_lock sync(*this);
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].state==Tango::ON)
+		if (signals[i].evstate==Tango::ON)
 		{
 			num++;
 		}
@@ -640,12 +727,13 @@ int  SharedData::get_sig_not_on_error_num()
 //=============================================================================
 void  SharedData::set_ok_event(string &signame)
 {
-//	omni_mutex_lock sync(*this);	//TODO: deadlock, called from ArchiveCB::push_event
+	//not to be locked, called only inside lock in ArchiveCB::push_event
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
 			signals[i].okev_counter++;
+			signals[i].first_err = true;
 			return;
 		}
 	}
@@ -654,6 +742,7 @@ void  SharedData::set_ok_event(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].okev_counter++;
+			signals[i].first_err = true;
 			return;
 		}
 	}
@@ -694,7 +783,7 @@ uint32_t  SharedData::get_ok_event(string &signame)
 //=============================================================================
 void  SharedData::set_nok_event(string &signame)
 {
-//	omni_mutex_lock sync(*this);//TODO: deadlock, called from ArchiveCB::push_event
+	//not to be locked, called only inside lock in ArchiveCB::push_event
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
@@ -767,6 +856,21 @@ string  SharedData::get_sig_status(string &signame)
 }
 //=============================================================================
 /**
+ *	Reset statistic counters
+ */
+//=============================================================================
+void SharedData::reset_statistics()
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		signals[i].nokev_counter=0;
+		signals[i].okev_counter=0;
+	}
+
+}
+//=============================================================================
+/**
  *	Return ALARM if at list one signal is not subscribed.
  */
 //=============================================================================
@@ -776,7 +880,7 @@ Tango::DevState SharedData::state()
 	Tango::DevState	state = Tango::ON;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (signals[i].state==Tango::ALARM)
+		if (signals[i].evstate==Tango::ALARM)
 		{
 			state = Tango::ALARM;
 			break;
@@ -797,7 +901,7 @@ void SharedData::stop_thread()
 {
 	omni_mutex_lock sync(*this);
 	stop_it = true;
-	signal();
+	condition.signal();
 }
 //=============================================================================
 //=============================================================================
@@ -869,15 +973,16 @@ void *SubscribeThread::run_undetached(void *ptr)
 		shared->subscribe_events();
 		updateProperty();
 		int	nb_to_subscribe = shared->nb_sig_to_subscribe();
-
 		//	And wait a bit before next time or
 		//	wait a long time if all signals subscribed
 		{
 			omni_mutex_lock sync(*shared);
+			//shared->lock();
 			if (nb_to_subscribe==0)
-				shared->wait();
+				shared->condition.wait();
 			else
-				shared->wait(period*1000);
+				shared->condition.timedwait(period);
+			//shared->unlock();
 		}
 	}
 	shared->unsubscribe_events();
