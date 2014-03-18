@@ -123,6 +123,16 @@ vector<string> PushThreadShared::get_sig_list_waiting()
 }
 //=============================================================================
 //=============================================================================
+void PushThreadShared::reset_statistics()
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		signals[i].nokdb_counter = 0;
+	}
+}
+//=============================================================================
+//=============================================================================
 Tango::EventData *PushThreadShared::get_next_cmd()
 {
 	omni_mutex_lock sync(*this);
@@ -154,7 +164,7 @@ bool PushThreadShared::get_if_stop()
 }
 //=============================================================================
 /**
- *	Increment the error counter of db saving
+ *
  */
 //=============================================================================
 void  PushThreadShared::remove(string &signame)
@@ -181,6 +191,96 @@ void  PushThreadShared::remove(string &signame)
 	}
 
 }
+
+//=============================================================================
+/**
+ *	Return the list of signals on error
+ */
+//=============================================================================
+vector<string>  PushThreadShared::get_sig_on_error_list()
+{
+	omni_mutex_lock sync(*this);
+	vector<string>	list;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].dbstate==Tango::ALARM)
+		{
+			string	signame(signals[i].name);
+			list.push_back(signame);
+		}
+	return list;
+}
+//=============================================================================
+/**
+ *	Return the number of signals on error
+ */
+//=============================================================================
+int  PushThreadShared::get_sig_on_error_num()
+{
+	omni_mutex_lock sync(*this);
+	int num=0;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].dbstate==Tango::ALARM)
+		{
+			num++;
+		}
+	return num;
+}
+//=============================================================================
+/**
+ *	Return the list of signals not on error
+ */
+//=============================================================================
+vector<string>  PushThreadShared::get_sig_not_on_error_list()
+{
+	omni_mutex_lock sync(*this);
+	vector<string>	list;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].dbstate==Tango::ON)
+		{
+			string	signame(signals[i].name);
+			list.push_back(signame);
+		}
+	return list;
+}
+//=============================================================================
+/**
+ *	Return the number of signals not on error
+ */
+//=============================================================================
+int  PushThreadShared::get_sig_not_on_error_num()
+{
+	omni_mutex_lock sync(*this);
+	int num=0;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].dbstate==Tango::ON)
+		{
+			num++;
+		}
+	return num;
+}
+//=============================================================================
+/**
+ *	Return the db state of the signal
+ */
+//=============================================================================
+Tango::DevState  PushThreadShared::get_sig_state(string &signame)
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].dbstate;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (compare_without_domain(signals[i].name,signame))
+			return signals[i].dbstate;
+
+	return Tango::ON;
+	//	if not found
+	/*Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_nok_db()");*/
+}
+
 //=============================================================================
 /**
  *	Increment the error counter of db saving
@@ -195,6 +295,7 @@ void  PushThreadShared::set_nok_db(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].nokdb_counter++;
+			signals[i].dbstate = Tango::ALARM;
 			return;
 		}
 	}
@@ -203,6 +304,7 @@ void  PushThreadShared::set_nok_db(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].nokdb_counter++;
+			signals[i].dbstate = Tango::ALARM;
 			return;
 		}
 	}
@@ -211,6 +313,7 @@ void  PushThreadShared::set_nok_db(string &signame)
 		HdbStat sig;
 		sig.name = signame;
 		sig.nokdb_counter = 1;
+		sig.dbstate = Tango::ALARM;
 		signals.push_back(sig);
 	}
 
@@ -237,6 +340,75 @@ uint32_t  PushThreadShared::get_nok_db(string &signame)
 				"Signal NOT subscribed",
 				(const char *)"SharedData::get_nok_db()");*/
 }
+//=============================================================================
+/**
+ *	reset state
+ */
+//=============================================================================
+void  PushThreadShared::set_ok_db(string &signame)
+{
+	omni_mutex_lock sync(*this);
+	unsigned int i;
+	for (i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].dbstate = Tango::ON;
+			return;
+		}
+	}
+	for (i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			signals[i].dbstate = Tango::ON;
+			return;
+		}
+	}
+}
+
+void  PushThreadShared::start_attr(string &signame)
+{
+	//------Configure DB------------------------------------------------
+	int res = mdb->start_Attr(signame);
+	if(res < 0)
+	{
+		//... TODO
+
+	}
+}
+
+void  PushThreadShared::stop_attr(string &signame)
+{
+	//------Configure DB------------------------------------------------
+	int res = mdb->stop_Attr(signame);
+	if(res < 0)
+	{
+		//... TODO
+
+	}
+}
+
+//=============================================================================
+/**
+ *	Return ALARM if at list one signal is not subscribed.
+ */
+//=============================================================================
+Tango::DevState PushThreadShared::state()
+{
+	omni_mutex_lock sync(*this);
+	Tango::DevState	state = Tango::ON;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].dbstate==Tango::ALARM)
+		{
+			state = Tango::ALARM;
+			break;
+		}
+	}
+	return state;
+}
+
 string PushThreadShared::remove_domain(string str)
 {
 	string::size_type	end1 = str.find(".");
@@ -298,6 +470,8 @@ void *PushThread::run_undetached(void *ptr)
 				int ret = shared->mdb->insert_Attr(cmd);
 				if(ret < 0)
 					shared->set_nok_db(cmd->attr_name);
+				else
+					shared->set_ok_db(cmd->attr_name);
 			}
 			catch(Tango::DevFailed  &e)
 			{

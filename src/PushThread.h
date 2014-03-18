@@ -61,6 +61,7 @@ typedef struct
 {
 	string	name;
 	uint32_t nokdb_counter;
+	Tango::DevState dbstate;
 }
 HdbStat;
 
@@ -103,10 +104,31 @@ public:
 
 	int get_max_waiting();
 	vector<string> get_sig_list_waiting();
+	void reset_statistics();
 	void stop_thread();
 	bool get_if_stop();
 
 	void  remove(string &signame);
+	/**
+	 *	Return the list of signals on error
+	 */
+	vector<string>  get_sig_on_error_list();
+	/**
+	 *	Return the list of signals not on error
+	 */
+	vector<string>  get_sig_not_on_error_list();
+	/**
+	 *	Return the number of signals on error
+	 */
+	int  get_sig_on_error_num();
+	/**
+	 *	Return the number of signals not on error
+	 */
+	int  get_sig_not_on_error_num();
+	/**
+	 *	Return the db state of the signal
+	 */
+	Tango::DevState  get_sig_state(string &signame);
 
 	/**
 	 *	Increment the error counter of db saving
@@ -116,6 +138,18 @@ public:
 	 *	Get the error counter of db saving
 	 */
 	uint32_t  get_nok_db(string &signame);
+	/**
+	 *	reset state
+	 */
+	void  set_ok_db(string &signame);
+
+	void  start_attr(string &signame);
+	void  stop_attr(string &signame);
+
+	/**
+	 *	Return ALARM if at list one signal is not saving in DB.
+	 */
+	Tango::DevState state();
 
 	vector<HdbStat>	signals;
 
