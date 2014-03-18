@@ -67,9 +67,12 @@ typedef struct
 	string	attname;
 	string	status;
 	int		data_type;
+	Tango::AttrDataFormat		data_format;
+	int		write_type;
 	Tango::AttributeProxy	*attr;
-	Tango::DevState			state;
+	Tango::DevState			evstate;
 	bool 	first;
+	bool 	first_err;
 	ArchiveCB	*archive_cb;
 	int		event_id;
 	bool	isZMQ;
@@ -88,7 +91,7 @@ class SubscribeThread;
  *	Shared data between DS and thread.
  */
 //=========================================================
-class SharedData: public Tango::TangoMonitor
+class SharedData: public omni_mutex
 {
 private:
 	/**
@@ -101,16 +104,17 @@ private:
 	bool	initialized;
 
 	string remove_domain(string str);
-	bool compare_without_domain(string str1, string str2);
 
 public:
+	omni_condition condition;
+	bool compare_without_domain(string str1, string str2);
 	vector<HdbSignal>	signals;
 
 
 	/**
 	 * Constructor
 	 */
-	SharedData(HdbDevice *dev){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
+	SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
 	/**
 	 * Add a new signal.
 	 */
@@ -148,6 +152,14 @@ public:
 	 * Set a signal first event arrived
 	 */
 	void set_first(string &signame);
+	/**
+	 * Is a signal first consecutive error event arrived?
+	 */
+	bool is_first_err(string &signame);
+	/**
+	 * Set a signal first consecutive error event arrived
+	 */
+	void set_first_err(string &signame);
 	/**
 	 *	get signal by name.
 	 */
@@ -216,6 +228,10 @@ public:
 	 *	Return the status of specified signal
 	 */
 	string  get_sig_status(string &signame);
+	/**
+	 *	Reset statistic counters
+	 */
+	void reset_statistics();
 	/**
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */
