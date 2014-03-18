@@ -570,9 +570,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		dev_attr_copy->time = data->attr_value->time;*/
 #endif
 	}
-	cout << __func__<<": Event '"<<data->attr_name<<"'  copyed EventData 2" << endl;
 	Tango::EventData	*cmd = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
-	cout << __func__<<": Event '"<<data->attr_name<<"'  copyed EventData 3" << endl;
 
 	hdb_dev->push_shared->push_back_cmd(cmd);
 }
