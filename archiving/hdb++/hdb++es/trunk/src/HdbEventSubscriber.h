@@ -91,9 +91,6 @@ private:
 	vector<string> attribute_nok_list_str;
 	vector<string> attribute_pending_list_str;
 
-	void fix_tango_host(string &attr);
-
-
 #ifdef _USE_FERMI_DB_RW
 private:
 	string host_rw;
