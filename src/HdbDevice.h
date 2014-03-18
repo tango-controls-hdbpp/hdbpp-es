@@ -96,6 +96,7 @@ public:
 	PushThreadShared	*push_shared;
 	Tango::DeviceImpl 	*_device;
 	bool startArchivingAtStartup;
+	map<string, string> domain_map;
 #ifdef _USE_FERMI_DB_RW
 private:
 	string host_rw;
@@ -181,7 +182,10 @@ public:
 	 *	Returns the list of signals waiting to be stored
 	 */
 	 vector<string> get_sig_list_waiting();
-	
+	/**
+	 *	Reset statistic counters
+	 */
+	 void reset_statistics();
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */
@@ -194,6 +198,10 @@ public:
 	 *	Check if fqdn, otherwise fix it
 	 */
 	void fix_tango_host(string &attr);
+	/**
+	 *	Check if full domain name, otherwise fix it
+	 */
+	void add_domain(string &attr);
 
 protected :	
 	/**
@@ -234,8 +242,8 @@ class ArchiveCB : public Tango::CallBack
 {
 public:
 	HdbDevice	*hdb_dev;
-	HdbSignal	*signal;
-	ArchiveCB(HdbDevice	*dev, HdbSignal *sig) { hdb_dev=dev; signal=sig; };
+//	HdbSignal	*signal;
+	ArchiveCB(HdbDevice	*dev) { hdb_dev=dev; };
 
 	virtual void push_event(Tango::EventData *data);
 	virtual void push_event(Tango::AttrConfEventData* data) {};
