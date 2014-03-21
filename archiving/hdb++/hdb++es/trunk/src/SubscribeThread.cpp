@@ -467,6 +467,20 @@ void SharedData::add(string &signame, int to_do)
 		signal.first = true;
 		signal.first_err = true;
 
+		try
+		{
+			Tango::AttributeInfo	info = signal.attr->get_config();
+			signal.data_type = info.data_type;
+			signal.data_format = info.data_format;
+			signal.write_type = info.writable;
+			signal.max_dim_x = info.max_dim_x;
+			signal.max_dim_y = info.max_dim_y;
+		}
+		catch (Tango::DevFailed &e)
+		{
+
+		}
+
 		cout << "created proxy to " << signame << endl;
 
 		//	Add in vector
@@ -475,7 +489,8 @@ void SharedData::add(string &signame, int to_do)
 		action = to_do;
 	}
 	cout << __func__<<": exiting... " << signame << endl;
-	condition.signal();
+	signal();
+	//condition.signal();
 }
 //=============================================================================
 /**
@@ -502,6 +517,8 @@ void SharedData::subscribe_events()
 				sig->data_type = info.data_type;
 				sig->data_format = info.data_format;
 				sig->write_type = info.writable;
+				sig->max_dim_x = info.max_dim_x;
+				sig->max_dim_y = info.max_dim_y;
 				sig->event_id = sig->attr->subscribe_event(
 												Tango::ARCHIVE_EVENT,
 												sig->archive_cb,
@@ -542,6 +559,8 @@ void SharedData::subscribe_events()
 				signals[j].data_type = local_signals[i].data_type;
 				signals[j].data_format = local_signals[i].data_format;
 				signals[j].write_type = local_signals[i].write_type;
+				signals[j].max_dim_x = local_signals[i].max_dim_x;
+				signals[j].max_dim_y = local_signals[i].max_dim_y;
 				signals[j].event_id = local_signals[i].event_id;
 				signals[j].evstate  = local_signals[i].evstate;
 				signals[j].first  = local_signals[i].first;
@@ -901,7 +920,8 @@ void SharedData::stop_thread()
 {
 	omni_mutex_lock sync(*this);
 	stop_it = true;
-	condition.signal();
+	signal();
+	//condition.signal();
 }
 //=============================================================================
 //=============================================================================
@@ -979,9 +999,19 @@ void *SubscribeThread::run_undetached(void *ptr)
 			omni_mutex_lock sync(*shared);
 			//shared->lock();
 			if (nb_to_subscribe==0)
-				shared->condition.wait();
+			{
+				cout << __func__<<": going to wait nb_to_subscribe=0"<<period<<endl;
+				//shared->condition.wait();
+				shared->wait();
+			}
 			else
-				shared->condition.timedwait(period);
+			{
+				cout << __func__<<": going to wait period="<<period<<endl;
+				//unsigned long s,n;
+				//omni_thread::get_time(&s,&n,period,0);
+				//shared->condition.timedwait(s,n);
+				shared->wait(period*1000);
+			}
 			//shared->unlock();
 		}
 	}

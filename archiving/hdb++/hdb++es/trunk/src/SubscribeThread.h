@@ -69,6 +69,8 @@ typedef struct
 	int		data_type;
 	Tango::AttrDataFormat		data_format;
 	int		write_type;
+	int max_dim_x;
+	int max_dim_y;
 	Tango::AttributeProxy	*attr;
 	Tango::DevState			evstate;
 	bool 	first;
@@ -91,7 +93,8 @@ class SubscribeThread;
  *	Shared data between DS and thread.
  */
 //=========================================================
-class SharedData: public omni_mutex
+//class SharedData: public omni_mutex
+class SharedData: public Tango::TangoMonitor
 {
 private:
 	/**
@@ -106,7 +109,7 @@ private:
 	string remove_domain(string str);
 
 public:
-	omni_condition condition;
+	//omni_condition condition;
 	bool compare_without_domain(string str1, string str2);
 	vector<HdbSignal>	signals;
 
@@ -114,7 +117,8 @@ public:
 	/**
 	 * Constructor
 	 */
-	SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
+	//SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
+	SharedData(HdbDevice *dev){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
 	/**
 	 * Add a new signal.
 	 */

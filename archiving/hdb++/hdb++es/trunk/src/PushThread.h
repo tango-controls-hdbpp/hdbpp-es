@@ -77,7 +77,7 @@ private:
 	/**
 	 *	Manage data to write.
 	 */
-	vector<Tango::EventData *>	events;
+	vector<HdbCmdData *>	events;
 	/**
 	 *	Manage exceptions if any
 	 */
@@ -96,11 +96,11 @@ public:
 	PushThreadShared(string host, string user, string password, string dbname, int port);
 	~PushThreadShared();
 
-	void push_back_cmd(Tango::EventData *argin);
+	void push_back_cmd(HdbCmdData *argin);
 	//void push_back_cmd(Tango::EventData argin);
 	void remove_cmd();
 	int nb_cmd_waiting();
-	Tango::EventData *get_next_cmd();
+	HdbCmdData *get_next_cmd();
 
 	int get_max_waiting();
 	vector<string> get_sig_list_waiting();

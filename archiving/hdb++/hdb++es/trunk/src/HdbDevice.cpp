@@ -120,8 +120,6 @@ void HdbDevice::initialize()
 	shared = new SharedData(this);	
 	thread = new SubscribeThread(this);
 
-	build_signal_vector(list);
-
 	//	Create thread to send commands to HdbAccess device
 	push_shared = new PushThreadShared(
 			(static_cast<HdbEventSubscriber *>(_device))->dbHost,
@@ -132,6 +130,9 @@ void HdbDevice::initialize()
 
 
 	push_thread = new PushThread(push_shared);
+
+	build_signal_vector(list);
+
 	push_thread->start();
 	thread->start();
 
@@ -424,6 +425,13 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		hdb_dev->shared->unlock();
 		return;
 	}
+	HdbEventDataType ev_data_type;
+	ev_data_type.attr_name = data->attr_name;
+	ev_data_type.max_dim_x = signal->max_dim_x;
+	ev_data_type.max_dim_y = signal->max_dim_y;
+	ev_data_type.data_type = signal->data_type;
+	ev_data_type.data_format = signal->data_format;
+	ev_data_type.write_type	= signal->write_type;
 	//	Check if event is an error event.
 	if (data->err)
 	{
@@ -444,7 +452,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 
 		try
 		{
-			if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first_err(data->attr_name))
+			if(!(hdb_dev->shared->is_running(data->attr_name) && hdb_dev->shared->is_first_err(data->attr_name)))
 			{
 				hdb_dev->shared->unlock();
 				return;
@@ -456,8 +464,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		try
 		{
-			if(hdb_dev->shared->is_first_err(data->attr_name))
-				hdb_dev->shared->set_first_err(data->attr_name);
+			hdb_dev->shared->set_first_err(data->attr_name);
 		}
 		catch(Tango::DevFailed &e)
 		{
@@ -484,7 +491,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		try
 		{
-			if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first_err(data->attr_name))
+			if(!(hdb_dev->shared->is_running(data->attr_name) && hdb_dev->shared->is_first_err(data->attr_name)))
 			{
 				hdb_dev->shared->unlock();
 				return;
@@ -496,8 +503,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		try
 		{
-			if(hdb_dev->shared->is_first_err(data->attr_name))
-				hdb_dev->shared->set_first_err(data->attr_name);
+			hdb_dev->shared->set_first_err(data->attr_name);
 		}
 		catch(Tango::DevFailed &e)
 		{
@@ -555,23 +561,10 @@ void ArchiveCB::push_event(Tango::EventData *data)
 	{
 		dev_attr_copy->deep_copy(*(data->attr_value));
 	}
-	else
-	{
-#if 0
-		//TODO: set all relevant DeviceAttribute fields
-        //dev_attr_copy->data_type = signal->data_type;
-        dev_attr_copy->data_format = signal->data_format;
-/*		dev_attr_copy->name = data->attr_value->name;
-//		dev_attr_copy->exceptions_flags = data->attr_value->exceptions_flags;	//protected
-		dev_attr_copy->dim_x = data->attr_value->dim_x;
-		dev_attr_copy->dim_y = data->attr_value->dim_y;
-		dev_attr_copy->quality = data->attr_value->quality;
-		dev_attr_copy->data_format = data->attr_value->data_format;
-		dev_attr_copy->time = data->attr_value->time;*/
-#endif
-	}
-	Tango::EventData	*cmd = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
 
+	Tango::EventData	*ev_data = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
+
+	HdbCmdData *cmd = new HdbCmdData(ev_data, ev_data_type);
 	hdb_dev->push_shared->push_back_cmd(cmd);
 }
 //=============================================================================
