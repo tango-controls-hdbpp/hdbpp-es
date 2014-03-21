@@ -68,7 +68,7 @@ PushThreadShared::~PushThreadShared()
 }
 //=============================================================================
 //=============================================================================
-void PushThreadShared::push_back_cmd(Tango::EventData *argin)
+void PushThreadShared::push_back_cmd(HdbCmdData *argin)
 {
 
 	omni_mutex_lock sync(*this);
@@ -115,8 +115,8 @@ vector<string> PushThreadShared::get_sig_list_waiting()
 	vector<string>	list;
 	for (unsigned int i=0 ; i<events.size() ; i++)
 	{
-		Tango::EventData *ev = events[i];
-		string	signame(ev->attr_name);
+		HdbCmdData *ev = events[i];
+		string	signame(ev->ev_data->attr_name);
 		list.push_back(signame);
 	}
 	return list;
@@ -133,12 +133,12 @@ void PushThreadShared::reset_statistics()
 }
 //=============================================================================
 //=============================================================================
-Tango::EventData *PushThreadShared::get_next_cmd()
+HdbCmdData *PushThreadShared::get_next_cmd()
 {
 	omni_mutex_lock sync(*this);
 	if (events.size()>0)
 	{
-		Tango::EventData *cmd = events[0];
+		HdbCmdData *cmd = events[0];
 		events.erase(events.begin());
 		return cmd;
 	}
@@ -461,17 +461,17 @@ void *PushThread::run_undetached(void *ptr)
 	while(shared->get_if_stop()==false)
 	{
 		//	Check if command ready
-		Tango::EventData	*cmd;
+		HdbCmdData	*cmd;
 		while ((cmd=shared->get_next_cmd())!=NULL)
 		{
 			try
 			{
 				//	Send it to DB
-				int ret = shared->mdb->insert_Attr(cmd);
+				int ret = shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
 				if(ret < 0)
-					shared->set_nok_db(cmd->attr_name);
+					shared->set_nok_db(cmd->ev_data->attr_name);
 				else
-					shared->set_ok_db(cmd->attr_name);
+					shared->set_ok_db(cmd->ev_data->attr_name);
 			}
 			catch(Tango::DevFailed  &e)
 			{
