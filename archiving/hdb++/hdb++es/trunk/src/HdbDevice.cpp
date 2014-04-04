@@ -321,15 +321,17 @@ vector<string>  HdbDevice::get_sig_on_error_list()
 vector<string>  HdbDevice::get_sig_not_on_error_list()
 {
 	vector<string> sig_list = shared->get_sig_not_on_error_list();
+	vector<string> ret_sig_list;
 	//check if signal not in event error is in db error
 	for(vector<string>::iterator it=sig_list.begin(); it!=sig_list.end(); it++)
 	{
-		if(push_shared->get_sig_state(*it) == Tango::ALARM)
+		string sig(*it);
+		if(push_shared->get_sig_state(sig) != Tango::ALARM)
 		{
-			sig_list.erase(it);
+			ret_sig_list.push_back(sig);
 		}
 	}
-	return sig_list;
+	return ret_sig_list;
 }
 //=============================================================================
 //=============================================================================
@@ -413,7 +415,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 {
 
 	time_t	t = time(NULL);
-	//cout << __func__<<": Event '"<<data->attr_name<<"'  Received at " << ctime(&t);
+	//cout << __func__<<": Event '"<<data->attr_name<<" '  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
 
 	hdb_dev->shared->lock();
