@@ -719,19 +719,23 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	hdb_dev->fix_tango_host(signame);
 
 	stringstream attr_status;
-	attr_status << "Event status: "<<hdb_dev->get_sig_status(signame);
+	attr_status << "Event status       : "<<hdb_dev->get_sig_status(signame);
 	attr_status << endl;
-	attr_status << "Using ZMQ: "<<(hdb_dev->shared->get_sig_source(signame) ? "true" : "false");
+	attr_status << "Events engine      : "<<(hdb_dev->shared->get_sig_source(signame) ? "ZMQ" : "Notifd");
 	attr_status << endl;
 	hdb_dev->shared->lock();
-	attr_status << "Archiving: "<<(hdb_dev->shared->is_running(signame) ? "true" : "false");
+	attr_status << "Archiving          : "<<(hdb_dev->shared->is_running(signame) ? "Started" : "Stopped");
 	hdb_dev->shared->unlock();
 	attr_status << endl;
-	attr_status << "Event OK counter: "<<hdb_dev->shared->get_ok_event(signame);
+	attr_status << "Event OK counter   : "<<hdb_dev->shared->get_ok_event(signame);
 	attr_status << endl;
-	attr_status << "Event NOK counter: "<<hdb_dev->shared->get_nok_event(signame);
+	attr_status << "Event NOK counter  : "<<hdb_dev->shared->get_nok_event(signame);
 	attr_status << endl;
-	attr_status << "DB ERRORS counter: "<<hdb_dev->push_shared->get_nok_db(signame);
+	attr_status << "DB ERRORS counter  : "<<hdb_dev->push_shared->get_nok_db(signame);
+	attr_status << endl;
+	attr_status << "Store time AVG     : "<<fixed<<hdb_dev->push_shared->get_avg_store_time(signame)<<"s";
+	attr_status << endl;
+	attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_shared->get_avg_process_time(signame)<<"s";
 	argout  = new char[attr_status.str().length()+1];
 	strcpy(argout, attr_status.str().c_str());
 

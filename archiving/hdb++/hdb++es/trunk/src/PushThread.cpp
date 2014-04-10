@@ -59,12 +59,14 @@ PushThreadShared::PushThreadShared(string host, string user, string password, st
 		cout << __func__ << ": error connecting DB: " << err << endl;
 		exit(-1);
 	}
+	sig_lock = new omni_mutex();
 }
 //=============================================================================
 //=============================================================================
 PushThreadShared::~PushThreadShared()
 {
 	delete mdb;
+	delete sig_lock;
 }
 //=============================================================================
 //=============================================================================
@@ -125,11 +127,16 @@ vector<string> PushThreadShared::get_sig_list_waiting()
 //=============================================================================
 void PushThreadShared::reset_statistics()
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].nokdb_counter = 0;
+		signals[i].okdb_counter = 0;
+		signals[i].store_time_avg = 0;
+		signals[i].process_time_avg = 0;
 	}
+	max_waiting = 0;
+	sig_lock->unlock();
 }
 //=============================================================================
 //=============================================================================
@@ -169,7 +176,7 @@ bool PushThreadShared::get_if_stop()
 //=============================================================================
 void  PushThreadShared::remove(string &signame)
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	unsigned int i;
 	vector<HdbStat>::iterator pos = signals.begin();
 	for (i=0 ; i<signals.size() ; i++, pos++)
@@ -177,6 +184,7 @@ void  PushThreadShared::remove(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals.erase(pos);
+			sig_lock->unlock();
 			return;
 		}
 	}
@@ -186,10 +194,11 @@ void  PushThreadShared::remove(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals.erase(pos);
+			sig_lock->unlock();
 			return;
 		}
 	}
-
+	sig_lock->unlock();
 }
 
 //=============================================================================
@@ -199,14 +208,18 @@ void  PushThreadShared::remove(string &signame)
 //=============================================================================
 vector<string>  PushThreadShared::get_sig_on_error_list()
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].dbstate==Tango::ALARM)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
+	}
+
+	sig_lock->unlock();
 	return list;
 }
 //=============================================================================
@@ -216,13 +229,16 @@ vector<string>  PushThreadShared::get_sig_on_error_list()
 //=============================================================================
 int  PushThreadShared::get_sig_on_error_num()
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].dbstate==Tango::ALARM)
 		{
 			num++;
 		}
+	}
+	sig_lock->unlock();
 	return num;
 }
 //=============================================================================
@@ -232,14 +248,17 @@ int  PushThreadShared::get_sig_on_error_num()
 //=============================================================================
 vector<string>  PushThreadShared::get_sig_not_on_error_list()
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].dbstate==Tango::ON)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
+	}
+	sig_lock->unlock();
 	return list;
 }
 //=============================================================================
@@ -249,13 +268,16 @@ vector<string>  PushThreadShared::get_sig_not_on_error_list()
 //=============================================================================
 int  PushThreadShared::get_sig_not_on_error_num()
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].dbstate==Tango::ON)
 		{
 			num++;
 		}
+	}
+	sig_lock->unlock();
 	return num;
 }
 //=============================================================================
@@ -263,16 +285,27 @@ int  PushThreadShared::get_sig_not_on_error_num()
  *	Return the db state of the signal
  */
 //=============================================================================
-Tango::DevState  PushThreadShared::get_sig_state(string &signame)
+Tango::DevState  PushThreadShared::get_sig_state(string signame)
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].name==signame)
+		{
+			sig_lock->unlock();
 			return signals[i].dbstate;
+		}
+	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (compare_without_domain(signals[i].name,signame))
+		{
+			sig_lock->unlock();
 			return signals[i].dbstate;
+		}
+	}
 
+	sig_lock->unlock();
 	return Tango::ON;
 	//	if not found
 	/*Tango::Except::throw_exception(
@@ -288,7 +321,7 @@ Tango::DevState  PushThreadShared::get_sig_state(string &signame)
 //=============================================================================
 void  PushThreadShared::set_nok_db(string &signame)
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	unsigned int i;
 	for (i=0 ; i<signals.size() ; i++)
 	{
@@ -296,6 +329,7 @@ void  PushThreadShared::set_nok_db(string &signame)
 		{
 			signals[i].nokdb_counter++;
 			signals[i].dbstate = Tango::ALARM;
+			sig_lock->unlock();
 			return;
 		}
 	}
@@ -305,6 +339,7 @@ void  PushThreadShared::set_nok_db(string &signame)
 		{
 			signals[i].nokdb_counter++;
 			signals[i].dbstate = Tango::ALARM;
+			sig_lock->unlock();
 			return;
 		}
 	}
@@ -313,10 +348,13 @@ void  PushThreadShared::set_nok_db(string &signame)
 		HdbStat sig;
 		sig.name = signame;
 		sig.nokdb_counter = 1;
+		sig.okdb_counter = 0;
+		sig.store_time_avg = 0.0;
+		sig.process_time_avg = 0.0;
 		sig.dbstate = Tango::ALARM;
 		signals.push_back(sig);
 	}
-
+	sig_lock->unlock();
 }
 //=============================================================================
 /**
@@ -325,14 +363,24 @@ void  PushThreadShared::set_nok_db(string &signame)
 //=============================================================================
 uint32_t  PushThreadShared::get_nok_db(string &signame)
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].name==signame)
+		{
+			sig_lock->unlock();
 			return signals[i].nokdb_counter;
+		}
+	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (compare_without_domain(signals[i].name,signame))
+		{
+			sig_lock->unlock();
 			return signals[i].nokdb_counter;
-
+		}
+	}
+	sig_lock->unlock();
 	return 0;
 	//	if not found
 	/*Tango::Except::throw_exception(
@@ -342,18 +390,80 @@ uint32_t  PushThreadShared::get_nok_db(string &signame)
 }
 //=============================================================================
 /**
+ *	Get avg store time
+ */
+//=============================================================================
+double  PushThreadShared::get_avg_store_time(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			sig_lock->unlock();
+			return signals[i].store_time_avg;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			sig_lock->unlock();
+			return signals[i].store_time_avg;
+		}
+	}
+	sig_lock->unlock();
+
+	return -1;
+}
+//=============================================================================
+/**
+ *	Get avg process time
+ */
+//=============================================================================
+double  PushThreadShared::get_avg_process_time(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			sig_lock->unlock();
+			return signals[i].process_time_avg;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			sig_lock->unlock();
+			return signals[i].process_time_avg;
+		}
+	}
+	sig_lock->unlock();
+
+	return -1;
+}
+//=============================================================================
+/**
  *	reset state
  */
 //=============================================================================
-void  PushThreadShared::set_ok_db(string &signame)
+void  PushThreadShared::set_ok_db(string &signame, double store_time, double process_time)
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	unsigned int i;
 	for (i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
 			signals[i].dbstate = Tango::ON;
+			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
+			signals[i].process_time_avg = ((signals[i].process_time_avg * signals[i].okdb_counter) + process_time)/(signals[i].okdb_counter+1);
+			signals[i].okdb_counter++;
+			sig_lock->unlock();
 			return;
 		}
 	}
@@ -362,9 +472,25 @@ void  PushThreadShared::set_ok_db(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].dbstate = Tango::ON;
+			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
+			signals[i].process_time_avg = ((signals[i].process_time_avg * signals[i].okdb_counter) + process_time)/(signals[i].okdb_counter+1);
+			signals[i].okdb_counter++;
+			sig_lock->unlock();
 			return;
 		}
 	}
+	if(i == signals.size())
+	{
+		HdbStat sig;
+		sig.name = signame;
+		sig.nokdb_counter = 0;
+		sig.okdb_counter = 1;
+		sig.store_time_avg = store_time;
+		sig.process_time_avg = process_time;
+		sig.dbstate = Tango::ALARM;
+		signals.push_back(sig);
+	}
+	sig_lock->unlock();
 }
 
 void  PushThreadShared::start_attr(string &signame)
@@ -396,7 +522,7 @@ void  PushThreadShared::stop_attr(string &signame)
 //=============================================================================
 Tango::DevState PushThreadShared::state()
 {
-	omni_mutex_lock sync(*this);
+	sig_lock->lock();
 	Tango::DevState	state = Tango::ON;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
@@ -406,6 +532,7 @@ Tango::DevState PushThreadShared::state()
 			break;
 		}
 	}
+	sig_lock->unlock();
 	return state;
 }
 
@@ -466,12 +593,22 @@ void *PushThread::run_undetached(void *ptr)
 		{
 			try
 			{
+				timeval now;
+				gettimeofday(&now, NULL);
+				double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
 				//	Send it to DB
 				int ret = shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
 				if(ret < 0)
+				{
 					shared->set_nok_db(cmd->ev_data->attr_name);
+				}
 				else
-					shared->set_ok_db(cmd->ev_data->attr_name);
+				{
+					gettimeofday(&now, NULL);
+					double	dnow = now.tv_sec + (double)now.tv_usec/1.0e6;
+					double	rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/1.0e6;
+					shared->set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+				}
 			}
 			catch(Tango::DevFailed  &e)
 			{
