@@ -61,7 +61,10 @@ typedef struct
 {
 	string	name;
 	uint32_t nokdb_counter;
+	uint32_t okdb_counter;
 	Tango::DevState dbstate;
+	double process_time_avg;
+	double store_time_avg;
 }
 HdbStat;
 
@@ -128,7 +131,7 @@ public:
 	/**
 	 *	Return the db state of the signal
 	 */
-	Tango::DevState  get_sig_state(string &signame);
+	Tango::DevState  get_sig_state(string signame);
 
 	/**
 	 *	Increment the error counter of db saving
@@ -139,9 +142,17 @@ public:
 	 */
 	uint32_t  get_nok_db(string &signame);
 	/**
+	 *	Get avg store time
+	 */
+	double  get_avg_store_time(string &signame);
+	/**
+	 *	Get avg process time
+	 */
+	double  get_avg_process_time(string &signame);
+	/**
 	 *	reset state
 	 */
-	void  set_ok_db(string &signame);
+	void  set_ok_db(string &signame, double store_time, double process_time);
 
 	void  start_attr(string &signame);
 	void  stop_attr(string &signame);
@@ -151,6 +162,7 @@ public:
 	 */
 	Tango::DevState state();
 
+	omni_mutex *sig_lock;
 	vector<HdbStat>	signals;
 
 	HdbClient *mdb;
