@@ -159,6 +159,7 @@ void HdbEventSubscriber::delete_device()
 
 	//	Delete device allocated objects
 	cout << "-------- Delete device's allocated object --------" << endl;
+	stop();
 	delete hdb_dev;
 	cout << "-------- Delete device's allocated object done !--------" << endl;
 	//Tango::client_leavefunc();
@@ -694,8 +695,14 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
 
 	//	Add your own code
 	string	signame(argin);
-	hdb_dev->remove(signame);
+	hdb_dev->fix_tango_host(signame);
 
+	if(hdb_dev->shared->is_running(signame))
+	{
+		hdb_dev->shared->stop(signame);
+		hdb_dev->push_shared->stop_attr(signame);
+	}
+	hdb_dev->remove(signame);
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_remove
 }
@@ -768,6 +775,7 @@ void HdbEventSubscriber::start()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
 
 	//	Add your own code
+	hdb_dev->push_shared->start_all();
 	hdb_dev->shared->start_all();
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::start
 }
@@ -785,6 +793,7 @@ void HdbEventSubscriber::stop()
 
 	//	Add your own code
 	hdb_dev->shared->stop_all();
+	hdb_dev->push_shared->stop_all();
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::stop
 }
 //--------------------------------------------------------
@@ -828,8 +837,8 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
 
-	hdb_dev->push_shared->stop_attr(signame);
 	hdb_dev->shared->stop(signame);
+	hdb_dev->push_shared->stop_attr(signame);
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_stop
 }

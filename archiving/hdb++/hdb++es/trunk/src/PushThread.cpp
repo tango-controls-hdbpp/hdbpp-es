@@ -496,23 +496,44 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 void  PushThreadShared::start_attr(string &signame)
 {
 	//------Configure DB------------------------------------------------
-	int res = mdb->start_Attr(signame);
-	if(res < 0)
-	{
-		//... TODO
-
-	}
+	HdbCmdData *cmd = new HdbCmdData(DB_START, signame);
+	push_back_cmd(cmd);
 }
 
 void  PushThreadShared::stop_attr(string &signame)
 {
 	//------Configure DB------------------------------------------------
-	int res = mdb->stop_Attr(signame);
-	if(res < 0)
-	{
-		//... TODO
+	HdbCmdData *cmd = new HdbCmdData(DB_STOP, signame);
+	push_back_cmd(cmd);
+}
 
+void  PushThreadShared::remove_attr(string &signame)
+{
+	//------Configure DB------------------------------------------------
+	HdbCmdData *cmd = new HdbCmdData(DB_REMOVE, signame);
+	push_back_cmd(cmd);
+}
+
+void  PushThreadShared::start_all()
+{
+	sig_lock->lock();
+	unsigned int i;
+	for (i=0 ; i<signals.size() ; i++)
+	{
+		start_attr(signals[i].name);
 	}
+	sig_lock->unlock();
+}
+
+void  PushThreadShared::stop_all()
+{
+	sig_lock->lock();
+	unsigned int i;
+	for (i=0 ; i<signals.size() ; i++)
+	{
+		stop_attr(signals[i].name);
+	}
+	sig_lock->unlock();
 }
 
 //=============================================================================
@@ -593,21 +614,58 @@ void *PushThread::run_undetached(void *ptr)
 		{
 			try
 			{
-				timeval now;
-				gettimeofday(&now, NULL);
-				double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
-				//	Send it to DB
-				int ret = shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
-				if(ret < 0)
+				switch(cmd->op_code)
 				{
-					shared->set_nok_db(cmd->ev_data->attr_name);
-				}
-				else
-				{
-					gettimeofday(&now, NULL);
-					double	dnow = now.tv_sec + (double)now.tv_usec/1.0e6;
-					double	rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/1.0e6;
-					shared->set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+					case DB_INSERT:
+					{
+						timeval now;
+						gettimeofday(&now, NULL);
+						double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
+						//	Send it to DB
+						int ret = shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
+						if(ret < 0)
+						{
+							shared->set_nok_db(cmd->ev_data->attr_name);
+						}
+						else
+						{
+							gettimeofday(&now, NULL);
+							double	dnow = now.tv_sec + (double)now.tv_usec/1.0e6;
+							double	rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/1.0e6;
+							shared->set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+						}
+						break;
+					}
+					case DB_START:
+					{
+						//	Send it to DB
+						int ret = shared->mdb->start_Attr(cmd->attr_name);
+						if(ret < 0)
+						{
+							//TODO
+						}
+						break;
+					}
+					case DB_STOP:
+					{
+						//	Send it to DB
+						int ret = shared->mdb->stop_Attr(cmd->attr_name);
+						if(ret < 0)
+						{
+							//TODO
+						}
+						break;
+					}
+					case DB_REMOVE:
+					{
+						//	Send it to DB
+						int ret = shared->mdb->remove_Attr(cmd->attr_name);
+						if(ret < 0)
+						{
+							//TODO
+						}
+						break;
+					}
 				}
 			}
 			catch(Tango::DevFailed  &e)
