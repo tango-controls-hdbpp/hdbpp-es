@@ -714,11 +714,13 @@ vector<string>  SharedData::get_sig_not_on_error_list()
 	omni_mutex_lock sync(*this);
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
 		if (signals[i].evstate==Tango::ON)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
+	}
 	return list;
 }
 //=============================================================================

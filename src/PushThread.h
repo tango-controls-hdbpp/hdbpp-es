@@ -156,6 +156,9 @@ public:
 
 	void  start_attr(string &signame);
 	void  stop_attr(string &signame);
+	void  remove_attr(string &signame);
+	void  start_all();
+	void  stop_all();
 
 	/**
 	 *	Return ALARM if at list one signal is not saving in DB.

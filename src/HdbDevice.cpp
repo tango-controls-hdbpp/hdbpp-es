@@ -183,6 +183,7 @@ void HdbDevice::remove(string &signame)
 	fix_tango_host(signame);
 	shared->remove(signame);
 	push_shared->remove(signame);
+	push_shared->remove_attr(signame);
 }
 //=============================================================================
 //=============================================================================
