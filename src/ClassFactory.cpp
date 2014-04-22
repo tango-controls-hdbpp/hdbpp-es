@@ -17,7 +17,7 @@ static const char *RcsId = "$Id: ClassFactory.cpp,v 1.2 2014-02-20 14:57:06 graz
 // $Date: 2014-02-20 14:57:06 $
 //
 // SVN only:
-// $HeadURL:  $
+// $HeadURL$
 //
 // CVS only:
 // $Source: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/ClassFactory.cpp,v $
