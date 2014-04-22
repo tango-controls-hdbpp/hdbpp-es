@@ -17,7 +17,7 @@
 // $Date: 2014-03-07 14:05:54 $
 //
 // SVN only:
-// $HeadURL:  $
+// $HeadURL$
 //
 // CVS only:
 // $Source: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/HdbEventSubscriberClass.h,v $

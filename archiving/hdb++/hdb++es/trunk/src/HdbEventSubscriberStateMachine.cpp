@@ -15,7 +15,7 @@ static const char *RcsId = "$Id: HdbEventSubscriberStateMachine.cpp,v 1.3 2014-0
 // $Date: 2014-03-07 14:05:54 $
 //
 // SVN only:
-// $HeadURL:  $
+// $HeadURL$
 //
 // CVS only:
 // $Source: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/HdbEventSubscriberStateMachine.cpp,v $

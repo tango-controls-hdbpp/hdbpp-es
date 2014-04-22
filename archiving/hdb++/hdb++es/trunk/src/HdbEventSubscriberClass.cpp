@@ -2,7 +2,7 @@
 static const char *RcsId      = "$Id: HdbEventSubscriberClass.cpp,v 1.5 2014-03-07 14:05:54 graziano Exp $";
 static const char *TagName    = "$Name:  $";
 static const char *CvsPath    = "$Source: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/HdbEventSubscriberClass.cpp,v $";
-static const char *SvnPath    = "$HeadURL:  $";
+static const char *SvnPath    = "$HeadURL$";
 static const char *HttpServer = "http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/";
 //=============================================================================
 //
@@ -21,7 +21,7 @@ static const char *HttpServer = "http://www.esrf.eu/computing/cs/tango/tango_doc
 // $Date: 2014-03-07 14:05:54 $
 //
 // SVN only:
-// $HeadURL:  $
+// $HeadURL$
 //
 // CVS only:
 // $Source: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/HdbEventSubscriberClass.cpp,v $
