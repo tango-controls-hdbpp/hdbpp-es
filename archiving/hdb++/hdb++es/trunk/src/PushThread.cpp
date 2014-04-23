@@ -487,7 +487,7 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		sig.okdb_counter = 1;
 		sig.store_time_avg = store_time;
 		sig.process_time_avg = process_time;
-		sig.dbstate = Tango::ALARM;
+		sig.dbstate = Tango::ON;
 		signals.push_back(sig);
 	}
 	sig_lock->unlock();
