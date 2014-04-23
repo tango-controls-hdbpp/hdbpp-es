@@ -381,10 +381,12 @@ void SharedData::set_first_err(string &signame)
 //=============================================================================
 void SharedData::unsubscribe_events()
 {
-	omni_mutex_lock sync(*this);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	this->lock();
+	vector<HdbSignal>	local_signals(signals);
+	this->unlock();
+	for (unsigned int i=0 ; i<local_signals.size() ; i++)
 	{
-		HdbSignal	*sig = &signals[i];
+		HdbSignal	*sig = &local_signals[i];
 		if (signals[i].event_id != ERR)
 		{
 			cout << "    unsubscribe " << sig->name << endl;
@@ -401,6 +403,16 @@ void SharedData::unsubscribe_events()
 		}
 		delete sig->attr;
 	}
+	this->lock();
+
+	for (unsigned int j=0 ; j<signals.size() ; j++)
+	{
+		signals[j].event_id = ERR;
+		signals[j].archive_cb = NULL;
+		signals[j].attr = NULL;
+	}
+
+	this->unlock();
 	cout << __func__<< ": exiting..."<<endl;
 }
 //=============================================================================
@@ -1002,7 +1014,7 @@ void *SubscribeThread::run_undetached(void *ptr)
 			//shared->lock();
 			if (nb_to_subscribe==0)
 			{
-				cout << __func__<<": going to wait nb_to_subscribe=0"<<period<<endl;
+				cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
 				//shared->condition.wait();
 				shared->wait();
 			}
