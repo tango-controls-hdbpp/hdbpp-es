@@ -66,15 +66,15 @@ HdbDevice::~HdbDevice()
 
 	DEBUG_STREAM << "	Stopping subscribe thread" << endl;
 	shared->stop_thread();
-	usleep(50000);
+	DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
+	thread->join(0);
+	DEBUG_STREAM << "	Subscribe thread Joined " << endl;
+	usleep(100000);
 	DEBUG_STREAM << "	Stopping push thread" << endl;
 	push_shared->stop_thread();
-
-	thread->join(0);
-	DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
-
-	push_thread->join(0);
 	DEBUG_STREAM << "	Push thread Stopped " << endl;
+	push_thread->join(0);
+	DEBUG_STREAM << "	Push thread Joined " << endl;
 	delete shared;
 	DEBUG_STREAM << "	shared deleted " << endl;
 	delete push_shared;
