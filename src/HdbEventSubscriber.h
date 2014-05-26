@@ -90,6 +90,8 @@ private:
 	vector<string> attribute_ok_list_str;
 	vector<string> attribute_nok_list_str;
 	vector<string> attribute_pending_list_str;
+	vector<string> attribute_started_list_str;
+	vector<string> attribute_stopped_list_str;
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -118,6 +120,8 @@ public:
 	Tango::DevShort	dbPort;
 	//	StartArchivingAtStartup:	Start archiving at startup
 	Tango::DevBoolean	startArchivingAtStartup;
+	//	StatisticsTimeWindow:	Statistics time window in seconds
+	Tango::DevLong	statisticsTimeWindow;
 
 //	Attribute data members
 public:
@@ -125,10 +129,22 @@ public:
 	Tango::DevLong	*attr_AttributeNokNumber_read;
 	Tango::DevLong	*attr_AttributePendingNumber_read;
 	Tango::DevLong	*attr_AttributeNumber_read;
+	Tango::DevDouble	*attr_AttributeMaxStoreTime_read;
+	Tango::DevDouble	*attr_AttributeMinStoreTime_read;
+	Tango::DevDouble	*attr_AttributeMaxProcessingTime_read;
+	Tango::DevDouble	*attr_AttributeMinProcessingTime_read;
+	Tango::DevDouble	*attr_AttributeRecordFreq_read;
+	Tango::DevDouble	*attr_AttributeFailureFreq_read;
+	Tango::DevLong	*attr_AttributeStartedNumber_read;
+	Tango::DevLong	*attr_AttributeStoppedNumber_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
 	Tango::DevString	*attr_AttributeNokList_read;
 	Tango::DevString	*attr_AttributePendingList_read;
+	Tango::DevDouble	*attr_AttributeRecordFreqList_read;
+	Tango::DevDouble	*attr_AttributeFailureFreqList_read;
+	Tango::DevString	*attr_AttributeStartedList_read;
+	Tango::DevString	*attr_AttributeStoppedList_read;
 
 //	Constructors and destructors
 public:
@@ -227,6 +243,78 @@ public:
 	virtual void read_AttributeNumber(Tango::Attribute &attr);
 	virtual bool is_AttributeNumber_allowed(Tango::AttReqType type);
 /**
+ *	Attribute AttributeMaxStoreTime related methods
+ *	Description: Maximum storing time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeMaxStoreTime(Tango::Attribute &attr);
+	virtual bool is_AttributeMaxStoreTime_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeMinStoreTime related methods
+ *	Description: Minimum storing time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeMinStoreTime(Tango::Attribute &attr);
+	virtual bool is_AttributeMinStoreTime_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeMaxProcessingTime related methods
+ *	Description: Maximum processing (from event reception to storage) time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeMaxProcessingTime(Tango::Attribute &attr);
+	virtual bool is_AttributeMaxProcessingTime_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeMinProcessingTime related methods
+ *	Description: Minimum processing (from event reception to storage) time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeMinProcessingTime(Tango::Attribute &attr);
+	virtual bool is_AttributeMinProcessingTime_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeRecordFreq related methods
+ *	Description: Record frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeRecordFreq(Tango::Attribute &attr);
+	virtual bool is_AttributeRecordFreq_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeFailureFreq related methods
+ *	Description: Failure frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeFailureFreq(Tango::Attribute &attr);
+	virtual bool is_AttributeFailureFreq_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeStartedNumber related methods
+ *	Description: Number of archived attributes started
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeStartedNumber(Tango::Attribute &attr);
+	virtual bool is_AttributeStartedNumber_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeStoppedNumber related methods
+ *	Description: Number of archived attributes stopped
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeStoppedNumber(Tango::Attribute &attr);
+	virtual bool is_AttributeStoppedNumber_allowed(Tango::AttReqType type);
+/**
  *	Attribute AttributeList related methods
  *	Description: Returns the configured attribute list
  *
@@ -262,6 +350,42 @@ public:
  */
 	virtual void read_AttributePendingList(Tango::Attribute &attr);
 	virtual bool is_AttributePendingList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeRecordFreqList related methods
+ *	Description: Returns the configured attribute list
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeRecordFreqList(Tango::Attribute &attr);
+	virtual bool is_AttributeRecordFreqList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeFailureFreqList related methods
+ *	Description: Returns the configured attribute list
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeFailureFreqList(Tango::Attribute &attr);
+	virtual bool is_AttributeFailureFreqList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeStartedList related methods
+ *	Description: Returns the attributes started list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeStartedList(Tango::Attribute &attr);
+	virtual bool is_AttributeStartedList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeStoppedList related methods
+ *	Description: Returns the attributes stopped list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeStoppedList(Tango::Attribute &attr);
+	virtual bool is_AttributeStoppedList_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------
@@ -297,7 +421,7 @@ public:
 	 *	Description: Read a attribute status.
 	 *
 	 *	@param argin The attribute name
-	 *	@returns The attribute status. TODO: DevString OK?
+	 *	@returns The attribute status.
 	 */
 	virtual Tango::DevString attribute_status(Tango::DevString argin);
 	virtual bool is_AttributeStatus_allowed(const CORBA::Any &any);

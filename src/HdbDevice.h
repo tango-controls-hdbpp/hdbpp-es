@@ -43,6 +43,7 @@
 #include <tango.h>
 #include <SubscribeThread.h>
 #include <PushThread.h>
+#include <StatsThread.h>
 /**
  * @author	$Author: graziano $
  * @version	$Revision: 1.5 $
@@ -88,7 +89,9 @@ public:
 	string				status;
 	SubscribeThread		*thread;
 	PushThread			*push_thread;
+	StatsThread			*stats_thread;
 	int					period;
+	int					stats_window;
 	/**
 	 *	Shared data
 	 */
@@ -97,6 +100,12 @@ public:
 	Tango::DeviceImpl 	*_device;
 	bool startArchivingAtStartup;
 	map<string, string> domain_map;
+
+	Tango::DevDouble	AttributeRecordFreq;
+	Tango::DevDouble	AttributeFailureFreq;
+	Tango::DevDouble	AttributeRecordFreqList[10000];
+	Tango::DevDouble	AttributeFailureFreqList[10000];
+
 #ifdef _USE_FERMI_DB_RW
 private:
 	string host_rw;
@@ -109,7 +118,7 @@ public:
 	 *	@param devname 	Device Name
 	 *	@param p	 	Period to retry subscribe event
 	 */
-	HdbDevice(int p, Tango::DeviceImpl *device);
+	HdbDevice(int p, int s, Tango::DeviceImpl *device);
 	~HdbDevice();
 	/**
 	 * initialize object
@@ -143,6 +152,14 @@ public:
 	 */
 	vector<string>  get_sig_not_on_error_list();
 	/**
+	 *	Return the list of signals started
+	 */
+	vector<string>  get_sig_started_list();
+	/**
+	 *	Return the list of signals not_started
+	 */
+	vector<string>  get_sig_not_started_list();
+	/**
 	 *	Return the number of signals on error
 	 */
 	int  get_sig_on_error_num();
@@ -151,6 +168,14 @@ public:
 	 */
 	int  get_sig_not_on_error_num();
 	/**
+	 *	Return the number of signals started
+	 */
+	int  get_sig_started_num();
+	/**
+	 *	Return the number of signals not started
+	 */
+	int  get_sig_not_started_num();
+	/**
 	 *	Return the status of specified signal
 	 */
 	string  get_sig_status(string &signame);
@@ -158,10 +183,6 @@ public:
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */
 	virtual Tango::DevState subcribing_state();
-	/**
-	 *	Manage attribute received on event to store in HDB
-	 */
-	void manage_attribute(Tango::EventData *data, HdbSignal *sig);
 	/**
 	 *	Manage attribute received an error event
 	 */
@@ -186,6 +207,10 @@ public:
 	 *	Reset statistic counters
 	 */
 	 void reset_statistics();
+	/**
+	 *	Reset statistic freq counters
+	 */
+	 void reset_freq_statistics();
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */

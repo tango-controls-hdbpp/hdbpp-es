@@ -474,7 +474,9 @@ void SharedData::add(string &signame, int to_do)
 		signal.evstate    = Tango::ALARM;
 		signal.isZMQ    = false;
 		signal.okev_counter = 0;
+		signal.okev_counter_freq = 0;
 		signal.nokev_counter = 0;
+		signal.nokev_counter_freq = 0;
 		signal.running = false;
 		signal.first = true;
 		signal.first_err = true;
@@ -751,7 +753,72 @@ int  SharedData::get_sig_not_on_error_num()
 		}
 	return num;
 }
-
+//=============================================================================
+/**
+ *	Return the list of signals started
+ */
+//=============================================================================
+vector<string>  SharedData::get_sig_started_list()
+{
+	omni_mutex_lock sync(*this);
+	vector<string>	list;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].running)
+		{
+			string	signame(signals[i].name);
+			list.push_back(signame);
+		}
+	return list;
+}
+//=============================================================================
+/**
+ *	Return the number of signals started
+ */
+//=============================================================================
+int  SharedData::get_sig_started_num()
+{
+	omni_mutex_lock sync(*this);
+	int num=0;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].running)
+		{
+			num++;
+		}
+	return num;
+}
+//=============================================================================
+/**
+ *	Return the list of signals not started
+ */
+//=============================================================================
+vector<string>  SharedData::get_sig_not_started_list()
+{
+	omni_mutex_lock sync(*this);
+	vector<string>	list;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (!signals[i].running)
+		{
+			string	signame(signals[i].name);
+			list.push_back(signame);
+		}
+	return list;
+}
+//=============================================================================
+/**
+ *	Return the number of signals not started
+ */
+//=============================================================================
+int  SharedData::get_sig_not_started_num()
+{
+	omni_mutex_lock sync(*this);
+	int num=0;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (!signals[i].running)
+		{
+			num++;
+		}
+	return num;
+}
 
 //=============================================================================
 /**
@@ -766,7 +833,9 @@ void  SharedData::set_ok_event(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].okev_counter++;
+			signals[i].okev_counter_freq++;
 			signals[i].first_err = true;
+			gettimeofday(&signals[i].last_okev, NULL);
 			return;
 		}
 	}
@@ -775,7 +844,9 @@ void  SharedData::set_ok_event(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].okev_counter++;
+			signals[i].okev_counter_freq++;
 			signals[i].first_err = true;
+			gettimeofday(&signals[i].last_okev, NULL);
 			return;
 		}
 	}
@@ -811,6 +882,56 @@ uint32_t  SharedData::get_ok_event(string &signame)
 }
 //=============================================================================
 /**
+ *	Get the ok counter of event rx for freq stats
+ */
+//=============================================================================
+uint32_t  SharedData::get_ok_event_freq(string &signame)
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].okev_counter_freq;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (compare_without_domain(signals[i].name,signame))
+			return signals[i].okev_counter_freq;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_ok_event()");
+
+	return 0;
+}
+//=============================================================================
+/**
+ *	Get last okev timestamp
+ */
+//=============================================================================
+timeval  SharedData::get_last_okev(string &signame)
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].last_okev;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (compare_without_domain(signals[i].name,signame))
+			return signals[i].last_okev;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_last_okev()");
+	timeval ret;
+	ret.tv_sec=0;
+	ret.tv_usec=0;
+	return ret;
+}
+//=============================================================================
+/**
  *	Increment the error counter of event rx
  */
 //=============================================================================
@@ -822,6 +943,8 @@ void  SharedData::set_nok_event(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].nokev_counter++;
+			signals[i].nokev_counter_freq++;
+			gettimeofday(&signals[i].last_nokev, NULL);
 			return;
 		}
 	}
@@ -830,6 +953,8 @@ void  SharedData::set_nok_event(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].nokev_counter++;
+			signals[i].nokev_counter_freq++;
+			gettimeofday(&signals[i].last_nokev, NULL);
 			return;
 		}
 	}
@@ -862,6 +987,56 @@ uint32_t  SharedData::get_nok_event(string &signame)
 				(const char *)"SharedData::get_nok_event()");
 
 	return 0;
+}
+//=============================================================================
+/**
+ *	Get the error counter of event rx for freq stats
+ */
+//=============================================================================
+uint32_t  SharedData::get_nok_event_freq(string &signame)
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].nokev_counter_freq;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (compare_without_domain(signals[i].name,signame))
+			return signals[i].nokev_counter_freq;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_nok_event()");
+
+	return 0;
+}
+//=============================================================================
+/**
+ *	Get last nokev timestamp
+ */
+//=============================================================================
+timeval  SharedData::get_last_nokev(string &signame)
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].last_nokev;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (compare_without_domain(signals[i].name,signame))
+			return signals[i].last_nokev;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_last_nokev()");
+	timeval ret;
+	ret.tv_sec=0;
+	ret.tv_usec=0;
+	return ret;
 }
 
 //=============================================================================
@@ -900,7 +1075,20 @@ void SharedData::reset_statistics()
 		signals[i].nokev_counter=0;
 		signals[i].okev_counter=0;
 	}
-
+}
+//=============================================================================
+/**
+ *	Reset freq statistic counters
+ */
+//=============================================================================
+void SharedData::reset_freq_statistics()
+{
+	omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		signals[i].nokev_counter_freq=0;
+		signals[i].okev_counter_freq=0;
+	}
 }
 //=============================================================================
 /**
@@ -1014,13 +1202,13 @@ void *SubscribeThread::run_undetached(void *ptr)
 			//shared->lock();
 			if (nb_to_subscribe==0)
 			{
-				cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
+				//cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
 				//shared->condition.wait();
 				shared->wait();
 			}
 			else
 			{
-				cout << __func__<<": going to wait period="<<period<<endl;
+				//cout << __func__<<": going to wait period="<<period<<endl;
 				//unsigned long s,n;
 				//omni_thread::get_time(&s,&n,period,0);
 				//shared->condition.timedwait(s,n);

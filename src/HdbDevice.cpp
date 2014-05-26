@@ -63,7 +63,8 @@ namespace HdbEventSubscriber_ns
 HdbDevice::~HdbDevice()
 {
 	DEBUG_STREAM << "	Deleting HdbDevice" << endl;
-
+	DEBUG_STREAM << "	Stopping stats thread" << endl;
+	stats_thread->abortflag=true;
 	DEBUG_STREAM << "	Stopping subscribe thread" << endl;
 	shared->stop_thread();
 	DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
@@ -75,6 +76,8 @@ HdbDevice::~HdbDevice()
 	DEBUG_STREAM << "	Push thread Stopped " << endl;
 	push_thread->join(0);
 	DEBUG_STREAM << "	Push thread Joined " << endl;
+	stats_thread->join(0);
+	DEBUG_STREAM << "	Stats thread Joined " << endl;
 	delete shared;
 	DEBUG_STREAM << "	shared deleted " << endl;
 	delete push_shared;
@@ -82,10 +85,11 @@ HdbDevice::~HdbDevice()
 }
 //=============================================================================
 //=============================================================================
-HdbDevice::HdbDevice(int p, Tango::DeviceImpl *device)
+HdbDevice::HdbDevice(int p, int s, Tango::DeviceImpl *device)
 				:Tango::LogAdapter(device)
 {
 	this->period = p;
+	this->stats_window = s;
 	_device = device;
 #ifdef _USE_FERMI_DB_RW
 	host_rw = "";
@@ -130,9 +134,12 @@ void HdbDevice::initialize()
 
 
 	push_thread = new PushThread(push_shared);
+	stats_thread = new StatsThread(this);
+	stats_thread->period = stats_window;
 
 	build_signal_vector(list);
 
+	stats_thread->start();
 	push_thread->start();
 	thread->start();
 
@@ -336,6 +343,18 @@ vector<string>  HdbDevice::get_sig_not_on_error_list()
 }
 //=============================================================================
 //=============================================================================
+vector<string>  HdbDevice::get_sig_started_list()
+{
+	return shared->get_sig_started_list();
+}
+//=============================================================================
+//=============================================================================
+vector<string>  HdbDevice::get_sig_not_started_list()
+{
+	return shared->get_sig_not_started_list();
+}
+//=============================================================================
+//=============================================================================
 int  HdbDevice::get_sig_on_error_num()
 {
 	int on_ev_err = shared->get_sig_on_error_num();
@@ -370,6 +389,18 @@ int  HdbDevice::get_sig_not_on_error_num()
 }
 //=============================================================================
 //=============================================================================
+int  HdbDevice::get_sig_started_num()
+{
+	return shared->get_sig_started_num();
+}
+//=============================================================================
+//=============================================================================
+int  HdbDevice::get_sig_not_started_num()
+{
+	return shared->get_sig_not_started_num();
+}
+//=============================================================================
+//=============================================================================
 string  HdbDevice::get_sig_status(string &signame)
 {
 	return shared->get_sig_status(signame);
@@ -401,7 +432,13 @@ void  HdbDevice::reset_statistics()
 }
 //=============================================================================
 //=============================================================================
-
+void  HdbDevice::reset_freq_statistics()
+{
+	shared->reset_freq_statistics();
+	push_shared->reset_freq_statistics();
+}
+//=============================================================================
+//=============================================================================
 
 
 
