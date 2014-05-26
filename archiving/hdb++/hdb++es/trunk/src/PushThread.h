@@ -61,10 +61,16 @@ typedef struct
 {
 	string	name;
 	uint32_t nokdb_counter;
+	uint32_t nokdb_counter_freq;
 	uint32_t okdb_counter;
 	Tango::DevState dbstate;
 	double process_time_avg;
+	double process_time_min;
+	double process_time_max;
 	double store_time_avg;
+	double store_time_min;
+	double store_time_max;
+	timeval last_nokdb;
 }
 HdbStat;
 
@@ -108,6 +114,7 @@ public:
 	int get_max_waiting();
 	vector<string> get_sig_list_waiting();
 	void reset_statistics();
+	void reset_freq_statistics();
 	void stop_thread();
 	bool get_if_stop();
 
@@ -142,13 +149,37 @@ public:
 	 */
 	uint32_t  get_nok_db(string &signame);
 	/**
+	 *	Get the error counter of db saving for freq stats
+	 */
+	uint32_t  get_nok_db_freq(string &signame);
+	/**
 	 *	Get avg store time
 	 */
 	double  get_avg_store_time(string &signame);
 	/**
+	 *	Get min store time
+	 */
+	double  get_min_store_time(string &signame);
+	/**
+	 *	Get max store time
+	 */
+	double  get_max_store_time(string &signame);
+	/**
 	 *	Get avg process time
 	 */
 	double  get_avg_process_time(string &signame);
+	/**
+	 *	Get min process time
+	 */
+	double  get_min_process_time(string &signame);
+	/**
+	 *	Get max process time
+	 */
+	double  get_max_process_time(string &signame);
+	/**
+	 *	Get last nokdb timestamp
+	 */
+	timeval  get_last_nokdb(string &signame);
 	/**
 	 *	reset state
 	 */

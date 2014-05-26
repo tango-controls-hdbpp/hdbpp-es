@@ -133,9 +133,24 @@ void PushThreadShared::reset_statistics()
 		signals[i].nokdb_counter = 0;
 		signals[i].okdb_counter = 0;
 		signals[i].store_time_avg = 0;
+		signals[i].store_time_min = -1;
+		signals[i].store_time_max = -1;
 		signals[i].process_time_avg = 0;
+		signals[i].process_time_min = -1;
+		signals[i].process_time_max = -1;
 	}
 	max_waiting = 0;
+	sig_lock->unlock();
+}
+//=============================================================================
+//=============================================================================
+void PushThreadShared::reset_freq_statistics()
+{
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		signals[i].nokdb_counter_freq = 0;
+	}
 	sig_lock->unlock();
 }
 //=============================================================================
@@ -292,26 +307,23 @@ Tango::DevState  PushThreadShared::get_sig_state(string signame)
 	{
 		if (signals[i].name==signame)
 		{
+			Tango::DevState ret = signals[i].dbstate;
 			sig_lock->unlock();
-			return signals[i].dbstate;
+			return ret;
 		}
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (compare_without_domain(signals[i].name,signame))
 		{
+			Tango::DevState ret = signals[i].dbstate;
 			sig_lock->unlock();
-			return signals[i].dbstate;
+			return ret;
 		}
 	}
 
 	sig_lock->unlock();
 	return Tango::ON;
-	//	if not found
-	/*Tango::Except::throw_exception(
-				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
-				(const char *)"SharedData::get_nok_db()");*/
 }
 
 //=============================================================================
@@ -328,7 +340,9 @@ void  PushThreadShared::set_nok_db(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].nokdb_counter++;
+			signals[i].nokdb_counter_freq++;
 			signals[i].dbstate = Tango::ALARM;
+			gettimeofday(&signals[i].last_nokdb, NULL);
 			sig_lock->unlock();
 			return;
 		}
@@ -338,7 +352,9 @@ void  PushThreadShared::set_nok_db(string &signame)
 		if (compare_without_domain(signals[i].name,signame))
 		{
 			signals[i].nokdb_counter++;
+			signals[i].nokdb_counter_freq++;
 			signals[i].dbstate = Tango::ALARM;
+			gettimeofday(&signals[i].last_nokdb, NULL);
 			sig_lock->unlock();
 			return;
 		}
@@ -348,10 +364,16 @@ void  PushThreadShared::set_nok_db(string &signame)
 		HdbStat sig;
 		sig.name = signame;
 		sig.nokdb_counter = 1;
+		sig.nokdb_counter_freq = 1;
 		sig.okdb_counter = 0;
 		sig.store_time_avg = 0.0;
+		sig.store_time_min = -1;
+		sig.store_time_max = -1;
 		sig.process_time_avg = 0.0;
+		sig.process_time_min = -1;
+		sig.process_time_max = -1;
 		sig.dbstate = Tango::ALARM;
+		gettimeofday(&sig.last_nokdb, NULL);
 		signals.push_back(sig);
 	}
 	sig_lock->unlock();
@@ -368,16 +390,52 @@ uint32_t  PushThreadShared::get_nok_db(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
+			uint32_t ret = signals[i].nokdb_counter;
 			sig_lock->unlock();
-			return signals[i].nokdb_counter;
+			return ret;
 		}
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (compare_without_domain(signals[i].name,signame))
 		{
+			uint32_t ret = signals[i].nokdb_counter;
 			sig_lock->unlock();
-			return signals[i].nokdb_counter;
+			return ret;
+		}
+	}
+	sig_lock->unlock();
+	return 0;
+	//	if not found
+	/*Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_nok_db()");*/
+}
+//=============================================================================
+/**
+ *	Get the error counter of db saving for freq stats
+ */
+//=============================================================================
+uint32_t  PushThreadShared::get_nok_db_freq(string &signame)
+{
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			uint32_t ret = signals[i].nokdb_counter_freq;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			uint32_t ret = signals[i].nokdb_counter_freq;
+			sig_lock->unlock();
+			return ret;
 		}
 	}
 	sig_lock->unlock();
@@ -401,16 +459,80 @@ double  PushThreadShared::get_avg_store_time(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
+			double ret = signals[i].store_time_avg;
 			sig_lock->unlock();
-			return signals[i].store_time_avg;
+			return ret;
 		}
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (compare_without_domain(signals[i].name,signame))
 		{
+			double ret = signals[i].store_time_avg;
 			sig_lock->unlock();
-			return signals[i].store_time_avg;
+			return ret;
+		}
+	}
+	sig_lock->unlock();
+
+	return -1;
+}
+//=============================================================================
+/**
+ *	Get min store time
+ */
+//=============================================================================
+double  PushThreadShared::get_min_store_time(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			double ret = signals[i].store_time_min;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			double ret = signals[i].store_time_min;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	sig_lock->unlock();
+
+	return -1;
+}
+//=============================================================================
+/**
+ *	Get max store time
+ */
+//=============================================================================
+double  PushThreadShared::get_max_store_time(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			double ret = signals[i].store_time_max;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			double ret = signals[i].store_time_max;
+			sig_lock->unlock();
+			return ret;
 		}
 	}
 	sig_lock->unlock();
@@ -430,21 +552,117 @@ double  PushThreadShared::get_avg_process_time(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
+			double ret = signals[i].process_time_avg;
 			sig_lock->unlock();
-			return signals[i].process_time_avg;
+			return ret;
 		}
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (compare_without_domain(signals[i].name,signame))
 		{
+			double ret = signals[i].process_time_avg;
 			sig_lock->unlock();
-			return signals[i].process_time_avg;
+			return ret;
 		}
 	}
 	sig_lock->unlock();
 
 	return -1;
+}
+//=============================================================================
+/**
+ *	Get min process time
+ */
+//=============================================================================
+double  PushThreadShared::get_min_process_time(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			double ret = signals[i].process_time_min;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			double ret = signals[i].process_time_min;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	sig_lock->unlock();
+
+	return -1;
+}
+//=============================================================================
+/**
+ *	Get max process time
+ */
+//=============================================================================
+double  PushThreadShared::get_max_process_time(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			double ret = signals[i].process_time_max;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			double ret = signals[i].process_time_max;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	sig_lock->unlock();
+
+	return -1;
+}
+//=============================================================================
+/**
+ *	Get last nokdb timestamp
+ */
+//=============================================================================
+timeval  PushThreadShared::get_last_nokdb(string &signame)
+{
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			timeval ret = signals[i].last_nokdb;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (compare_without_domain(signals[i].name,signame))
+		{
+			timeval ret = signals[i].last_nokdb;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	sig_lock->unlock();
+	timeval ret;
+	ret.tv_sec=0;
+	ret.tv_usec=0;
+	return ret;
 }
 //=============================================================================
 /**
@@ -461,7 +679,23 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		{
 			signals[i].dbstate = Tango::ON;
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
+			if(signals[i].store_time_min == -1)
+				signals[i].store_time_min = store_time;
+			else if(store_time < signals[i].store_time_min)
+				signals[i].store_time_min = store_time;
+			if(signals[i].store_time_max == -1)
+				signals[i].store_time_max = store_time;
+			else if(store_time > signals[i].store_time_max)
+				signals[i].store_time_max = store_time;
 			signals[i].process_time_avg = ((signals[i].process_time_avg * signals[i].okdb_counter) + process_time)/(signals[i].okdb_counter+1);
+			if(signals[i].process_time_min == -1)
+				signals[i].process_time_min = process_time;
+			else if(store_time < signals[i].process_time_min)
+				signals[i].process_time_min = process_time;
+			if(signals[i].process_time_max == -1)
+				signals[i].process_time_max = process_time;
+			else if(store_time > signals[i].process_time_max)
+				signals[i].process_time_max = process_time;
 			signals[i].okdb_counter++;
 			sig_lock->unlock();
 			return;
@@ -473,7 +707,23 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		{
 			signals[i].dbstate = Tango::ON;
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
+			if(signals[i].store_time_min == -1)
+				signals[i].store_time_min = store_time;
+			else if(store_time < signals[i].store_time_min)
+				signals[i].store_time_min = store_time;
+			if(signals[i].store_time_max == -1)
+				signals[i].store_time_max = store_time;
+			else if(store_time > signals[i].store_time_max)
+				signals[i].store_time_max = store_time;
 			signals[i].process_time_avg = ((signals[i].process_time_avg * signals[i].okdb_counter) + process_time)/(signals[i].okdb_counter+1);
+			if(signals[i].process_time_min == -1)
+				signals[i].process_time_min = process_time;
+			else if(store_time < signals[i].process_time_min)
+				signals[i].process_time_min = process_time;
+			if(signals[i].process_time_max == -1)
+				signals[i].process_time_max = process_time;
+			else if(store_time > signals[i].process_time_max)
+				signals[i].process_time_max = process_time;
 			signals[i].okdb_counter++;
 			sig_lock->unlock();
 			return;
@@ -484,9 +734,14 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		HdbStat sig;
 		sig.name = signame;
 		sig.nokdb_counter = 0;
+		sig.nokdb_counter_freq = 0;
 		sig.okdb_counter = 1;
 		sig.store_time_avg = store_time;
+		sig.store_time_min = store_time;
+		sig.store_time_max = store_time;
 		sig.process_time_avg = process_time;
+		sig.process_time_min = process_time;
+		sig.process_time_max = process_time;
 		sig.dbstate = Tango::ON;
 		signals.push_back(sig);
 	}
@@ -680,7 +935,9 @@ void *PushThread::run_undetached(void *ptr)
 		if(shared->get_if_stop()==false)
 		{
 			omni_mutex_lock sync(*shared);
-			shared->wait();
+			//shared->wait();
+			cout <<"PushThread::"<< __func__<<": before shared->wait(2*1000)..."<<endl;
+			shared->wait(2*1000);
 		}
 	}
 	cout <<"PushThread::"<< __func__<<": exiting..."<<endl;

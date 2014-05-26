@@ -79,7 +79,11 @@ typedef struct
 	int		event_id;
 	bool	isZMQ;
 	uint32_t okev_counter;
+	uint32_t okev_counter_freq;
+	timeval last_okev;
 	uint32_t nokev_counter;
+	uint32_t nokev_counter_freq;
+	timeval last_nokev;
 	bool running;
 }
 HdbSignal;
@@ -205,6 +209,14 @@ public:
 	 */
 	vector<string>  get_sig_not_on_error_list();
 	/**
+	 *	Return the list of signals started
+	 */
+	vector<string>  get_sig_started_list();
+	/**
+	 *	Return the list of signals not started
+	 */
+	vector<string>  get_sig_not_started_list();
+	/**
 	 *	Return the number of signals on error
 	 */
 	int  get_sig_on_error_num();
@@ -212,6 +224,14 @@ public:
 	 *	Return the number of signals not on error
 	 */
 	int  get_sig_not_on_error_num();
+	/**
+	 *	Return the number of signals started
+	 */
+	int  get_sig_started_num();
+	/**
+	 *	Return the number of signals not started
+	 */
+	int  get_sig_not_started_num();
 	/**
 	 *	Increment the ok counter of event rx
 	 */
@@ -221,6 +241,14 @@ public:
 	 */
 	uint32_t  get_ok_event(string &signame);
 	/**
+	 *	Get the ok counter of event rx for freq stats
+	 */
+	uint32_t  get_ok_event_freq(string &signame);
+	/**
+	 *	Get last okev timestamp
+	 */
+	timeval  get_last_okev(string &signame);
+	/**
 	 *	Increment the error counter of event rx
 	 */
 	void  set_nok_event(string &signame);
@@ -229,6 +257,14 @@ public:
 	 */
 	uint32_t  get_nok_event(string &signame);
 	/**
+	 *	Get the error counter of event rx for freq stats
+	 */
+	uint32_t  get_nok_event_freq(string &signame);
+	/**
+	 *	Get last nokev timestamp
+	 */
+	timeval  get_last_nokev(string &signame);
+	/**
 	 *	Return the status of specified signal
 	 */
 	string  get_sig_status(string &signame);
@@ -236,6 +272,10 @@ public:
 	 *	Reset statistic counters
 	 */
 	void reset_statistics();
+	/**
+	 *	Reset freq statistic counters
+	 */
+	void reset_freq_statistics();
 	/**
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */

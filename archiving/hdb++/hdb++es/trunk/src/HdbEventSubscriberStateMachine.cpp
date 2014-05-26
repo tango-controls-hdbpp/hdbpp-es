@@ -124,6 +124,134 @@ bool HdbEventSubscriber::is_AttributeNumber_allowed(TANGO_UNUSED(Tango::AttReqTy
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_AttributeMaxStoreTime_allowed()
+ *	Description : Execution allowed for AttributeMaxStoreTime attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeMaxStoreTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeMaxStoreTime attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeMaxStoreTimeStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeMaxStoreTimeStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeMinStoreTime_allowed()
+ *	Description : Execution allowed for AttributeMinStoreTime attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeMinStoreTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeMinStoreTime attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeMinStoreTimeStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeMinStoreTimeStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeMaxProcessingTime_allowed()
+ *	Description : Execution allowed for AttributeMaxProcessingTime attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeMaxProcessingTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeMaxProcessingTime attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeMaxProcessingTimeStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeMaxProcessingTimeStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeMinProcessingTime_allowed()
+ *	Description : Execution allowed for AttributeMinProcessingTime attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeMinProcessingTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeMinProcessingTime attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeMinProcessingTimeStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeMinProcessingTimeStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeRecordFreq_allowed()
+ *	Description : Execution allowed for AttributeRecordFreq attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeRecordFreq_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeRecordFreq attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeRecordFreqStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeRecordFreqStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeFailureFreq_allowed()
+ *	Description : Execution allowed for AttributeFailureFreq attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeFailureFreq_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeFailureFreq attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeFailureFreqStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeFailureFreqStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeStartedNumber_allowed()
+ *	Description : Execution allowed for AttributeStartedNumber attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeStartedNumber_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeStartedNumber attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeStartedNumberStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeStartedNumberStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeStoppedNumber_allowed()
+ *	Description : Execution allowed for AttributeStoppedNumber attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeStoppedNumber_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeStoppedNumber attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeStoppedNumberStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeStoppedNumberStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeList_allowed()
  *	Description : Execution allowed for AttributeList attribute
  */
@@ -183,6 +311,70 @@ bool HdbEventSubscriber::is_AttributePendingList_allowed(TANGO_UNUSED(Tango::Att
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributePendingListStateAllowed_READ) ENABLED START -----*/
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributePendingListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeRecordFreqList_allowed()
+ *	Description : Execution allowed for AttributeRecordFreqList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeRecordFreqList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeRecordFreqList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeRecordFreqListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeRecordFreqListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeFailureFreqList_allowed()
+ *	Description : Execution allowed for AttributeFailureFreqList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeFailureFreqList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeFailureFreqList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeFailureFreqListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeFailureFreqListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeStartedList_allowed()
+ *	Description : Execution allowed for AttributeStartedList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeStartedList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeStartedList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeStartedListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeStartedListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeStoppedList_allowed()
+ *	Description : Execution allowed for AttributeStoppedList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeStoppedList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeStoppedList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeStoppedListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeStoppedListStateAllowed_READ
 	return true;
 }
 
