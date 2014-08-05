@@ -1138,7 +1138,7 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	{
 		memset(buf, 0,  sizeof(buf));
 		strfret = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", nowtm);
-		snprintf(&buf[strfret], sizeof(buf)-strfret, "%s.%06ld", &buf[0], tv.tv_usec);
+		snprintf(&buf[strfret], sizeof(buf)-strfret, ".%06ld", tv.tv_usec);
 	}
 	else
 	{
