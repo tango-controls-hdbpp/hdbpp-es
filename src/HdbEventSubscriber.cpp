@@ -439,7 +439,7 @@ void HdbEventSubscriber::get_device_property()
 //--------------------------------------------------------
 void HdbEventSubscriber::always_executed_hook()
 {
-	INFO_STREAM << "HdbEventSubscriber::always_executed_hook()  " << device_name << endl;
+	//INFO_STREAM << "HdbEventSubscriber::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::always_executed_hook) ENABLED START -----*/
 
 	//	code always executed before all requests
@@ -466,7 +466,7 @@ void HdbEventSubscriber::always_executed_hook()
 //--------------------------------------------------------
 void HdbEventSubscriber::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_attr_hardware) ENABLED START -----*/
 
 	//	Add your own code
@@ -485,7 +485,7 @@ void HdbEventSubscriber::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -511,7 +511,7 @@ void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -536,7 +536,7 @@ void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -564,7 +564,7 @@ void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -591,7 +591,7 @@ void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxStoreTime) ENABLED START -----*/
 	*attr_AttributeMaxStoreTime_read=-1;
 	if (initialized)
@@ -621,7 +621,7 @@ void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinStoreTime) ENABLED START -----*/
 	*attr_AttributeMinStoreTime_read=-1;
 	if (initialized)
@@ -653,7 +653,7 @@ void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxProcessingTime) ENABLED START -----*/
 	*attr_AttributeMaxProcessingTime_read=-1;
 	if (initialized)
@@ -683,7 +683,7 @@ void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinProcessingTime) ENABLED START -----*/
 	*attr_AttributeMinProcessingTime_read=-1;
 	if (initialized)
@@ -715,7 +715,7 @@ void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreq) ENABLED START -----*/
 	//	Set the attribute value
 	if(*attr_AttributeRecordFreq_read == -1)
@@ -736,7 +736,7 @@ void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreq) ENABLED START -----*/
 	//	Set the attribute value
 	if(*attr_AttributeFailureFreq_read == -1)
@@ -756,7 +756,7 @@ void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedNumber) ENABLED START -----*/
 	//hdb_dev->shared->is_running(signame)
 
@@ -782,7 +782,7 @@ void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedNumber) ENABLED START -----*/
 	//	Set the attribute value
 	if (initialized)
@@ -805,7 +805,7 @@ void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -831,7 +831,7 @@ void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -858,7 +858,7 @@ void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -885,7 +885,7 @@ void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -912,7 +912,7 @@ void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqList) ENABLED START -----*/
 	if(*attr_AttributeRecordFreq_read == -1)
 		attr.set_quality(Tango::ATTR_INVALID);
@@ -933,7 +933,7 @@ void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqList) ENABLED START -----*/
 	if(*attr_AttributeFailureFreq_read == -1)
 		attr.set_quality(Tango::ATTR_INVALID);
@@ -953,7 +953,7 @@ void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedList) ENABLED START -----*/
 	//	Set the attribute value
 	attribute_started_list_str = hdb_dev->get_sig_started_list();
@@ -984,7 +984,7 @@ void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedList) ENABLED START -----*/
 	//	Set the attribute value
 	attribute_stopped_list_str = hdb_dev->get_sig_not_started_list();

@@ -190,7 +190,7 @@ public:
 	/**
 	 *	Calculate statistics of the HDB storage time/attribute
 	 */
-	void storage_time(Tango::EventData *data, double elapsed);	
+	void storage_time(Tango::EventData *data, double elapsed);
 	/**
 	 *	Returns how many signals are waiting to be stored
 	 */
@@ -227,6 +227,26 @@ public:
 	 *	Check if full domain name, otherwise fix it
 	 */
 	void add_domain(string &attr);
+	/**
+	 *	Remove domain
+	 */
+	string remove_domain(string str);
+#ifndef _MULTI_TANGO_HOST
+	/**
+	 *	Compare without domain
+	 */
+	bool compare_without_domain(string str1, string str2);
+#else
+	/**
+	 *	compare 2 tango names considering fqdn, domain, multi tango host
+	 *	returns 0 if equal
+	 */
+	int compare_tango_names(string str1, string str2);
+	/**
+	 *	explode a string in multiple strings using separator
+	 */
+	void string_explode(string str, string separator, vector<string>* results);
+#endif
 
 protected :	
 	/**

@@ -125,7 +125,7 @@ void HdbDevice::initialize()
 	thread = new SubscribeThread(this);
 
 	//	Create thread to send commands to HdbAccess device
-	push_shared = new PushThreadShared(
+	push_shared = new PushThreadShared(this,
 			(static_cast<HdbEventSubscriber *>(_device))->dbHost,
 			(static_cast<HdbEventSubscriber *>(_device))->dbUser,
 			(static_cast<HdbEventSubscriber *>(_device))->dbPassword,
@@ -677,6 +677,7 @@ void HdbDevice::fix_tango_host(string &attr)
 }
 //=============================================================================
 //=============================================================================
+#ifndef _MULTI_TANGO_HOST
 void HdbDevice::add_domain(string &str)
 {
 	string::size_type	end1 = str.find(".");
@@ -736,6 +737,290 @@ void HdbDevice::add_domain(string &str)
 		return;
 	}
 }
+//=============================================================================
+//=============================================================================
+string HdbDevice::remove_domain(string str)
+{
+	string::size_type	end1 = str.find(".");
+	if (end1 == string::npos)
+	{
+		return str;
+	}
+	else
+	{
+		string::size_type	start = str.find("tango://");
+		if (start == string::npos)
+		{
+			start = 0;
+		}
+		else
+		{
+			start = 8;	//tango:// len
+		}
+		string::size_type	end2 = str.find(":", start);
+		if(end1 > end2)	//'.' not in the tango host part
+			return str;
+		string th = str.substr(0, end1);
+		th += str.substr(end2, str.size()-end2);
+		return th;
+	}
+}
+//=============================================================================
+//=============================================================================
+bool HdbDevice::compare_without_domain(string str1, string str2)
+{
+	string str1_nd = remove_domain(str1);
+	string str2_nd = remove_domain(str2);
+	return (str1_nd==str2_nd);
+}
+#else
+void HdbDevice::add_domain(string &str)
+{
+	string strresult="";
+	string facility(str);
+	vector<string> facilities;
+	if(facility.find(",") == string::npos)
+	{
+		facilities.push_back(facility);
+	}
+	else
+	{
+		string_explode(facility,",",&facilities);
+	}
+	for(vector<string>::iterator it = facilities.begin(); it != facilities.end(); it++)
+	{
+		string::size_type	end1 = it->find(".");
+		if (end1 == string::npos)
+		{
+			//get host name without tango://
+			string::size_type	start = it->find("tango://");
+			if (start == string::npos)
+			{
+				start = 0;
+			}
+			else
+			{
+				start = 8;	//tango:// len
+			}
+			string::size_type end2 = it->find(":", start);
+			if (end2 == string::npos)
+			{
+				strresult += *it;
+				if(it != facilities.end()-1)
+					strresult += ",";
+				continue;
+			}
+			string th = it->substr(start, end2);
+			string port = it->substr(end2);
+			string with_domain = *it;
+
+			map<string,string>::iterator it_domain = domain_map.find(th);
+			if(it_domain != domain_map.end())
+			{
+				with_domain = it_domain->second;
+				//cout << __func__ <<": found domain in map -> " << with_domain<<endl;
+				strresult += with_domain+port;
+				if(it != facilities.end()-1)
+					strresult += ",";
+				//cout<<__func__<<": strresult 1 "<<strresult<<endl;
+				continue;
+			}
+
+			struct addrinfo hints;
+//			hints.ai_family = AF_INET; // use AF_INET6 to force IPv6
+//			hints.ai_flags = AI_CANONNAME|AI_CANONIDN;
+			memset(&hints, 0, sizeof hints);
+			hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
+			hints.ai_socktype = SOCK_STREAM;
+			hints.ai_flags = AI_CANONNAME;
+			struct addrinfo *result, *rp;
+			int ret = getaddrinfo(th.c_str(), NULL, &hints, &result);
+			if (ret != 0)
+			{
+				INFO_STREAM << __func__<< ": getaddrinfo error='" << gai_strerror(ret)<<"' while looking for " << th<<endl;
+				strresult += th+port;
+				if(it != facilities.end()-1)
+					strresult += ",";
+				continue;
+			}
+
+			for (rp = result; rp != NULL; rp = rp->ai_next)
+			{
+				with_domain = string(rp->ai_canonname) + port;
+				domain_map.insert(make_pair(th, string(rp->ai_canonname)));
+			}
+			freeaddrinfo(result); // all done with this structure
+			strresult += with_domain;
+			if(it != facilities.end()-1)
+				strresult += ",";
+			continue;
+		}
+		else
+		{
+			strresult += *it;
+			if(it != facilities.end()-1)
+				strresult += ",";
+			continue;
+		}
+	}
+	str = strresult;
+}
+string HdbDevice::remove_domain(string str)
+{
+	string result="";
+	string facility(str);
+	vector<string> facilities;
+	if(str.find(",") == string::npos)
+	{
+		facilities.push_back(facility);
+	}
+	else
+	{
+		string_explode(facility,",",&facilities);
+	}
+	for(vector<string>::iterator it = facilities.begin(); it != facilities.end(); it++)
+	{
+		string::size_type	end1 = it->find(".");
+		if (end1 == string::npos)
+		{
+			result += *it;
+			if(it != facilities.end()-1)
+				result += ",";
+			continue;
+		}
+		else
+		{
+			string::size_type	start = it->find("tango://");
+			if (start == string::npos)
+			{
+				start = 0;
+			}
+			else
+			{
+				start = 8;	//tango:// len
+			}
+			string::size_type	end2 = it->find(":", start);
+			if(end1 > end2)	//'.' not in the tango host part
+			{
+				result += *it;
+				if(it != facilities.end()-1)
+					result += ",";
+				continue;
+			}
+			string th = it->substr(0, end1);
+			th += it->substr(end2, it->size()-end2);
+			result += th;
+			if(it != facilities.end()-1)
+				result += ",";
+			continue;
+		}
+	}
+	return result;
+}
+
+/**
+ *	compare 2 tango names considering fqdn, domain, multi tango host
+ *	returns 0 if equal
+ */
+int HdbDevice::compare_tango_names(string str1, string str2)
+{
+	//cout << __func__<< ": entering with '" << str1<<"' - '" << str2<<"'" << endl;
+	if(str1 == str2)
+	{
+		//cout << __func__<< ": EQUAL 1 -> '" << str1<<"'=='" << str2<<"'" << endl;
+		return 0;
+	}
+	fix_tango_host(str1);
+	fix_tango_host(str2);
+	if(str1 == str2)
+	{
+		//cout << __func__<< ": EQUAL 2 -> '" << str1<<"'=='" << str2<<"'" << endl;
+		return 0;
+	}
+
+	string facility1 = get_only_tango_host(str1);
+	string attr_name1 = get_only_signal_name(str1);
+	string facility2 = get_only_tango_host(str2);
+	string attr_name2 = get_only_signal_name(str2);
+	//if attr only part is different -> different
+	if(attr_name1 != attr_name2)
+		return strcmp(attr_name1.c_str(),attr_name2.c_str());
+
+	//check combination of multiple tango hosts
+	vector<string> facilities1;
+	string_explode(facility1,",",&facilities1);
+	vector<string> facilities2;
+	string_explode(facility2,",",&facilities2);
+	for(vector<string>::iterator it1=facilities1.begin(); it1!=facilities1.end(); it1++)
+	{
+		for(vector<string>::iterator it2=facilities2.begin(); it2!=facilities2.end(); it2++)
+		{
+			string name1 = string("tango://")+ *it1 + string("/") + attr_name1;
+			string name2 = string("tango://")+ *it2 + string("/") + attr_name2;
+			//cout << __func__<< ": checking all possible combinations: '" << str1<<"' - '" << str2<<"'" << endl;
+			if(name1 == name2)
+			{
+				//cout << __func__<< ": EQUAL 3 -> '" << name1<<"'=='" << name2<<"'" << endl;
+				return 0;
+			}
+		}
+	}
+
+	string str1_nd = remove_domain(str1);
+	string str2_nd = remove_domain(str2);
+	if(str1_nd == str2_nd)
+	{
+//		cout << __func__<< ": EQUAL 3 -> '" << str1_nd<<"'=='" << str2_nd<<"'" << endl;
+		return 0;
+	}
+	string facility1_nd = get_only_tango_host(str1_nd);
+	string attr_name1_nd = get_only_signal_name(str1_nd);
+	string facility2_nd = get_only_tango_host(str2_nd);
+	string attr_name2_nd = get_only_signal_name(str2_nd);
+	//check combination of multiple tango hosts
+	vector<string> facilities1_nd;
+	string_explode(facility1_nd,",",&facilities1_nd);
+	vector<string> facilities2_nd;
+	string_explode(facility2_nd,",",&facilities2_nd);
+	for(vector<string>::iterator it1=facilities1_nd.begin(); it1!=facilities1_nd.end(); it1++)
+	{
+		for(vector<string>::iterator it2=facilities2_nd.begin(); it2!=facilities2_nd.end(); it2++)
+		{
+			string name1 = string("tango://")+ *it1 + string("/") + attr_name1;
+			string name2 = string("tango://")+ *it2 + string("/") + attr_name2;
+			//cout << __func__<< ": checking all possible combinations without domain: '" << str1<<"' - '" << str2<<"'" << endl;
+			if(name1 == name2)
+			{
+				//cout << __func__<< ": EQUAL 4 -> '" << name1<<"'=='" << name2<<"'" << endl;
+				return 0;
+			}
+		}
+	}
+
+	int result=strcmp(str1_nd.c_str(),str2_nd.c_str());
+//	cout << __func__<< ": DIFFERENTS -> '" << str1_nd<< (result ? "'<'" : "'>'") << str2_nd<<"'" << endl;
+	return result;
+}
+//=============================================================================
+//=============================================================================
+void HdbDevice::string_explode(string str, string separator, vector<string>* results)
+{
+	string::size_type found;
+
+	found = str.find_first_of(separator);
+	while(found != string::npos) {
+		if(found > 0) {
+			results->push_back(str.substr(0,found));
+		}
+		str = str.substr(found+1);
+		found = str.find_first_of(separator);
+	}
+	if(str.length() > 0) {
+		results->push_back(str);
+	}
+
+}
+#endif
 //=============================================================================
 //=============================================================================
 void HdbDevice::error_attribute(Tango::EventData *data)

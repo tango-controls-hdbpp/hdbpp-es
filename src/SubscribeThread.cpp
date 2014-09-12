@@ -64,7 +64,11 @@ HdbSignal *SharedData::get_signal(string signame)
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		HdbSignal	*sig = &signals[i];
-		if (compare_without_domain(sig->name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(sig->name,signame))
+#else		
+		if (!hdb_dev->compare_tango_names(sig->name,signame))
+#endif
 			return sig;
 	}
 	return NULL;
@@ -115,7 +119,11 @@ void SharedData::remove(string &signame)
 			for (unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
 			{
 				HdbSignal	*sig = &signals[i];
-				if (compare_without_domain(sig->name,signame))
+#ifndef _MULTI_TANGO_HOST
+				if (hdb_dev->compare_without_domain(sig->name,signame))
+#else					
+				if (!hdb_dev->compare_tango_names(sig->name,signame))
+#endif
 				{
 					found = true;
 					cout <<__func__<< "removing " << signame << endl;
@@ -167,7 +175,11 @@ void SharedData::start(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].running=true;
 			return;
@@ -197,7 +209,11 @@ void SharedData::stop(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else		
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].running=false;
 			return;
@@ -249,7 +265,11 @@ bool SharedData::is_running(string &signame)
 			return signals[i].running;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].running;
 
 	//	if not found
@@ -273,7 +293,11 @@ bool SharedData::is_first(string &signame)
 			return signals[i].first;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].first;
 
 	//	if not found
@@ -303,7 +327,11 @@ void SharedData::set_first(string &signame)
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].first = false;
 			return;
@@ -330,7 +358,11 @@ bool SharedData::is_first_err(string &signame)
 			return signals[i].first_err;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].first_err;
 
 	//	if not found
@@ -360,7 +392,11 @@ void SharedData::set_first_err(string &signame)
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].first_err = false;
 			return;
@@ -445,7 +481,11 @@ void SharedData::add(string &signame, int to_do)
 		for (unsigned int i=0 ; i<signals.size() && !found ; i++)
 		{
 			HdbSignal	*sig = &signals[i];
-			found = compare_without_domain(sig->name,signame);
+#ifndef _MULTI_TANGO_HOST
+			found = hdb_dev->compare_without_domain(sig->name,signame);
+#else	
+			found = !hdb_dev->compare_tango_names(sig->name,signame);
+#endif
 		}
 		if (found)		
 			Tango::Except::throw_exception(
@@ -674,7 +714,11 @@ bool  SharedData::get_sig_source(string &signame)
 			return signals[i].isZMQ;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].isZMQ;
 
 	//	if not found
@@ -841,7 +885,11 @@ void  SharedData::set_ok_event(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].okev_counter++;
 			signals[i].okev_counter_freq++;
@@ -869,7 +917,11 @@ uint32_t  SharedData::get_ok_event(string &signame)
 			return signals[i].okev_counter;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].okev_counter;
 
 	//	if not found
@@ -893,7 +945,11 @@ uint32_t  SharedData::get_ok_event_freq(string &signame)
 			return signals[i].okev_counter_freq;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].okev_counter_freq;
 
 	//	if not found
@@ -917,7 +973,11 @@ timeval  SharedData::get_last_okev(string &signame)
 			return signals[i].last_okev;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].last_okev;
 
 	//	if not found
@@ -950,7 +1010,11 @@ void  SharedData::set_nok_event(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].nokev_counter++;
 			signals[i].nokev_counter_freq++;
@@ -977,7 +1041,11 @@ uint32_t  SharedData::get_nok_event(string &signame)
 			return signals[i].nokev_counter;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].nokev_counter;
 
 	//	if not found
@@ -1001,7 +1069,11 @@ uint32_t  SharedData::get_nok_event_freq(string &signame)
 			return signals[i].nokev_counter_freq;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].nokev_counter_freq;
 
 	//	if not found
@@ -1025,7 +1097,11 @@ timeval  SharedData::get_last_nokev(string &signame)
 			return signals[i].last_nokev;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].last_nokev;
 
 	//	if not found
@@ -1052,7 +1128,11 @@ string  SharedData::get_sig_status(string &signame)
 			return signals[i].status;
 
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else	
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 			return signals[i].status;
 
 	//	if not found
@@ -1127,48 +1207,6 @@ void SharedData::stop_thread()
 }
 //=============================================================================
 //=============================================================================
-
-string SharedData::remove_domain(string str)
-{
-	string::size_type	end1 = str.find(".");
-	if (end1 == string::npos)
-	{
-		return str;
-	}
-	else
-	{
-		string::size_type	start = str.find("tango://");
-		if (start == string::npos)
-		{
-			start = 0;
-		}
-		else
-		{
-			start = 8;	//tango:// len
-		}
-		string::size_type	end2 = str.find(":", start);
-		if(end1 > end2)	//'.' not in the tango host part
-			return str;
-		string th = str.substr(0, end1);
-		th += str.substr(end2, str.size()-end2);
-		return th;
-	}
-}
-//=============================================================================
-//=============================================================================
-bool SharedData::compare_without_domain(string str1, string str2)
-{
-	string str1_nd = remove_domain(str1);
-	string str2_nd = remove_domain(str2);
-	return (str1_nd==str2_nd);
-}
-//=============================================================================
-//=============================================================================
-
-
-
-
-
 
 
 //=============================================================================
