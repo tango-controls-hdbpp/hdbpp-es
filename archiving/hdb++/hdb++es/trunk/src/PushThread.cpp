@@ -40,13 +40,14 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 
 #include <PushThread.h>
+#include <HdbDevice.h>
 
 
 namespace HdbEventSubscriber_ns
 {
 //=============================================================================
 //=============================================================================
-PushThreadShared::PushThreadShared(string host, string user, string password, string dbname, int port)
+PushThreadShared::PushThreadShared(HdbDevice *dev, string host, string user, string password, string dbname, int port)
 {
 	max_waiting=0; stop_it=false;
 
@@ -59,6 +60,7 @@ PushThreadShared::PushThreadShared(string host, string user, string password, st
 		cout << __func__ << ": error connecting DB: " << err << endl;
 		exit(-1);
 	}
+	hdb_dev = dev;
 	sig_lock = new omni_mutex();
 }
 //=============================================================================
@@ -206,7 +208,11 @@ void  PushThreadShared::remove(string &signame)
 	pos = signals.begin();
 	for (i=0 ; i<signals.size() ; i++, pos++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals.erase(pos);
 			sig_lock->unlock();
@@ -314,7 +320,11 @@ Tango::DevState  PushThreadShared::get_sig_state(string signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			Tango::DevState ret = signals[i].dbstate;
 			sig_lock->unlock();
@@ -349,7 +359,11 @@ void  PushThreadShared::set_nok_db(string &signame)
 	}
 	for (i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].nokdb_counter++;
 			signals[i].nokdb_counter_freq++;
@@ -397,7 +411,11 @@ uint32_t  PushThreadShared::get_nok_db(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			uint32_t ret = signals[i].nokdb_counter;
 			sig_lock->unlock();
@@ -431,7 +449,11 @@ uint32_t  PushThreadShared::get_nok_db_freq(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			uint32_t ret = signals[i].nokdb_counter_freq;
 			sig_lock->unlock();
@@ -466,7 +488,11 @@ double  PushThreadShared::get_avg_store_time(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			double ret = signals[i].store_time_avg;
 			sig_lock->unlock();
@@ -497,7 +523,11 @@ double  PushThreadShared::get_min_store_time(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			double ret = signals[i].store_time_min;
 			sig_lock->unlock();
@@ -528,7 +558,11 @@ double  PushThreadShared::get_max_store_time(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			double ret = signals[i].store_time_max;
 			sig_lock->unlock();
@@ -559,7 +593,11 @@ double  PushThreadShared::get_avg_process_time(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			double ret = signals[i].process_time_avg;
 			sig_lock->unlock();
@@ -590,7 +628,11 @@ double  PushThreadShared::get_min_process_time(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			double ret = signals[i].process_time_min;
 			sig_lock->unlock();
@@ -621,7 +663,11 @@ double  PushThreadShared::get_max_process_time(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			double ret = signals[i].process_time_max;
 			sig_lock->unlock();
@@ -651,7 +697,11 @@ timeval  PushThreadShared::get_last_nokdb(string &signame)
 	}
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			timeval ret = signals[i].last_nokdb;
 			sig_lock->unlock();
@@ -703,7 +753,11 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 	}
 	for (i=0 ; i<signals.size() ; i++)
 	{
-		if (compare_without_domain(signals[i].name,signame))
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
 		{
 			signals[i].dbstate = Tango::ON;
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
@@ -812,45 +866,6 @@ Tango::DevState PushThreadShared::state()
 	return state;
 }
 
-string PushThreadShared::remove_domain(string str)
-{
-	string::size_type	end1 = str.find(".");
-	if (end1 == string::npos)
-	{
-		return str;
-	}
-	else
-	{
-		string::size_type	start = str.find("tango://");
-		if (start == string::npos)
-		{
-			start = 0;
-		}
-		else
-		{
-			start = 8;	//tango:// len
-		}
-		string::size_type	end2 = str.find(":", start);
-		if(end1 > end2)	//'.' not in the tango host part
-			return str;
-		string th = str.substr(0, end1);
-		th += str.substr(end2, str.size()-end2);
-		return th;
-	}
-}
-//=============================================================================
-//=============================================================================
-bool PushThreadShared::compare_without_domain(string str1, string str2)
-{
-	string str1_nd = remove_domain(str1);
-	string str2_nd = remove_domain(str2);
-	return (str1_nd==str2_nd);
-}
-//=============================================================================
-//=============================================================================
-
-
-
 
 
 //=============================================================================
@@ -936,7 +951,7 @@ void *PushThread::run_undetached(void *ptr)
 		{
 			omni_mutex_lock sync(*shared);
 			//shared->wait();
-			cout <<"PushThread::"<< __func__<<": before shared->wait(2*1000)..."<<endl;
+			//cout <<"PushThread::"<< __func__<<": before shared->wait(2*1000)..."<<endl;
 			shared->wait(2*1000);
 		}
 	}

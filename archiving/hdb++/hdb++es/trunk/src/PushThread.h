@@ -74,6 +74,7 @@ typedef struct
 }
 HdbStat;
 
+class HdbDevice;
 	
 //=========================================================
 /**
@@ -83,6 +84,10 @@ HdbStat;
 class PushThreadShared: public Tango::TangoMonitor
 {
 private:
+	/**
+	 *	HdbDevice object
+	 */
+	HdbDevice	*hdb_dev;
 	/**
 	 *	Manage data to write.
 	 */
@@ -97,12 +102,9 @@ private:
 	int	max_waiting;
 	bool	stop_it;
 
-	string remove_domain(string str);
-	bool compare_without_domain(string str1, string str2);
-
 public:
 	//PushThreadShared() { max_waiting=0; stop_it=false;};
-	PushThreadShared(string host, string user, string password, string dbname, int port);
+	PushThreadShared(HdbDevice *dev, string host, string user, string password, string dbname, int port);
 	~PushThreadShared();
 
 	void push_back_cmd(HdbCmdData *argin);

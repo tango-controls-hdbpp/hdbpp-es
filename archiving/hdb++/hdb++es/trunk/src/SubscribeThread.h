@@ -110,11 +110,8 @@ private:
 	bool	stop_it;
 	bool	initialized;
 
-	string remove_domain(string str);
-
 public:
 	//omni_condition condition;
-	bool compare_without_domain(string str1, string str2);
 	vector<HdbSignal>	signals;
 
 
