@@ -355,6 +355,54 @@ vector<string>  HdbDevice::get_sig_not_started_list()
 }
 //=============================================================================
 //=============================================================================
+vector<string>  HdbDevice::get_error_list()
+{
+	vector<string> sig_list = shared->get_sig_list();
+	vector<string> error_list = shared->get_error_list();
+	vector<string> other_list = shared->get_sig_not_on_error_list();
+	//check if signal not in event error is in db error
+	for(vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
+	{
+		//looking for DB errors
+		if(push_shared->get_sig_state(*it) == Tango::ALARM)
+		{
+			//find *it in sig_list and replace string in error_list with "DB error"
+			vector<string>::iterator itsig_list = find(sig_list.begin(), sig_list.end(), *it);
+			size_t idx = itsig_list - sig_list.begin();
+			if(idx < error_list.size())
+				error_list[idx] = STATUS_DB_ERROR;
+		}
+	}
+	return error_list;
+}
+//=============================================================================
+//=============================================================================
+void  HdbDevice::get_event_number_list()
+{
+	vector<string> attribute_list_tmp = get_sig_list();
+	for (size_t i=0 ; i<attribute_list_tmp.size() ; i++)
+	{
+		string signame(attribute_list_tmp[i]);
+		try
+		{
+			shared->lock();
+			bool is_running = shared->is_running(signame);
+			shared->unlock();
+			if(!is_running)
+				continue;
+		}catch(Tango::DevFailed &e)
+		{
+			continue;
+		}
+		long ok_ev_t=0;
+		long nok_ev_t=0;
+		ok_ev_t = shared->get_ok_event(signame);
+		nok_ev_t = shared->get_nok_event(signame);
+		AttributeEventNumberList[i] = ok_ev_t + nok_ev_t;
+	}
+}
+//=============================================================================
+//=============================================================================
 int  HdbDevice::get_sig_on_error_num()
 {
 	int on_ev_err = shared->get_sig_on_error_num();
@@ -403,7 +451,15 @@ int  HdbDevice::get_sig_not_started_num()
 //=============================================================================
 string  HdbDevice::get_sig_status(string &signame)
 {
-	return shared->get_sig_status(signame);
+	string ev_status = shared->get_sig_status(signame);
+
+	//looking for DB errors
+	if(push_shared->get_sig_state(signame) == Tango::ALARM)
+	{
+		ev_status = STATUS_DB_ERROR;
+	}
+
+	return ev_status;
 }
 //=============================================================================
 //=============================================================================
@@ -527,7 +583,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		if (signal->evstate!=Tango::ON)
 		{
 			signal->evstate  = Tango::ON;
-			signal->status = "Subscribed";
+			signal->status = STATUS_SUBSCRIBED;
 		}
 		try
 		{

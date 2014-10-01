@@ -986,7 +986,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	format	not set for AttributeNokNumber
 	//	max_value	not set for AttributeNokNumber
 	//	min_value	not set for AttributeNokNumber
-	//	max_alarm	not set for AttributeNokNumber
+	attributenoknumber_prop.set_max_alarm("1");
 	//	min_alarm	not set for AttributeNokNumber
 	//	max_warning	not set for AttributeNokNumber
 	//	min_warning	not set for AttributeNokNumber
@@ -1253,6 +1253,32 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	att_list.push_back(attributestoppednumber);
 
+	//	Attribute : AttributeMaxPendingNumber
+	AttributeMaxPendingNumberAttrib	*attributemaxpendingnumber = new AttributeMaxPendingNumberAttrib();
+	Tango::UserDefaultAttrProp	attributemaxpendingnumber_prop;
+	attributemaxpendingnumber_prop.set_description("Max number of attributes waiting to be archived");
+	//	label	not set for AttributeMaxPendingNumber
+	//	unit	not set for AttributeMaxPendingNumber
+	//	standard_unit	not set for AttributeMaxPendingNumber
+	//	display_unit	not set for AttributeMaxPendingNumber
+	//	format	not set for AttributeMaxPendingNumber
+	//	max_value	not set for AttributeMaxPendingNumber
+	//	min_value	not set for AttributeMaxPendingNumber
+	//	max_alarm	not set for AttributeMaxPendingNumber
+	//	min_alarm	not set for AttributeMaxPendingNumber
+	//	max_warning	not set for AttributeMaxPendingNumber
+	//	min_warning	not set for AttributeMaxPendingNumber
+	//	delta_t	not set for AttributeMaxPendingNumber
+	//	delta_val	not set for AttributeMaxPendingNumber
+	attributemaxpendingnumber_prop.set_event_abs_change("1");
+	attributemaxpendingnumber_prop.set_archive_event_abs_change("1");
+	
+	attributemaxpendingnumber->set_default_properties(attributemaxpendingnumber_prop);
+	//	Not Polled
+	attributemaxpendingnumber->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(attributemaxpendingnumber);
+
 	//	Attribute : AttributeList
 	AttributeListAttrib	*attributelist = new AttributeListAttrib();
 	Tango::UserDefaultAttrProp	attributelist_prop;
@@ -1328,7 +1354,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Attribute : AttributePendingList
 	AttributePendingListAttrib	*attributependinglist = new AttributePendingListAttrib();
 	Tango::UserDefaultAttrProp	attributependinglist_prop;
-	attributependinglist_prop.set_description("Returns the attributes waiting to be archived");
+	attributependinglist_prop.set_description("Returns the list attributes waiting to be archived");
 	//	label	not set for AttributePendingList
 	//	unit	not set for AttributePendingList
 	//	standard_unit	not set for AttributePendingList
@@ -1352,7 +1378,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Attribute : AttributeRecordFreqList
 	AttributeRecordFreqListAttrib	*attributerecordfreqlist = new AttributeRecordFreqListAttrib();
 	Tango::UserDefaultAttrProp	attributerecordfreqlist_prop;
-	attributerecordfreqlist_prop.set_description("Returns the configured attribute list");
+	attributerecordfreqlist_prop.set_description("Returns the list of record frequencies");
 	//	label	not set for AttributeRecordFreqList
 	//	unit	not set for AttributeRecordFreqList
 	//	standard_unit	not set for AttributeRecordFreqList
@@ -1376,7 +1402,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Attribute : AttributeFailureFreqList
 	AttributeFailureFreqListAttrib	*attributefailurefreqlist = new AttributeFailureFreqListAttrib();
 	Tango::UserDefaultAttrProp	attributefailurefreqlist_prop;
-	attributefailurefreqlist_prop.set_description("Returns the configured attribute list");
+	attributefailurefreqlist_prop.set_description("Returns the list of failure frequencies");
 	//	label	not set for AttributeFailureFreqList
 	//	unit	not set for AttributeFailureFreqList
 	//	standard_unit	not set for AttributeFailureFreqList
@@ -1444,6 +1470,54 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributestoppedlist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	att_list.push_back(attributestoppedlist);
+
+	//	Attribute : AttributeEventNumberList
+	AttributeEventNumberListAttrib	*attributeeventnumberlist = new AttributeEventNumberListAttrib();
+	Tango::UserDefaultAttrProp	attributeeventnumberlist_prop;
+	attributeeventnumberlist_prop.set_description("Returns the list of numbers of events received");
+	//	label	not set for AttributeEventNumberList
+	//	unit	not set for AttributeEventNumberList
+	//	standard_unit	not set for AttributeEventNumberList
+	//	display_unit	not set for AttributeEventNumberList
+	//	format	not set for AttributeEventNumberList
+	//	max_value	not set for AttributeEventNumberList
+	//	min_value	not set for AttributeEventNumberList
+	//	max_alarm	not set for AttributeEventNumberList
+	//	min_alarm	not set for AttributeEventNumberList
+	//	max_warning	not set for AttributeEventNumberList
+	//	min_warning	not set for AttributeEventNumberList
+	//	delta_t	not set for AttributeEventNumberList
+	//	delta_val	not set for AttributeEventNumberList
+	
+	attributeeventnumberlist->set_default_properties(attributeeventnumberlist_prop);
+	//	Not Polled
+	attributeeventnumberlist->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(attributeeventnumberlist);
+
+	//	Attribute : AttributeErrorList
+	AttributeErrorListAttrib	*attributeerrorlist = new AttributeErrorListAttrib();
+	Tango::UserDefaultAttrProp	attributeerrorlist_prop;
+	attributeerrorlist_prop.set_description("Returns the list of attribute errors");
+	//	label	not set for AttributeErrorList
+	//	unit	not set for AttributeErrorList
+	//	standard_unit	not set for AttributeErrorList
+	//	display_unit	not set for AttributeErrorList
+	//	format	not set for AttributeErrorList
+	//	max_value	not set for AttributeErrorList
+	//	min_value	not set for AttributeErrorList
+	//	max_alarm	not set for AttributeErrorList
+	//	min_alarm	not set for AttributeErrorList
+	//	max_warning	not set for AttributeErrorList
+	//	min_warning	not set for AttributeErrorList
+	//	delta_t	not set for AttributeErrorList
+	//	delta_val	not set for AttributeErrorList
+	
+	attributeerrorlist->set_default_properties(attributeerrorlist_prop);
+	//	Not Polled
+	attributeerrorlist->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(attributeerrorlist);
 
 	//	Create a list of static attributes
 	create_static_attribute_list(get_class_attr()->get_attr_list());

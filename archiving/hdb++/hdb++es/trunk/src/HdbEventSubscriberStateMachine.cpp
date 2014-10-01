@@ -252,6 +252,22 @@ bool HdbEventSubscriber::is_AttributeStoppedNumber_allowed(TANGO_UNUSED(Tango::A
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_AttributeMaxPendingNumber_allowed()
+ *	Description : Execution allowed for AttributeMaxPendingNumber attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeMaxPendingNumber_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeMaxPendingNumber attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeMaxPendingNumberStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeMaxPendingNumberStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeList_allowed()
  *	Description : Execution allowed for AttributeList attribute
  */
@@ -375,6 +391,38 @@ bool HdbEventSubscriber::is_AttributeStoppedList_allowed(TANGO_UNUSED(Tango::Att
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeStoppedListStateAllowed_READ) ENABLED START -----*/
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeStoppedListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeEventNumberList_allowed()
+ *	Description : Execution allowed for AttributeEventNumberList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeEventNumberList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeEventNumberList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeEventNumberListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeEventNumberListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeErrorList_allowed()
+ *	Description : Execution allowed for AttributeErrorList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeErrorList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeErrorList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeErrorListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeErrorListStateAllowed_READ
 	return true;
 }
 

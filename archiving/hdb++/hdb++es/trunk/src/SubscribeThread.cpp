@@ -496,7 +496,7 @@ void SharedData::add(string &signame, int to_do)
 		//	Build Hdb Signal object
 		HdbSignal	signal;
 		signal.name      = signame;
-
+		signal.status = "Syntax error in signal name";
 		//	on name, split device name and attrib name
 		string::size_type idx = signal.name.find_last_of("/");
 		if (idx==string::npos)
@@ -506,7 +506,7 @@ void SharedData::add(string &signame, int to_do)
 						(const char *)"SharedData::add()");
 		signal.devname = signal.name.substr(0, idx);
 		signal.attname = signal.name.substr(idx+1);
-
+		signal.status = "NOT connected";
 		//cout << "created proxy to " << signame << endl;
 		//	create Attribute proxy
 		signal.attr = new Tango::AttributeProxy(signal.name);
@@ -739,7 +739,7 @@ vector<string>  SharedData::get_sig_on_error_list()
 	omni_mutex_lock sync(*this);
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].evstate==Tango::ALARM)
+		if (signals[i].evstate==Tango::ALARM && signals[i].running)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
@@ -756,7 +756,7 @@ int  SharedData::get_sig_on_error_num()
 	omni_mutex_lock sync(*this);
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].evstate==Tango::ALARM)
+		if (signals[i].evstate==Tango::ALARM && signals[i].running)
 		{
 			num++;
 		}
@@ -773,7 +773,7 @@ vector<string>  SharedData::get_sig_not_on_error_list()
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (signals[i].evstate==Tango::ON)
+		if (signals[i].evstate==Tango::ON || (signals[i].evstate==Tango::ALARM && !signals[i].running))
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
@@ -791,7 +791,7 @@ int  SharedData::get_sig_not_on_error_num()
 	omni_mutex_lock sync(*this);
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
-		if (signals[i].evstate==Tango::ON)
+		if (signals[i].evstate==Tango::ON || (signals[i].evstate==Tango::ALARM && !signals[i].running))
 		{
 			num++;
 		}
@@ -845,6 +845,44 @@ vector<string>  SharedData::get_sig_not_started_list()
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
+	return list;
+}
+//=============================================================================
+/**
+ *	Return the list of errors
+ */
+//=============================================================================
+vector<string>  SharedData::get_error_list()
+{
+	omni_mutex_lock sync(*this);
+	vector<string>	list;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		//if (signals[i].status != STATUS_SUBSCRIBED)
+		if (signals[i].evstate != Tango::ON)
+		{
+			list.push_back(signals[i].status);
+		}
+		else
+		{
+			list.push_back(string(""));
+		}
+	}
+	return list;
+}
+//=============================================================================
+/**
+ *	Return the list of errors
+ */
+//=============================================================================
+vector<uint32_t>  SharedData::get_ev_counter_list()
+{
+	omni_mutex_lock sync(*this);
+	vector<uint32_t>	list;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		list.push_back(signals[i].okev_counter + signals[i].nokev_counter);
+	}
 	return list;
 }
 //=============================================================================
@@ -1181,7 +1219,7 @@ Tango::DevState SharedData::state()
 	Tango::DevState	state = Tango::ON;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-		if (signals[i].evstate==Tango::ALARM)
+		if (signals[i].evstate==Tango::ALARM && signals[i].running)
 		{
 			state = Tango::ALARM;
 			break;

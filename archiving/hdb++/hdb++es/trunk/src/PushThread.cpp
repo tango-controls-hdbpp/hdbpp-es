@@ -108,7 +108,7 @@ int PushThreadShared::get_max_waiting()
 {
 	omni_mutex_lock sync(*this);
 	int	tmp_max_waiting = max_waiting;
-	max_waiting = events.size();
+//	max_waiting = events.size();
 	return tmp_max_waiting;
 }
 //=============================================================================
