@@ -214,6 +214,14 @@ public:
 	 */
 	vector<string>  get_sig_not_started_list();
 	/**
+	 *	Return the list of errors
+	 */
+	vector<string>  get_error_list();
+	/**
+	 *	Return the list of event received
+	 */
+	vector<uint32_t>  get_ev_counter_list();
+	/**
 	 *	Return the number of signals on error
 	 */
 	int  get_sig_on_error_num();

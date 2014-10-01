@@ -68,8 +68,17 @@ void *StatsThread::run_undetached(void *ptr)
 		for (size_t i=0 ; i<attribute_list_tmp.size() ; i++)
 		{
 			string signame(attribute_list_tmp[i]);
-			if(!hdb_dev->shared->is_running(signame))
+			try
+			{
+				hdb_dev->shared->lock();
+				bool is_running = hdb_dev->shared->is_running(signame);
+				hdb_dev->shared->unlock();
+				if(!is_running)
+					continue;
+			}catch(Tango::DevFailed &e)
+			{
 				continue;
+			}
 			long ok_ev_t=0;
 			long nok_ev_t=0;
 			long nok_db_t=0;

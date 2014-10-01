@@ -216,6 +216,19 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeStoppedNumber_allowed(ty);}
 };
 
+//	Attribute AttributeMaxPendingNumber class definition
+class AttributeMaxPendingNumberAttrib: public Tango::Attr
+{
+public:
+	AttributeMaxPendingNumberAttrib():Attr("AttributeMaxPendingNumber",
+			Tango::DEV_LONG, Tango::READ) {};
+	~AttributeMaxPendingNumberAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeMaxPendingNumber(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeMaxPendingNumber_allowed(ty);}
+};
+
 //	Attribute AttributeList class definition
 class AttributeListAttrib: public Tango::SpectrumAttr
 {
@@ -318,6 +331,32 @@ public:
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeStoppedList(att);}
 	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeStoppedList_allowed(ty);}
+};
+
+//	Attribute AttributeEventNumberList class definition
+class AttributeEventNumberListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributeEventNumberListAttrib():SpectrumAttr("AttributeEventNumberList",
+			Tango::DEV_LONG, Tango::READ, 10000) {};
+	~AttributeEventNumberListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeEventNumberList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeEventNumberList_allowed(ty);}
+};
+
+//	Attribute AttributeErrorList class definition
+class AttributeErrorListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributeErrorListAttrib():SpectrumAttr("AttributeErrorList",
+			Tango::DEV_STRING, Tango::READ, 10000) {};
+	~AttributeErrorListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeErrorList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeErrorList_allowed(ty);}
 };
 
 

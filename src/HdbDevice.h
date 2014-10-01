@@ -70,6 +70,8 @@
 #endif	/*	WIN32		*/
 #endif	/*	TIME_VAR	*/
 
+#define STATUS_SUBSCRIBED	string("Subscribed")
+#define STATUS_DB_ERROR		string("DB Error")
 
 
 namespace HdbEventSubscriber_ns
@@ -105,6 +107,7 @@ public:
 	Tango::DevDouble	AttributeFailureFreq;
 	Tango::DevDouble	AttributeRecordFreqList[10000];
 	Tango::DevDouble	AttributeFailureFreqList[10000];
+	Tango::DevLong		AttributeEventNumberList[10000];
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -159,6 +162,14 @@ public:
 	 *	Return the list of signals not_started
 	 */
 	vector<string>  get_sig_not_started_list();
+	/**
+	 *	Return the list errors
+	 */
+	vector<string>  get_error_list();
+	/**
+	 *	Populate the list of event received numbers
+	 */
+	void  get_event_number_list();
 	/**
 	 *	Return the number of signals on error
 	 */

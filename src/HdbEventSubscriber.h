@@ -92,6 +92,7 @@ private:
 	vector<string> attribute_pending_list_str;
 	vector<string> attribute_started_list_str;
 	vector<string> attribute_stopped_list_str;
+	vector<string> attribute_error_list_str;
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -137,6 +138,7 @@ public:
 	Tango::DevDouble	*attr_AttributeFailureFreq_read;
 	Tango::DevLong	*attr_AttributeStartedNumber_read;
 	Tango::DevLong	*attr_AttributeStoppedNumber_read;
+	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
 	Tango::DevString	*attr_AttributeNokList_read;
@@ -145,6 +147,8 @@ public:
 	Tango::DevDouble	*attr_AttributeFailureFreqList_read;
 	Tango::DevString	*attr_AttributeStartedList_read;
 	Tango::DevString	*attr_AttributeStoppedList_read;
+	Tango::DevLong	*attr_AttributeEventNumberList_read;
+	Tango::DevString	*attr_AttributeErrorList_read;
 
 //	Constructors and destructors
 public:
@@ -315,6 +319,15 @@ public:
 	virtual void read_AttributeStoppedNumber(Tango::Attribute &attr);
 	virtual bool is_AttributeStoppedNumber_allowed(Tango::AttReqType type);
 /**
+ *	Attribute AttributeMaxPendingNumber related methods
+ *	Description: Max number of attributes waiting to be archived
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeMaxPendingNumber(Tango::Attribute &attr);
+	virtual bool is_AttributeMaxPendingNumber_allowed(Tango::AttReqType type);
+/**
  *	Attribute AttributeList related methods
  *	Description: Returns the configured attribute list
  *
@@ -343,7 +356,7 @@ public:
 	virtual bool is_AttributeNokList_allowed(Tango::AttReqType type);
 /**
  *	Attribute AttributePendingList related methods
- *	Description: Returns the attributes waiting to be archived
+ *	Description: Returns the list attributes waiting to be archived
  *
  *	Data type:	Tango::DevString
  *	Attr type:	Spectrum max = 10000
@@ -352,7 +365,7 @@ public:
 	virtual bool is_AttributePendingList_allowed(Tango::AttReqType type);
 /**
  *	Attribute AttributeRecordFreqList related methods
- *	Description: Returns the configured attribute list
+ *	Description: Returns the list of record frequencies
  *
  *	Data type:	Tango::DevDouble
  *	Attr type:	Spectrum max = 10000
@@ -361,7 +374,7 @@ public:
 	virtual bool is_AttributeRecordFreqList_allowed(Tango::AttReqType type);
 /**
  *	Attribute AttributeFailureFreqList related methods
- *	Description: Returns the configured attribute list
+ *	Description: Returns the list of failure frequencies
  *
  *	Data type:	Tango::DevDouble
  *	Attr type:	Spectrum max = 10000
@@ -386,6 +399,24 @@ public:
  */
 	virtual void read_AttributeStoppedList(Tango::Attribute &attr);
 	virtual bool is_AttributeStoppedList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeEventNumberList related methods
+ *	Description: Returns the list of numbers of events received
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeEventNumberList(Tango::Attribute &attr);
+	virtual bool is_AttributeEventNumberList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeErrorList related methods
+ *	Description: Returns the list of attribute errors
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeErrorList(Tango::Attribute &attr);
+	virtual bool is_AttributeErrorList_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------
