@@ -1258,8 +1258,14 @@ void HdbEventSubscriber::start()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
 
 	//	Add your own code
+#if 0
 	hdb_dev->push_shared->start_all();
 	hdb_dev->shared->start_all();
+#else
+	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
+		attribute_start((Tango::DevString)att_list_tmp[i].c_str());
+#endif
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::start
 }
 //--------------------------------------------------------
@@ -1275,8 +1281,14 @@ void HdbEventSubscriber::stop()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::stop) ENABLED START -----*/
 
 	//	Add your own code
+#if 0
 	hdb_dev->shared->stop_all();
 	hdb_dev->push_shared->stop_all();
+#else
+	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
+		attribute_stop((Tango::DevString)att_list_tmp[i].c_str());
+#endif
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::stop
 }
 //--------------------------------------------------------
@@ -1296,9 +1308,14 @@ void HdbEventSubscriber::attribute_start(Tango::DevString argin)
 
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
-
-	hdb_dev->push_shared->start_attr(signame);
-	hdb_dev->shared->start(signame);
+	hdb_dev->shared->lock();
+	bool is_running = hdb_dev->shared->is_running(signame);
+	hdb_dev->shared->unlock();
+	if(!is_running)
+	{
+		hdb_dev->push_shared->start_attr(signame);
+		hdb_dev->shared->start(signame);
+	}
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_start
 }
@@ -1319,9 +1336,14 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
-
-	hdb_dev->shared->stop(signame);
-	hdb_dev->push_shared->stop_attr(signame);
+	hdb_dev->shared->lock();
+	bool is_running = hdb_dev->shared->is_running(signame);
+	hdb_dev->shared->unlock();
+	if(is_running)
+	{
+		hdb_dev->shared->stop(signame);
+		hdb_dev->push_shared->stop_attr(signame);
+	}
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_stop
 }
