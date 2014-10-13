@@ -523,11 +523,31 @@ void ArchiveCB::push_event(Tango::EventData *data)
 	}
 	HdbEventDataType ev_data_type;
 	ev_data_type.attr_name = data->attr_name;
-	ev_data_type.max_dim_x = signal->max_dim_x;
-	ev_data_type.max_dim_y = signal->max_dim_y;
-	ev_data_type.data_type = signal->data_type;
-	ev_data_type.data_format = signal->data_format;
-	ev_data_type.write_type	= signal->write_type;
+	if(!hdb_dev->shared->is_first(data->attr_name))
+	{
+		ev_data_type.max_dim_x = signal->max_dim_x;
+		ev_data_type.max_dim_y = signal->max_dim_y;
+		ev_data_type.data_type = signal->data_type;
+		ev_data_type.data_format = signal->data_format;
+		ev_data_type.write_type	= signal->write_type;
+	}
+	else
+	{
+		try
+		{
+			Tango::AttributeInfo	info = signal->attr->get_config();
+			ev_data_type.data_type = info.data_type;
+			ev_data_type.data_format = info.data_format;
+			ev_data_type.write_type = info.writable;
+			ev_data_type.max_dim_x = info.max_dim_x;
+			ev_data_type.max_dim_y = info.max_dim_y;
+		}
+		catch (Tango::DevFailed &e)
+		{
+			cout<< __func__ << ": FIRST exception in get_config" << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
+		}
+	}
+
 	//	Check if event is an error event.
 	if (data->err)
 	{
@@ -567,6 +587,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 			cout << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
+#if 0	//storing quality factor
 	else if ( data->attr_value->get_quality() == Tango::ATTR_INVALID )
 	{
 		cout << "Attribute " << data->attr_name << " is invalid !" << endl;
@@ -606,6 +627,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 			cout << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
+#endif
 	else
 	{
 		try
