@@ -566,19 +566,19 @@ void SharedData::subscribe_events()
 			sig->archive_cb = new ArchiveCB(hdb_dev);
 			try
 			{
-				cout << "Subscribing for " << sig->name << endl;
 				Tango::AttributeInfo	info = sig->attr->get_config();
 				sig->data_type = info.data_type;
 				sig->data_format = info.data_format;
 				sig->write_type = info.writable;
 				sig->max_dim_x = info.max_dim_x;
 				sig->max_dim_y = info.max_dim_y;
+				cout << "Subscribing for " << sig->name << " data_type=" << sig->data_type << endl;
 				sig->event_id = sig->attr->subscribe_event(
 												Tango::ARCHIVE_EVENT,
 												sig->archive_cb,
 												/*stateless=*/false);
 				sig->evstate  = Tango::ON;
-				sig->first  = true;
+				sig->first  = false;	//first event already arrived at subscribe_event
 				sig->first_err  = true;
 				sig->status.clear();
 				sig->status = "Subscribed";
