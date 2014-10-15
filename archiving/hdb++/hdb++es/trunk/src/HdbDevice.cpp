@@ -544,7 +544,9 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch (Tango::DevFailed &e)
 		{
-			cout<< __func__ << ": FIRST exception in get_config" << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
+			cout<< __func__ << ": FIRST exception in get_config: " << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
+			hdb_dev->shared->unlock();
+			return;
 		}
 	}
 
