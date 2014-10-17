@@ -77,6 +77,7 @@ typedef struct
 	bool 	first_err;
 	ArchiveCB	*archive_cb;
 	int		event_id;
+	int		event_conf_id;
 	bool	isZMQ;
 	uint32_t okev_counter;
 	uint32_t okev_counter_freq;

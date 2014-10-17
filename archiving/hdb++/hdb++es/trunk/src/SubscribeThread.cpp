@@ -93,12 +93,13 @@ void SharedData::remove(string &signame)
 			if (sig->name==signame)
 			{
 				found = true;
-				cout <<__func__<< "removing " << signame << endl;
+				cout <<__func__<< ": removing " << signame << endl;
 				try
 				{
 					if(sig->event_id != ERR)
 					{
 						sig->attr->unsubscribe_event(sig->event_id);
+						sig->attr->unsubscribe_event(sig->event_conf_id);
 						delete sig->archive_cb;
 					}
 					delete sig->attr;
@@ -107,6 +108,7 @@ void SharedData::remove(string &signame)
 				{
 					//	Do nothing
 					//	Unregister failed means Register has also failed
+					cout << __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 				}
 				cout << __func__<<": unsubscribed " << signame << endl;
 				signals.erase(pos);
@@ -126,12 +128,13 @@ void SharedData::remove(string &signame)
 #endif
 				{
 					found = true;
-					cout <<__func__<< "removing " << signame << endl;
+					cout <<__func__<< ": removing " << signame << endl;
 					try
 					{
 						if(sig->event_id != ERR)
 						{
 							sig->attr->unsubscribe_event(sig->event_id);
+							sig->attr->unsubscribe_event(sig->event_conf_id);
 							delete sig->archive_cb;
 						}
 						delete sig->attr;
@@ -140,6 +143,7 @@ void SharedData::remove(string &signame)
 					{
 						//	Do nothing
 						//	Unregister failed means Register has also failed
+						cout << __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 					}
 					cout << __func__<<": unsubscribed " << signame << endl;
 					signals.erase(pos);
@@ -429,6 +433,7 @@ void SharedData::unsubscribe_events()
 			try
 			{
 				sig->attr->unsubscribe_event(sig->event_id);
+				sig->attr->unsubscribe_event(sig->event_conf_id);
 				delete sig->archive_cb;
 			}
 			catch (Tango::DevFailed &e)
@@ -444,6 +449,7 @@ void SharedData::unsubscribe_events()
 	for (unsigned int j=0 ; j<signals.size() ; j++)
 	{
 		signals[j].event_id = ERR;
+		signals[j].event_conf_id = ERR;
 		signals[j].archive_cb = NULL;
 		signals[j].attr = NULL;
 	}
@@ -511,6 +517,7 @@ void SharedData::add(string &signame, int to_do)
 		//	create Attribute proxy
 		signal.attr = new Tango::AttributeProxy(signal.name);
 		signal.event_id = ERR;
+		signal.event_conf_id = ERR;
 		signal.evstate    = Tango::ALARM;
 		signal.isZMQ    = false;
 		signal.okev_counter = 0;
@@ -573,6 +580,10 @@ void SharedData::subscribe_events()
 				sig->max_dim_x = info.max_dim_x;
 				sig->max_dim_y = info.max_dim_y;
 				cout << "Subscribing for " << sig->name << " data_type=" << sig->data_type << endl;
+				sig->event_conf_id = sig->attr->subscribe_event(
+												Tango::ATTR_CONF_EVENT,
+												sig->archive_cb,
+												/*stateless=*/false);
 				sig->event_id = sig->attr->subscribe_event(
 												Tango::ARCHIVE_EVENT,
 												sig->archive_cb,
@@ -616,6 +627,7 @@ void SharedData::subscribe_events()
 				signals[j].max_dim_x = local_signals[i].max_dim_x;
 				signals[j].max_dim_y = local_signals[i].max_dim_y;
 				signals[j].event_id = local_signals[i].event_id;
+				signals[j].event_conf_id = local_signals[i].event_conf_id;
 				signals[j].evstate  = local_signals[i].evstate;
 				signals[j].first  = local_signals[i].first;
 				signals[j].first_err  = local_signals[i].first_err;

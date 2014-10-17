@@ -906,6 +906,15 @@ void *PushThread::run_undetached(void *ptr)
 						}
 						break;
 					}
+					case DB_INSERT_PARAM:
+					{
+						timeval now;
+						gettimeofday(&now, NULL);
+						double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
+						//	Send it to DB
+						/*int ret =*/ shared->mdb->insert_param_Attr(cmd->ev_data_param, cmd->ev_data_type);
+						break;
+					}
 					case DB_START:
 					{
 						//	Send it to DB

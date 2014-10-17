@@ -302,7 +302,7 @@ public:
 	ArchiveCB(HdbDevice	*dev) { hdb_dev=dev; };
 
 	virtual void push_event(Tango::EventData *data);
-	virtual void push_event(Tango::AttrConfEventData* data) {};
+	virtual void push_event(Tango::AttrConfEventData* data);
 };
 
 
