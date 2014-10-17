@@ -684,7 +684,62 @@ void ArchiveCB::push_event(Tango::EventData *data)
 
 	Tango::EventData	*ev_data = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
 
-	HdbCmdData *cmd = new HdbCmdData(ev_data, ev_data_type);
+	HdbCmdData *cmd = new HdbCmdData((Tango::EventData *)ev_data, ev_data_type);
+	hdb_dev->push_shared->push_back_cmd(cmd);
+}
+//=============================================================================
+/**
+ *	Attribute and Event management
+ */
+//=============================================================================
+void ArchiveCB::push_event(Tango::AttrConfEventData *data)
+{
+
+	time_t	t = time(NULL);
+	cout << __func__<<": AttrConfEvent '"<<data->attr_name<<" '  Received at " << ctime(&t);
+	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
+
+	//	Check if event is an error event.
+	if (data->err)
+	{
+		cout<< __func__ << ": AttrConfEvent Exception on " << data->attr_name << endl;
+		cout << data->errors[0].desc  << endl;
+		return;
+	}
+	HdbEventDataType ev_data_type;
+	ev_data_type.attr_name = data->attr_name;
+	hdb_dev->shared->lock();
+	HdbSignal	*signal=hdb_dev->shared->get_signal(data->attr_name);
+
+	if(signal==NULL)
+	{
+		cout << __func__<<": AttrConfEvent '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
+		hdb_dev->shared->unlock();
+		return;
+	}
+
+	//if attribute stopped, just return
+	try
+	{
+		if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first(data->attr_name))
+		{
+			hdb_dev->shared->unlock();
+			return;
+		}
+	}
+	catch(Tango::DevFailed &e)
+	{
+		cout << __func__ << " AttrConfEvent Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+	}
+
+	hdb_dev->shared->unlock();
+
+	Tango::AttributeInfoEx *attr_conf = new Tango::AttributeInfoEx();
+	*attr_conf = *(data->attr_conf);
+
+	Tango::AttrConfEventData	*ev_data = new Tango::AttrConfEventData(data->device,data->attr_name, data->event, attr_conf, data->errors);
+	HdbCmdData *cmd = new HdbCmdData((Tango::AttrConfEventData *)ev_data, ev_data_type);
+
 	hdb_dev->push_shared->push_back_cmd(cmd);
 }
 //=============================================================================
