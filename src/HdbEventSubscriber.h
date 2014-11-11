@@ -403,7 +403,7 @@ public:
  *	Attribute AttributeEventNumberList related methods
  *	Description: Returns the list of numbers of events received
  *
- *	Data type:	Tango::DevDouble
+ *	Data type:	Tango::DevLong
  *	Attr type:	Spectrum max = 10000
  */
 	virtual void read_AttributeEventNumberList(Tango::Attribute &attr);
