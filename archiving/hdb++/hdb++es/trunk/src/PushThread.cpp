@@ -79,11 +79,25 @@ void PushThreadShared::push_back_cmd(HdbCmdData *argin)
 	//	Add data at end of vector
 
 	events.push_back(argin);
+	size_t events_size = events.size();
 
 	//	Check if nb waiting more the stored one.
-	if (events.size()>(unsigned )max_waiting)
-		max_waiting = events.size();
+	if (events_size>(unsigned )max_waiting)
+		max_waiting = events_size;
 
+	hdb_dev->AttributePendingNumber = events_size;
+	hdb_dev->AttributeMaxPendingNumber = max_waiting;
+	try
+	{
+		(hdb_dev->_device)->push_change_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
+		(hdb_dev->_device)->push_archive_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
+		(hdb_dev->_device)->push_change_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
+		(hdb_dev->_device)->push_archive_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
+	}
+	catch(Tango::DevFailed &e)
+	{
+
+	}
 	//	And awake thread
 	signal();
 }
@@ -160,7 +174,18 @@ void PushThreadShared::reset_freq_statistics()
 HdbCmdData *PushThreadShared::get_next_cmd()
 {
 	omni_mutex_lock sync(*this);
-	if (events.size()>0)
+	size_t events_size = events.size();
+	hdb_dev->AttributePendingNumber = events_size;
+	try
+	{
+		(hdb_dev->_device)->push_change_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
+		(hdb_dev->_device)->push_archive_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
+	}
+	catch(Tango::DevFailed &e)
+	{
+
+	}
+	if(events_size>0)
 	{
 		HdbCmdData *cmd = events[0];
 		events.erase(events.begin());

@@ -112,7 +112,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeFailureFreqList    |  Tango::DevDouble	Spectrum  ( max = 10000)
 //  AttributeStartedList        |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeStoppedList        |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeEventNumberList    |  Tango::DevDouble	Spectrum  ( max = 10000)
+//  AttributeEventNumberList    |  Tango::DevLong	Spectrum  ( max = 10000)
 //  AttributeErrorList          |  Tango::DevString	Spectrum  ( max = 10000)
 //================================================================
 

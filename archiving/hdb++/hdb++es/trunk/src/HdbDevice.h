@@ -108,6 +108,8 @@ public:
 	Tango::DevDouble	AttributeRecordFreqList[10000];
 	Tango::DevDouble	AttributeFailureFreqList[10000];
 	Tango::DevLong		AttributeEventNumberList[10000];
+	Tango::DevLong		AttributePendingNumber;
+	Tango::DevLong		AttributeMaxPendingNumber;
 
 #ifdef _USE_FERMI_DB_RW
 private:
