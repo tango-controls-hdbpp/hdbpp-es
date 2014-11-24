@@ -65,6 +65,7 @@ HdbDevice::~HdbDevice()
 	DEBUG_STREAM << "	Deleting HdbDevice" << endl;
 	DEBUG_STREAM << "	Stopping stats thread" << endl;
 	stats_thread->abortflag=true;
+	check_periodic_thread->abortflag=true;
 	DEBUG_STREAM << "	Stopping subscribe thread" << endl;
 	shared->stop_thread();
 	DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
@@ -76,6 +77,8 @@ HdbDevice::~HdbDevice()
 	DEBUG_STREAM << "	Push thread Stopped " << endl;
 	push_thread->join(0);
 	DEBUG_STREAM << "	Push thread Joined " << endl;
+	check_periodic_thread->join(0);
+	DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
 	stats_thread->join(0);
 	DEBUG_STREAM << "	Stats thread Joined " << endl;
 	delete shared;
@@ -85,11 +88,12 @@ HdbDevice::~HdbDevice()
 }
 //=============================================================================
 //=============================================================================
-HdbDevice::HdbDevice(int p, int s, Tango::DeviceImpl *device)
+HdbDevice::HdbDevice(int p, int s, int c, Tango::DeviceImpl *device)
 				:Tango::LogAdapter(device)
 {
 	this->period = p;
 	this->stats_window = s;
+	this->check_periodic_delay = c;
 	_device = device;
 #ifdef _USE_FERMI_DB_RW
 	host_rw = "";
@@ -136,12 +140,15 @@ void HdbDevice::initialize()
 	push_thread = new PushThread(push_shared);
 	stats_thread = new StatsThread(this);
 	stats_thread->period = stats_window;
+	check_periodic_thread = new CheckPeriodicThread(this);
+	check_periodic_thread->delay_tolerance_ms = stats_window;
 
 	build_signal_vector(list);
 
 	stats_thread->start();
 	push_thread->start();
 	thread->start();
+	check_periodic_thread->start();
 
 	//	Wait end of first subscribing loop
 	do
@@ -730,6 +737,15 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	catch(Tango::DevFailed &e)
 	{
 		cout << __func__ << " AttrConfEvent Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+	}
+
+	try
+	{
+		hdb_dev->shared->set_conf_periodic_event(data->attr_name, data->attr_conf->events.arch_event.archive_period);
+	}
+	catch(Tango::DevFailed &e)
+	{
+		cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 	}
 
 	hdb_dev->shared->unlock();

@@ -582,6 +582,8 @@ public:
 		Tango::DevBoolean	startArchivingAtStartup;
 		//	StatisticsTimeWindow:	Statistics time window in seconds
 		Tango::DevLong	statisticsTimeWindow;
+		//	CheckPeriodicTimeoutDelay:	Delay in seconds before timeout when checking periodic events
+		Tango::DevLong	checkPeriodicTimeoutDelay;
 	public:
 		//	write class properties data members
 		Tango::DbData	cl_prop;

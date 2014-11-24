@@ -93,7 +93,7 @@ void SharedData::remove(string &signame)
 			if (sig->name==signame)
 			{
 				found = true;
-				cout <<__func__<< ": removing " << signame << endl;
+				cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
 				try
 				{
 					if(sig->event_id != ERR)
@@ -108,9 +108,9 @@ void SharedData::remove(string &signame)
 				{
 					//	Do nothing
 					//	Unregister failed means Register has also failed
-					cout << __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+					cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 				}
-				cout << __func__<<": unsubscribed " << signame << endl;
+				cout <<"SharedData::"<< __func__<<": unsubscribed " << signame << endl;
 				signals.erase(pos);
 				break;
 			}
@@ -128,7 +128,7 @@ void SharedData::remove(string &signame)
 #endif
 				{
 					found = true;
-					cout <<__func__<< ": removing " << signame << endl;
+					cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
 					try
 					{
 						if(sig->event_id != ERR)
@@ -143,9 +143,9 @@ void SharedData::remove(string &signame)
 					{
 						//	Do nothing
 						//	Unregister failed means Register has also failed
-						cout << __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+						cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 					}
-					cout << __func__<<": unsubscribed " << signame << endl;
+					cout <<"SharedData::"<< __func__<<": unsubscribed " << signame << endl;
 					signals.erase(pos);
 					break;
 				}
@@ -429,7 +429,7 @@ void SharedData::unsubscribe_events()
 		HdbSignal	*sig = &local_signals[i];
 		if (signals[i].event_id != ERR)
 		{
-			cout << "    unsubscribe " << sig->name << endl;
+			cout <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << endl;
 			try
 			{
 				sig->attr->unsubscribe_event(sig->event_id);
@@ -455,7 +455,7 @@ void SharedData::unsubscribe_events()
 	}
 
 	this->unlock();
-	cout << __func__<< ": exiting..."<<endl;
+	cout <<"SharedData::"<< __func__<< ": exiting..."<<endl;
 }
 //=============================================================================
 /**
@@ -527,6 +527,8 @@ void SharedData::add(string &signame, int to_do)
 		signal.running = false;
 		signal.first = true;
 		signal.first_err = true;
+		signal.periodic_ev = -1;
+		clock_gettime(CLOCK_MONOTONIC, &signal.last_ev);
 
 		try
 		{
@@ -539,17 +541,17 @@ void SharedData::add(string &signame, int to_do)
 		}
 		catch (Tango::DevFailed &e)
 		{
-
+			cout <<"SubscribeThread::"<<__func__<< "ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
 		}
 
-		cout << "created proxy to " << signame << endl;
+		cout <<"SubscribeThread::"<< __func__<< "created proxy to " << signame << " data_type=" << signal.data_type << endl;
 
 		//	Add in vector
 		signals.push_back(signal);
 
 		action = to_do;
 	}
-	cout << __func__<<": exiting... " << signame << endl;
+	cout <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
 	signal();
 	//condition.signal();
 }
@@ -579,7 +581,7 @@ void SharedData::subscribe_events()
 				sig->write_type = info.writable;
 				sig->max_dim_x = info.max_dim_x;
 				sig->max_dim_y = info.max_dim_y;
-				cout << "Subscribing for " << sig->name << " data_type=" << sig->data_type << endl;
+				cout << "Subscribing for " << sig->name << " data_type=" << sig->data_type << " " << (sig->first ? "FIRST" : "NOT FIRST") << endl;
 				sig->event_conf_id = sig->attr->subscribe_event(
 												Tango::ATTR_CONF_EVENT,
 												sig->archive_cb,
@@ -926,10 +928,13 @@ void  SharedData::set_ok_event(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
+			signals[i].evstate = Tango::ON;
+			signals[i].status = "Event received";
 			signals[i].okev_counter++;
 			signals[i].okev_counter_freq++;
 			signals[i].first_err = true;
 			gettimeofday(&signals[i].last_okev, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
 			return;
 		}
 	}
@@ -941,10 +946,13 @@ void  SharedData::set_ok_event(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
+			signals[i].evstate = Tango::ON;
+			signals[i].status = "Event received";
 			signals[i].okev_counter++;
 			signals[i].okev_counter_freq++;
 			signals[i].first_err = true;
 			gettimeofday(&signals[i].last_okev, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
 			return;
 		}
 	}
@@ -1055,6 +1063,7 @@ void  SharedData::set_nok_event(string &signame)
 			signals[i].nokev_counter++;
 			signals[i].nokev_counter_freq++;
 			gettimeofday(&signals[i].last_nokev, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
 			return;
 		}
 	}
@@ -1069,6 +1078,7 @@ void  SharedData::set_nok_event(string &signame)
 			signals[i].nokev_counter++;
 			signals[i].nokev_counter_freq++;
 			gettimeofday(&signals[i].last_nokev, NULL);
+			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
 			return;
 		}
 	}
@@ -1164,7 +1174,42 @@ timeval  SharedData::get_last_nokev(string &signame)
 	ret.tv_usec=0;
 	return ret;
 }
-
+//=============================================================================
+/**
+ *	Set state and status of timeout on periodic event
+ */
+//=============================================================================
+void  SharedData::set_nok_periodic_event(string &signame)
+{
+	//not to be locked, called only inside lock in ArchiveCB::push_event
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].evstate = Tango::ALARM;
+			signals[i].status = "Timeout on periodic event";
+			return;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].evstate = Tango::ALARM;
+			signals[i].status = "Timeout on periodic event";
+			return;
+		}
+	}
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::set_nok_event()");
+}
 //=============================================================================
 /**
  *	Return the status of specified signal
@@ -1191,6 +1236,156 @@ string  SharedData::get_sig_status(string &signame)
 				"Signal NOT subscribed",
 				(const char *)"SharedData::get_sig_status()");
 	return "";
+}
+//=============================================================================
+/**
+ *	Return the state of specified signal
+ */
+//=============================================================================
+Tango::DevState  SharedData::get_sig_state(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].evstate;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+			return signals[i].evstate;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_sig_state()");
+	return Tango::ALARM;
+}
+//=============================================================================
+/**
+ *	Set Archive periodic event period
+ */
+//=============================================================================
+void SharedData::set_conf_periodic_event(string &signame, string period)
+{
+	//not to be locked, called only inside lock in ArchiveCB::push_event
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].periodic_ev = atoi(period.c_str());	//TODO: check if period is a number
+			return;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].periodic_ev = atoi(period.c_str());	//TODO: check if period is a number
+			return;
+		}
+	}
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::set_conf_periodic_event()");
+}
+//=============================================================================
+/**
+ *	Get Archive periodic event period
+ */
+//=============================================================================
+int  SharedData::get_conf_periodic_event(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].periodic_ev;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+			return signals[i].periodic_ev;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_conf_periodic_event()");
+
+	return -1;
+}
+//=============================================================================
+/**
+ *	Check Archive periodic event period
+ */
+//=============================================================================
+int  SharedData::check_periodic_event_timeout(int delay_tolerance_ms)
+{
+	omni_mutex_lock sync(*this);
+	timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double min_time_to_timeout_ms = 10000;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if(!signals[i].running)
+			continue;
+		if(signals[i].evstate != Tango::ON)
+			continue;
+		if(signals[i].periodic_ev <= 0)
+			continue;
+		double diff_time_ms = (now.tv_sec - signals[i].last_ev.tv_sec) * 1000 + ((double)(now.tv_nsec - signals[i].last_ev.tv_nsec))/1000000;
+		double time_to_timeout_ms = (double)(signals[i].periodic_ev + delay_tolerance_ms) - diff_time_ms;
+		if(time_to_timeout_ms <= 0)
+		{
+			signals[i].evstate = Tango::ALARM;
+			signals[i].status = "Timeout on periodic event";
+		}
+		else if(time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0)
+			min_time_to_timeout_ms = time_to_timeout_ms;
+	}
+	return min_time_to_timeout_ms;
+}
+//=============================================================================
+/**
+ *	Get last ev timestamp
+ */
+//=============================================================================
+timespec  SharedData::get_last_ev(string &signame)
+{
+	//omni_mutex_lock sync(*this);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+		if (signals[i].name==signame)
+			return signals[i].last_ev;
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+			return signals[i].last_ev;
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::get_last_ev()");
+	timespec ret;
+	ret.tv_sec=0;
+	ret.tv_nsec=0;
+	return ret;
 }
 //=============================================================================
 /**
