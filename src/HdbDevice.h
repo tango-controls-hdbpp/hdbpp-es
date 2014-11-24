@@ -44,6 +44,7 @@
 #include <SubscribeThread.h>
 #include <PushThread.h>
 #include <StatsThread.h>
+#include <CheckPeriodicThread.h>
 /**
  * @author	$Author: graziano $
  * @version	$Revision: 1.5 $
@@ -92,8 +93,10 @@ public:
 	SubscribeThread		*thread;
 	PushThread			*push_thread;
 	StatsThread			*stats_thread;
+	CheckPeriodicThread	*check_periodic_thread;
 	int					period;
 	int					stats_window;
+	int					check_periodic_delay;
 	/**
 	 *	Shared data
 	 */
@@ -122,8 +125,10 @@ public:
 	 *
 	 *	@param devname 	Device Name
 	 *	@param p	 	Period to retry subscribe event
+	 *	@param s	 	Period to compute statistics
+	 *	@param c	 	Delay before timeout on periodic events
 	 */
-	HdbDevice(int p, int s, Tango::DeviceImpl *device);
+	HdbDevice(int p, int s, int c, Tango::DeviceImpl *device);
 	~HdbDevice();
 	/**
 	 * initialize object

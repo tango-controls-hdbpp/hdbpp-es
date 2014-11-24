@@ -390,6 +390,7 @@ void HdbEventSubscriberClass::get_class_property()
 	cl_prop.push_back(Tango::DbDatum("DbPort"));
 	cl_prop.push_back(Tango::DbDatum("StartArchivingAtStartup"));
 	cl_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
+	cl_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	
 	//	Call database and extract values
 	if (Tango::Util::instance()->_UseDb==true)
@@ -491,6 +492,18 @@ void HdbEventSubscriberClass::get_class_property()
 		{
 			def_prop    >>  statisticsTimeWindow;
 			cl_prop[i]  <<  statisticsTimeWindow;
+		}
+	}
+	//	Try to extract CheckPeriodicTimeoutDelay value
+	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  checkPeriodicTimeoutDelay;
+	else
+	{
+		//	Check default value for CheckPeriodicTimeoutDelay
+		def_prop = get_default_class_property(cl_prop[i].name);
+		if (def_prop.is_empty()==false)
+		{
+			def_prop    >>  checkPeriodicTimeoutDelay;
+			cl_prop[i]  <<  checkPeriodicTimeoutDelay;
 		}
 	}
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::get_class_property_after) ENABLED START -----*/
@@ -623,6 +636,20 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_class_prop(prop_name, prop_desc);
+	prop_name = "CheckPeriodicTimeoutDelay";
+	prop_desc = "Delay in seconds before timeout when checking periodic events";
+	prop_def  = "5";
+	vect_data.clear();
+	vect_data.push_back("5");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		cl_def_prop.push_back(data);
+		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_class_prop(prop_name, prop_desc);
 
 	//	Set Default device Properties
 	prop_name = "SubscribeRetryPeriod";
@@ -734,6 +761,20 @@ void HdbEventSubscriberClass::set_default_property()
 	prop_desc = "Statistics time window in seconds";
 	prop_def  = "";
 	vect_data.clear();
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "CheckPeriodicTimeoutDelay";
+	prop_desc = "Delay in seconds before timeout when checking periodic events";
+	prop_def  = "5";
+	vect_data.clear();
+	vect_data.push_back("5");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);

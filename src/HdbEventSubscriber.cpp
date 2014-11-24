@@ -252,7 +252,7 @@ void HdbEventSubscriber::init_device()
 
 	//	Create one event handler by HDB access device
 	string	status("");
-	hdb_dev = new HdbDevice(subscribeRetryPeriod,statisticsTimeWindow, this);
+	hdb_dev = new HdbDevice(subscribeRetryPeriod,statisticsTimeWindow, checkPeriodicTimeoutDelay, this);
 	hdb_dev->startArchivingAtStartup = startArchivingAtStartup;
 
 	attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
@@ -316,6 +316,7 @@ void HdbEventSubscriber::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("DbPort"));
 	dev_prop.push_back(Tango::DbDatum("StartArchivingAtStartup"));
 	dev_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
+	dev_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -428,6 +429,17 @@ void HdbEventSubscriber::get_device_property()
 		}
 		//	And try to extract StatisticsTimeWindow value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  statisticsTimeWindow;
+
+		//	Try to initialize CheckPeriodicTimeoutDelay from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  checkPeriodicTimeoutDelay;
+		else {
+			//	Try to initialize CheckPeriodicTimeoutDelay from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  checkPeriodicTimeoutDelay;
+		}
+		//	And try to extract CheckPeriodicTimeoutDelay value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  checkPeriodicTimeoutDelay;
 
 	}
 

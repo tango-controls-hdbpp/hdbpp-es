@@ -85,6 +85,8 @@ typedef struct
 	uint32_t nokev_counter;
 	uint32_t nokev_counter_freq;
 	timeval last_nokev;
+	timespec last_ev;
+	int periodic_ev;
 	bool running;
 }
 HdbSignal;
@@ -271,9 +273,33 @@ public:
 	 */
 	timeval  get_last_nokev(string &signame);
 	/**
+	 *	Set state and status of timeout on periodic event
+	 */
+	void  set_nok_periodic_event(string &signame);
+	/**
 	 *	Return the status of specified signal
 	 */
 	string  get_sig_status(string &signame);
+	/**
+	 *	Return the state of specified signal
+	 */
+	Tango::DevState  get_sig_state(string &signame);
+	/**
+	 *	Set Archive periodic event period
+	 */
+	void  set_conf_periodic_event(string &signame, string period);
+	/**
+	 *	Get Archive periodic event period
+	 */
+	int  get_conf_periodic_event(string &signame);
+	/**
+	 *	Check Archive periodic event period
+	 */
+	int  check_periodic_event_timeout(int delay_tolerance_ms);
+	/**
+	 *	Get last ev timestamp
+	 */
+	timespec  get_last_ev(string &signame);
 	/**
 	 *	Reset statistic counters
 	 */
