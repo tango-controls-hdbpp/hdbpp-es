@@ -43,6 +43,8 @@
 #include <eventconsumer.h>
 #include <stdint.h>
 
+#define _RWLOCK
+
 /**
  * @author	$Author: graziano $
  * @version	$Revision: 1.5 $
@@ -53,7 +55,6 @@
 #define	ERR			-1
 #define	NOTHING		0
 #define	UPDATE_PROP	1
-
 
 namespace HdbEventSubscriber_ns
 {
@@ -88,6 +89,9 @@ typedef struct
 	timespec last_ev;
 	int periodic_ev;
 	bool running;
+#ifdef _RWLOCK
+	ReadersWritersLock *siglock;
+#endif
 }
 HdbSignal;
 
@@ -116,6 +120,9 @@ private:
 public:
 	//omni_condition condition;
 	vector<HdbSignal>	signals;
+#ifdef _RWLOCK
+	ReadersWritersLock      veclock;
+#endif
 
 
 	/**
@@ -289,17 +296,9 @@ public:
 	 */
 	void  set_conf_periodic_event(string &signame, string period);
 	/**
-	 *	Get Archive periodic event period
-	 */
-	int  get_conf_periodic_event(string &signame);
-	/**
 	 *	Check Archive periodic event period
 	 */
 	int  check_periodic_event_timeout(int delay_tolerance_ms);
-	/**
-	 *	Get last ev timestamp
-	 */
-	timespec  get_last_ev(string &signame);
 	/**
 	 *	Reset statistic counters
 	 */

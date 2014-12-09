@@ -111,10 +111,6 @@ HdbDevice::HdbDevice(int p, int s, int c, Tango::DeviceImpl *device)
 	{
 		ERROR_STREAM << __FUNCTION__ << " Error reading Database property='" << e.errors[0].desc << "'";
 	}
-	string server = "alarm-srv/test";
-	Tango::DbServerInfo info = db->get_server_info(server);
-	INFO_STREAM << " INFO: host=" << info.host;
-
 	delete db;
 #endif
 }
@@ -141,7 +137,7 @@ void HdbDevice::initialize()
 	stats_thread = new StatsThread(this);
 	stats_thread->period = stats_window;
 	check_periodic_thread = new CheckPeriodicThread(this);
-	check_periodic_thread->delay_tolerance_ms = stats_window;
+	check_periodic_thread->delay_tolerance_ms = check_periodic_delay*1000;
 
 	build_signal_vector(list);
 
@@ -392,13 +388,26 @@ void  HdbDevice::get_event_number_list()
 		string signame(attribute_list_tmp[i]);
 		try
 		{
+#ifdef _RWLOCK
+			shared->veclock.readerIn();
+#else
 			shared->lock();
+#endif
 			bool is_running = shared->is_running(signame);
+#ifdef _RWLOCK
+			shared->veclock.readerOut();
+#else
 			shared->unlock();
+#endif
 			if(!is_running)
 				continue;
 		}catch(Tango::DevFailed &e)
 		{
+#ifdef _RWLOCK
+			shared->veclock.readerOut();
+#else
+			shared->unlock();
+#endif
 			continue;
 		}
 		long ok_ev_t=0;
@@ -516,16 +525,24 @@ void ArchiveCB::push_event(Tango::EventData *data)
 {
 
 	time_t	t = time(NULL);
-	//cout << __func__<<": Event '"<<data->attr_name<<" '  Received at " << ctime(&t);
+	//cout << __func__<<": Event '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
 
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerIn();
+#else
 	hdb_dev->shared->lock();
+#endif
 	HdbSignal	*signal=hdb_dev->shared->get_signal(data->attr_name);
 
 	if(signal==NULL)
 	{
 		cout << __func__<<": Event '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
+#ifdef _RWLOCK
+		hdb_dev->shared->veclock.readerOut();
+#else
 		hdb_dev->shared->unlock();
+#endif
 		return;
 	}
 	HdbEventDataType ev_data_type;
@@ -552,7 +569,11 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		catch (Tango::DevFailed &e)
 		{
 			cout<< __func__ << ": FIRST exception in get_config: " << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
+#ifdef _RWLOCK
+			hdb_dev->shared->veclock.readerOut();
+#else
 			hdb_dev->shared->unlock();
+#endif
 			return;
 		}
 	}
@@ -579,7 +600,11 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		{
 			if(!(hdb_dev->shared->is_running(data->attr_name) && hdb_dev->shared->is_first_err(data->attr_name)))
 			{
+#ifdef _RWLOCK
+				hdb_dev->shared->veclock.readerOut();
+#else
 				hdb_dev->shared->unlock();
+#endif
 				return;
 			}
 		}
@@ -619,7 +644,11 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		{
 			if(!(hdb_dev->shared->is_running(data->attr_name) && hdb_dev->shared->is_first_err(data->attr_name)))
 			{
+#ifdef _RWLOCK
+				hdb_dev->shared->veclock.readerOut();
+#else
 				hdb_dev->shared->unlock();
+#endif
 				return;
 			}
 		}
@@ -659,7 +688,11 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		{
 			if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first(data->attr_name))
 			{
+#ifdef _RWLOCK
+				hdb_dev->shared->veclock.readerOut();
+#else
 				hdb_dev->shared->unlock();
+#endif
 				return;
 			}
 		}
@@ -677,8 +710,11 @@ void ArchiveCB::push_event(Tango::EventData *data)
 			cout << __func__ << " Unable to set first: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
-
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerOut();
+#else
 	hdb_dev->shared->unlock();
+#endif
 
 	//OK only with C++11:
 	//Tango::EventData	*cmd = new Tango::EventData(*data);
@@ -703,7 +739,7 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 {
 
 	time_t	t = time(NULL);
-	cout << __func__<<": AttrConfEvent '"<<data->attr_name<<" '  Received at " << ctime(&t);
+	//cout << __func__<<": AttrConfEvent '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
 
 	//	Check if event is an error event.
@@ -715,13 +751,20 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	}
 	HdbEventDataType ev_data_type;
 	ev_data_type.attr_name = data->attr_name;
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerIn();
+#else
 	hdb_dev->shared->lock();
+#endif
 	HdbSignal	*signal=hdb_dev->shared->get_signal(data->attr_name);
-
 	if(signal==NULL)
 	{
 		cout << __func__<<": AttrConfEvent '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
+#ifdef _RWLOCK
+		hdb_dev->shared->veclock.readerOut();
+#else
 		hdb_dev->shared->unlock();
+#endif
 		return;
 	}
 
@@ -730,7 +773,11 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	{
 		if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first(data->attr_name))
 		{
+#ifdef _RWLOCK
+			hdb_dev->shared->veclock.readerOut();
+#else
 			hdb_dev->shared->unlock();
+#endif
 			return;
 		}
 	}
@@ -747,8 +794,11 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	{
 		cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 	}
-
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerOut();
+#else
 	hdb_dev->shared->unlock();
+#endif
 
 	Tango::AttributeInfoEx *attr_conf = new Tango::AttributeInfoEx();
 	*attr_conf = *(data->attr_conf);

@@ -87,6 +87,7 @@ void PushThreadShared::push_back_cmd(HdbCmdData *argin)
 
 	hdb_dev->AttributePendingNumber = events_size;
 	hdb_dev->AttributeMaxPendingNumber = max_waiting;
+#if 0	//TODO: sometimes deadlock: Not able to acquire serialization (dev, class or process) monitor
 	try
 	{
 		(hdb_dev->_device)->push_change_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
@@ -96,8 +97,9 @@ void PushThreadShared::push_back_cmd(HdbCmdData *argin)
 	}
 	catch(Tango::DevFailed &e)
 	{
-
+		cout <<"PushThreadShared::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 	}
+#endif
 	//	And awake thread
 	signal();
 }

@@ -1066,8 +1066,6 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Polled
 	attributependingnumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributependingnumber->set_change_event(true, true);
-	attributependingnumber->set_archive_event(true, true);
 	att_list.push_back(attributependingnumber);
 
 	//	Attribute : AttributeNumber
@@ -1320,8 +1318,6 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Polled
 	attributemaxpendingnumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributemaxpendingnumber->set_change_event(true, true);
-	attributemaxpendingnumber->set_archive_event(true, true);
 	att_list.push_back(attributemaxpendingnumber);
 
 	//	Attribute : AttributeList

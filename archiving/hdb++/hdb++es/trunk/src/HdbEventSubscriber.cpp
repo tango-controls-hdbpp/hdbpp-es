@@ -189,6 +189,10 @@ void HdbEventSubscriber::delete_device()
 		delete [] attr_AttributePendingList_read;
 	if(attr_AttributeErrorList_read != NULL)
 		delete [] attr_AttributeErrorList_read;
+	if(attr_AttributeStartedList_read != NULL)
+		delete [] attr_AttributeStartedList_read;
+	if(attr_AttributeStoppedList_read != NULL)
+		delete [] attr_AttributeStoppedList_read;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
 	delete[] attr_AttributeOkNumber_read;
@@ -251,6 +255,7 @@ void HdbEventSubscriber::init_device()
 	set_status("Initializing....");
 
 	//	Create one event handler by HDB access device
+	cout << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
 	string	status("");
 	hdb_dev = new HdbDevice(subscribeRetryPeriod,statisticsTimeWindow, checkPeriodicTimeoutDelay, this);
 	hdb_dev->startArchivingAtStartup = startArchivingAtStartup;
@@ -1003,7 +1008,6 @@ void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedList) ENABLED START -----*/
 	//	Set the attribute value
 	attribute_started_list_str = hdb_dev->get_sig_started_list();
-	DEBUG_STREAM << __func__<<": attribute_started_list_str.size()="<<attribute_started_list_str.size()<<endl;
 	if(attr_AttributeStartedList_read != NULL)
 		delete [] attr_AttributeStartedList_read;
 	attr_AttributeStartedList_read = new Tango::DevString[attribute_started_list_str.size()];
@@ -1114,8 +1118,14 @@ void HdbEventSubscriber::attribute_add(Tango::DevString argin)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_add) ENABLED START -----*/
 
 	//	Add your own code
+	timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dstart = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
 	string	signame(argin);
 	hdb_dev->add(signame);
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dend = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
+	DEBUG_STREAM << __func__ << ": ADD time="<<fixed<<dend-dstart << endl;
 
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_add
@@ -1134,18 +1144,32 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_remove) ENABLED START -----*/
 
 	//	Add your own code
+	timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dstart = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
 
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerIn();
+#else
 	hdb_dev->shared->lock();
+#endif
 	bool is_running = hdb_dev->shared->is_running(signame);
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerOut();
+#else
 	hdb_dev->shared->unlock();
+#endif
 	if(is_running)
 	{
 		hdb_dev->shared->stop(signame);
 		hdb_dev->push_shared->stop_attr(signame);
 	}
 	hdb_dev->remove(signame);
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dend = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
+	DEBUG_STREAM << __func__ << ": REMOVE time="<<fixed<<dend-dstart << endl;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_remove
 }
@@ -1179,9 +1203,17 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	attr_status << endl;
 	attr_status << "Events engine      : "<<(hdb_dev->shared->get_sig_source(signame) ? "ZMQ" : "Notifd");
 	attr_status << endl;
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerIn();
+#else
 	hdb_dev->shared->lock();
+#endif
 	attr_status << "Archiving          : "<<(hdb_dev->shared->is_running(signame) ? "Started" : "Stopped");
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerOut();
+#else
 	hdb_dev->shared->unlock();
+#endif
 	attr_status << endl;
 
 	tv = hdb_dev->shared->get_last_okev(signame);
@@ -1320,9 +1352,17 @@ void HdbEventSubscriber::attribute_start(Tango::DevString argin)
 
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerIn();
+#else
 	hdb_dev->shared->lock();
+#endif
 	bool is_running = hdb_dev->shared->is_running(signame);
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerOut();
+#else
 	hdb_dev->shared->unlock();
+#endif
 	if(!is_running)
 	{
 		hdb_dev->push_shared->start_attr(signame);
@@ -1348,9 +1388,17 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerIn();
+#else
 	hdb_dev->shared->lock();
+#endif
 	bool is_running = hdb_dev->shared->is_running(signame);
+#ifdef _RWLOCK
+	hdb_dev->shared->veclock.readerOut();
+#else
 	hdb_dev->shared->unlock();
+#endif
 	if(is_running)
 	{
 		hdb_dev->shared->stop(signame);
