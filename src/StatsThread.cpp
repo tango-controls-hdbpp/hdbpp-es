@@ -42,6 +42,7 @@ StatsThread::StatsThread(HdbDevice *dev)
 //=============================================================================
 void *StatsThread::run_undetached(void *ptr)
 {
+	cout << "StatsThread id="<<omni_thread::self()->id()<<endl;
 	hdb_dev->AttributeRecordFreq = -1;
 	hdb_dev->AttributeFailureFreq = -1;
 	while(abortflag==false)
@@ -70,9 +71,17 @@ void *StatsThread::run_undetached(void *ptr)
 			string signame(attribute_list_tmp[i]);
 			try
 			{
+#ifdef _RWLOCK
+				hdb_dev->shared->veclock.readerIn();
+#else
 				hdb_dev->shared->lock();
+#endif
 				bool is_running = hdb_dev->shared->is_running(signame);
+#ifdef _RWLOCK
+				hdb_dev->shared->veclock.readerOut();
+#else
 				hdb_dev->shared->unlock();
+#endif
 				if(!is_running)
 					continue;
 			}catch(Tango::DevFailed &e)
@@ -94,10 +103,16 @@ void *StatsThread::run_undetached(void *ptr)
 		hdb_dev->AttributeRecordFreq = ok_ev - nok_db;
 		hdb_dev->AttributeFailureFreq = nok_ev + nok_db;
 
-		(hdb_dev->_device)->push_change_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
-		(hdb_dev->_device)->push_change_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
-		(hdb_dev->_device)->push_archive_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
-		(hdb_dev->_device)->push_archive_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
+			(hdb_dev->_device)->push_change_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
+			(hdb_dev->_device)->push_archive_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
+			(hdb_dev->_device)->push_archive_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
+		}catch(Tango::DevFailed &e)
+		{
+			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+		}
 
 		gettimeofday(&last_stat, NULL);
 		hdb_dev->reset_freq_statistics();
