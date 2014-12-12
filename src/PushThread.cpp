@@ -178,6 +178,7 @@ HdbCmdData *PushThreadShared::get_next_cmd()
 	omni_mutex_lock sync(*this);
 	size_t events_size = events.size();
 	hdb_dev->AttributePendingNumber = events_size;
+#if 0	//TODO: disabled because of problems with: Not able to acquire serialization (dev, class or process) monitor
 	try
 	{
 		(hdb_dev->_device)->push_change_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
@@ -187,6 +188,7 @@ HdbCmdData *PushThreadShared::get_next_cmd()
 	{
 
 	}
+#endif
 	if(events_size>0)
 	{
 		HdbCmdData *cmd = events[0];
