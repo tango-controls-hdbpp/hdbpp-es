@@ -104,6 +104,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeStartedNumber      |  Tango::DevLong	Scalar
 //  AttributeStoppedNumber      |  Tango::DevLong	Scalar
 //  AttributeMaxPendingNumber   |  Tango::DevLong	Scalar
+//  StatisticsResetTime         |  Tango::DevDouble	Scalar
 //  AttributeList               |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeOkList             |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeNokList            |  Tango::DevString	Spectrum  ( max = 10000)
@@ -206,6 +207,7 @@ void HdbEventSubscriber::delete_device()
 	delete[] attr_AttributeStartedNumber_read;
 	delete[] attr_AttributeStoppedNumber_read;
 	delete[] attr_AttributeMaxPendingNumber_read;
+	delete[] attr_StatisticsResetTime_read;
 }
 
 //--------------------------------------------------------
@@ -239,6 +241,7 @@ void HdbEventSubscriber::init_device()
 	attr_AttributeStartedNumber_read = new Tango::DevLong[1];
 	attr_AttributeStoppedNumber_read = new Tango::DevLong[1];
 	attr_AttributeMaxPendingNumber_read = new Tango::DevLong[1];
+	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
 	attr_AttributeList_read = NULL;
@@ -288,6 +291,10 @@ void HdbEventSubscriber::init_device()
 		set_status(status);
 		cout << status << endl;
 	}
+	timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/1000000000;
+	last_statistics_reset_time = dnow;
 
 	initialized = true;
 
@@ -847,6 +854,28 @@ void HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr)
 }
 //--------------------------------------------------------
 /**
+ *	Read attribute StatisticsResetTime related method
+ *	Description: Seconds elapsed since the last statistics reset
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
+{
+	//DEBUG_STREAM << "HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_StatisticsResetTime) ENABLED START -----*/
+	timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/1000000000;
+	*attr_StatisticsResetTime_read = dnow - last_statistics_reset_time;
+	//	Set the attribute value
+	attr.set_value(attr_StatisticsResetTime_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_StatisticsResetTime
+}
+//--------------------------------------------------------
+/**
  *	Read attribute AttributeList related method
  *	Description: Returns the configured attribute list
  *
@@ -1118,14 +1147,8 @@ void HdbEventSubscriber::attribute_add(Tango::DevString argin)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_add) ENABLED START -----*/
 
 	//	Add your own code
-	timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	double dstart = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
 	string	signame(argin);
 	hdb_dev->add(signame);
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	double dend = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
-	DEBUG_STREAM << __func__ << ": ADD time="<<fixed<<dend-dstart << endl;
 
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_add
@@ -1144,32 +1167,18 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_remove) ENABLED START -----*/
 
 	//	Add your own code
-	timespec now;
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	double dstart = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
 
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerIn();
-#else
-	hdb_dev->shared->lock();
-#endif
 	bool is_running = hdb_dev->shared->is_running(signame);
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerOut();
-#else
-	hdb_dev->shared->unlock();
-#endif
 	if(is_running)
 	{
 		hdb_dev->shared->stop(signame);
 		hdb_dev->push_shared->stop_attr(signame);
 	}
 	hdb_dev->remove(signame);
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	double dend = (now.tv_sec) * 1000 + ((double)(now.tv_nsec))/1000000;
-	DEBUG_STREAM << __func__ << ": REMOVE time="<<fixed<<dend-dstart << endl;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_remove
 }
@@ -1203,17 +1212,9 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	attr_status << endl;
 	attr_status << "Events engine      : "<<(hdb_dev->shared->get_sig_source(signame) ? "ZMQ" : "Notifd");
 	attr_status << endl;
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerIn();
-#else
-	hdb_dev->shared->lock();
-#endif
 	attr_status << "Archiving          : "<<(hdb_dev->shared->is_running(signame) ? "Started" : "Stopped");
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerOut();
-#else
-	hdb_dev->shared->unlock();
-#endif
 	attr_status << endl;
 
 	tv = hdb_dev->shared->get_last_okev(signame);
@@ -1352,17 +1353,9 @@ void HdbEventSubscriber::attribute_start(Tango::DevString argin)
 
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerIn();
-#else
-	hdb_dev->shared->lock();
-#endif
 	bool is_running = hdb_dev->shared->is_running(signame);
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerOut();
-#else
-	hdb_dev->shared->unlock();
-#endif
 	if(!is_running)
 	{
 		hdb_dev->push_shared->start_attr(signame);
@@ -1388,17 +1381,9 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerIn();
-#else
-	hdb_dev->shared->lock();
-#endif
 	bool is_running = hdb_dev->shared->is_running(signame);
-#ifdef _RWLOCK
 	hdb_dev->shared->veclock.readerOut();
-#else
-	hdb_dev->shared->unlock();
-#endif
 	if(is_running)
 	{
 		hdb_dev->shared->stop(signame);
@@ -1421,6 +1406,10 @@ void HdbEventSubscriber::reset_statistics()
 	
 	//	Add your own code
 	hdb_dev->reset_statistics();
+	timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/1000000000;
+	last_statistics_reset_time = dnow;
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::reset_statistics
 }

@@ -1320,6 +1320,30 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	att_list.push_back(attributemaxpendingnumber);
 
+	//	Attribute : StatisticsResetTime
+	StatisticsResetTimeAttrib	*statisticsresettime = new StatisticsResetTimeAttrib();
+	Tango::UserDefaultAttrProp	statisticsresettime_prop;
+	statisticsresettime_prop.set_description("Seconds elapsed since the last statistics reset");
+	//	label	not set for StatisticsResetTime
+	statisticsresettime_prop.set_unit("s");
+	statisticsresettime_prop.set_standard_unit("1");
+	statisticsresettime_prop.set_display_unit("s");
+	//	format	not set for StatisticsResetTime
+	//	max_value	not set for StatisticsResetTime
+	//	min_value	not set for StatisticsResetTime
+	//	max_alarm	not set for StatisticsResetTime
+	//	min_alarm	not set for StatisticsResetTime
+	//	max_warning	not set for StatisticsResetTime
+	//	min_warning	not set for StatisticsResetTime
+	//	delta_t	not set for StatisticsResetTime
+	//	delta_val	not set for StatisticsResetTime
+	
+	statisticsresettime->set_default_properties(statisticsresettime_prop);
+	//	Not Polled
+	statisticsresettime->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(statisticsresettime);
+
 	//	Attribute : AttributeList
 	AttributeListAttrib	*attributelist = new AttributeListAttrib();
 	Tango::UserDefaultAttrProp	attributelist_prop;

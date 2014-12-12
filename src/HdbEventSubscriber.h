@@ -54,9 +54,6 @@
 #include <HdbDevice.h>
 
 
-#define HISTO_MAX_SIZE	1024	//	attribute maximum size
-
-
 
 /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber.h
 
@@ -93,6 +90,8 @@ private:
 	vector<string> attribute_started_list_str;
 	vector<string> attribute_stopped_list_str;
 	vector<string> attribute_error_list_str;
+
+	double last_statistics_reset_time;
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -141,6 +140,7 @@ public:
 	Tango::DevLong	*attr_AttributeStartedNumber_read;
 	Tango::DevLong	*attr_AttributeStoppedNumber_read;
 	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
+	Tango::DevDouble	*attr_StatisticsResetTime_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
 	Tango::DevString	*attr_AttributeNokList_read;
@@ -329,6 +329,15 @@ public:
  */
 	virtual void read_AttributeMaxPendingNumber(Tango::Attribute &attr);
 	virtual bool is_AttributeMaxPendingNumber_allowed(Tango::AttReqType type);
+/**
+ *	Attribute StatisticsResetTime related methods
+ *	Description: Seconds elapsed since the last statistics reset
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_StatisticsResetTime(Tango::Attribute &attr);
+	virtual bool is_StatisticsResetTime_allowed(Tango::AttReqType type);
 /**
  *	Attribute AttributeList related methods
  *	Description: Returns the configured attribute list

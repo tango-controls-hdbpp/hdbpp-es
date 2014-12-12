@@ -82,18 +82,12 @@ void SharedData::remove(string &signame)
 {
 	//	Remove in signals list (vector)
 	{
-#ifdef _RWLOCK
 		veclock.readerIn();
-#else
-		omni_mutex_lock sync(*this);
-#endif
 		HdbSignal	*sig = get_signal(signame);
 		int event_id = sig->event_id;
 		int event_conf_id = sig->event_conf_id;
 		Tango::AttributeProxy *attr = sig->attr;
-#ifdef _RWLOCK
 		veclock.readerOut();
-#endif
 		try
 		{
 			if(event_id != ERR)
@@ -112,9 +106,7 @@ void SharedData::remove(string &signame)
 			cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 		}
 
-#ifdef _RWLOCK
 		veclock.writerIn();
-#endif
 		vector<HdbSignal>::iterator	pos = signals.begin();
 		
 		bool	found = false;
@@ -125,9 +117,7 @@ void SharedData::remove(string &signame)
 			{
 				found = true;
 				cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
-#ifdef _RWLOCK
 				sig->siglock->writerIn();
-#endif
 				try
 				{
 					if(sig->event_id != ERR)
@@ -142,10 +132,8 @@ void SharedData::remove(string &signame)
 					//	Unregister failed means Register has also failed
 					cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 				}
-#ifdef _RWLOCK
 				sig->siglock->writerOut();
 				delete sig->siglock;
-#endif
 				cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
 				signals.erase(pos);
 				break;
@@ -165,9 +153,7 @@ void SharedData::remove(string &signame)
 				{
 					found = true;
 					cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
-#ifdef _RWLOCK
 					sig->siglock->writerIn();
-#endif
 					try
 					{
 						if(sig->event_id != ERR)
@@ -182,18 +168,14 @@ void SharedData::remove(string &signame)
 						//	Unregister failed means Register has also failed
 						cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 					}
-#ifdef _RWLOCK
 					sig->siglock->writerOut();
-#endif
 					cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
 					signals.erase(pos);
 					break;
 				}
 			}
 		}
-#ifdef _RWLOCK
 		veclock.writerOut();
-#endif
 		if (!found)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
@@ -211,22 +193,14 @@ void SharedData::remove(string &signame)
 //=============================================================================
 void SharedData::start(string &signame)
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].running=true;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -238,13 +212,9 @@ void SharedData::start(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].running=true;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -262,22 +232,14 @@ void SharedData::start(string &signame)
 //=============================================================================
 void SharedData::stop(string &signame)
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].running=false;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -289,13 +251,9 @@ void SharedData::stop(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].running=false;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -313,20 +271,12 @@ void SharedData::stop(string &signame)
 //=============================================================================
 void SharedData::start_all()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->writerIn();
-#endif
 		signals[i].running=true;
-#ifdef _RWLOCK
 		signals[i].siglock->writerOut();
-#endif
 	}
 }
 //=============================================================================
@@ -336,20 +286,12 @@ void SharedData::start_all()
 //=============================================================================
 void SharedData::stop_all()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->writerIn();
-#endif
 		signals[i].running=false;
-#ifdef _RWLOCK
 		signals[i].siglock->writerOut();
-#endif
 	}
 }
 //=============================================================================
@@ -365,13 +307,9 @@ bool SharedData::is_running(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].running;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -384,13 +322,9 @@ bool SharedData::is_running(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].running;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -416,13 +350,9 @@ bool SharedData::is_first(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].first;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -435,13 +365,9 @@ bool SharedData::is_first(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].first;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -466,13 +392,9 @@ void SharedData::set_first(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].first = false;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -485,13 +407,9 @@ void SharedData::set_first(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].first = false;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -516,13 +434,9 @@ bool SharedData::is_first_err(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].first_err;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -535,13 +449,9 @@ bool SharedData::is_first_err(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].first_err;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -566,13 +476,9 @@ void SharedData::set_first_err(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].first_err = false;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -585,13 +491,9 @@ void SharedData::set_first_err(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].first_err = false;
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -611,31 +513,6 @@ void SharedData::set_first_err(string &signame)
 void SharedData::unsubscribe_events()
 {
 	cout <<"SharedData::"<<__func__<< "    entering..."<< endl;
-#ifndef _RWLOCK
-	this->lock();
-	vector<HdbSignal>	local_signals(signals);
-	this->unlock();
-	for (unsigned int i=0 ; i<local_signals.size() ; i++)
-	{
-		HdbSignal	*sig = &local_signals[i];
-		if (signals[i].event_id != ERR)
-		{
-			cout <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << " id="<<omni_thread::self()->id()<< endl;
-			try
-			{
-				sig->attr->unsubscribe_event(sig->event_id);
-				sig->attr->unsubscribe_event(sig->event_conf_id);
-				delete sig->archive_cb;
-			}
-			catch (Tango::DevFailed &e)
-			{
-				//	Do nothing
-				//	Unregister failed means Register has also failed
-			}
-		}
-		delete sig->attr;
-	}
-#else
 	veclock.readerIn();
 	vector<HdbSignal>	local_signals(signals);
 	veclock.readerOut();
@@ -675,12 +552,7 @@ void SharedData::unsubscribe_events()
 		cout <<"SharedData::"<<__func__<< "    deleted lock " << sig->name << endl;
 	}
 	cout <<"SharedData::"<<__func__<< "    ended loop, deleting vector" << endl;
-#endif
-#ifdef _RWLOCK
 
-#else
-	this->lock();
-#endif
 	/*for (unsigned int j=0 ; j<signals.size() ; j++, pos++)
 	{
 		signals[j].event_id = ERR;
@@ -689,11 +561,7 @@ void SharedData::unsubscribe_events()
 		signals[j].attr = NULL;
 	}*/
 	signals.clear();
-#ifdef _RWLOCK
 	veclock.writerOut();
-#else
-	this->unlock();
-#endif
 	cout <<"SharedData::"<< __func__<< ": exiting..."<<endl;
 }
 //=============================================================================
@@ -714,11 +582,7 @@ void SharedData::add(string &signame, int to_do)
 {
 	cout << "Adding " << signame << endl;
 	{
-#ifdef _RWLOCK
 		veclock.readerIn();
-#else
-		omni_mutex_lock sync(*this);
-#endif
 		
 		//	Check if already subscribed
 		bool	found = false;
@@ -736,9 +600,7 @@ void SharedData::add(string &signame, int to_do)
 			found = !hdb_dev->compare_tango_names(sig->name,signame);
 #endif
 		}
-#ifdef _RWLOCK
 		veclock.readerOut();
-#endif
 		if (found)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
@@ -748,9 +610,7 @@ void SharedData::add(string &signame, int to_do)
 		//	Build Hdb Signal object
 		HdbSignal	signal;
 		signal.name      = signame;
-#ifdef _RWLOCK
 		signal.siglock = new(ReadersWritersLock);
-#endif
 		signal.status = "Syntax error in signal name";
 		//	on name, split device name and attrib name
 		string::size_type idx = signal.name.find_last_of("/");
@@ -794,14 +654,10 @@ void SharedData::add(string &signame, int to_do)
 		}
 
 		cout <<"SubscribeThread::"<< __func__<< " created proxy to " << signame << endl;
-#ifdef _RWLOCK
 		veclock.writerIn();
-#endif
 		//	Add in vector
 		signals.push_back(signal);
-#ifdef _RWLOCK
 		veclock.writerOut();
-#endif
 
 		action = to_do;
 	}
@@ -824,22 +680,11 @@ void SharedData::subscribe_events()
 		if(ret == 0) pthread_rwlock_unlock(&sig2->siglock);
 	}*/
 	//omni_mutex_lock sync(*this);
-#ifndef _RWLOCK
-	this->lock();
-	vector<HdbSignal>	local_signals(signals);
-	this->unlock();
-
-	//now using unlocked local copy since subscribe_event call callback that needs to lock signals
-	for (unsigned int i=0 ; i<local_signals.size() ; i++)
-	{
-		HdbSignal	*sig = &local_signals[i];
-#else
 	veclock.readerIn();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		HdbSignal	*sig = &signals[i];
 		sig->siglock->writerIn();
-#endif
 		if (sig->event_id==ERR)
 		{
 			sig->archive_cb = new ArchiveCB(hdb_dev);
@@ -855,9 +700,7 @@ void SharedData::subscribe_events()
 				sig->status = e.errors[0].desc;
 				sig->event_id = ERR;
 				delete sig->archive_cb;
-#ifdef _RWLOCK
 				sig->siglock->writerOut();
-#endif
 				continue;
 			}
 			sig->first  = true;
@@ -868,9 +711,7 @@ void SharedData::subscribe_events()
 			sig->max_dim_y = info.max_dim_y;
 			sig->first_err  = true;
 			cout << "Subscribing for " << sig->name << " data_type=" << sig->data_type << " " << (sig->first ? "FIRST" : "NOT FIRST") << endl;
-#ifdef _RWLOCK
 			sig->siglock->writerOut();
-#endif
 			int		event_id = ERR;
 			int		event_conf_id = ERR;
 			bool	isZMQ = true;
@@ -903,68 +744,28 @@ void SharedData::subscribe_events()
 			{
 				err = true;
 				Tango::Except::print_exception(e);
-#ifdef _RWLOCK
 				sig->siglock->writerIn();
-#endif
 				sig->status.clear();
 				sig->status = e.errors[0].desc;
 				sig->event_id = ERR;
 				delete sig->archive_cb;
-#ifdef _RWLOCK
 				sig->siglock->writerOut();
-#endif
 			}
 			if(!err)
 			{
-#ifdef _RWLOCK
 				sig->siglock->writerIn();
-#endif
 				sig->event_conf_id = event_conf_id;
 				sig->event_id = event_id;
 				sig->isZMQ = isZMQ;
-#ifdef _RWLOCK
 				sig->siglock->writerOut();
-#endif
 			}
 		}
 		else
 		{
-#ifdef _RWLOCK
 			sig->siglock->writerOut();
-#endif
 		}
 	}
-#ifdef _RWLOCK
 	veclock.readerOut();
-#endif
-#ifndef _RWLOCK
-	this->lock();
-	for (unsigned int i=0 ; i<local_signals.size() ; i++)
-	{
-		for (unsigned int j=0 ; j<signals.size() ; j++)
-		{
-			//if this signal just subscribed:
-			if (signals[j].name==local_signals[i].name && signals[j].event_id==ERR && local_signals[i].event_id!=ERR)
-			{
-				signals[j].archive_cb = local_signals[i].archive_cb;
-				signals[j].data_type = local_signals[i].data_type;
-				signals[j].data_format = local_signals[i].data_format;
-				signals[j].write_type = local_signals[i].write_type;
-				signals[j].max_dim_x = local_signals[i].max_dim_x;
-				signals[j].max_dim_y = local_signals[i].max_dim_y;
-				signals[j].event_id = local_signals[i].event_id;
-				signals[j].event_conf_id = local_signals[i].event_conf_id;
-				signals[j].evstate  = local_signals[i].evstate;
-				signals[j].first  = local_signals[i].first;
-				signals[j].first_err  = local_signals[i].first_err;
-				signals[j].status.clear();
-				signals[j].status = local_signals[i].status;
-				signals[j].isZMQ = local_signals[i].isZMQ;
-			}
-		}
-	}
-	this->unlock();
-#endif
 	initialized = true;
 }
 //=============================================================================
@@ -981,25 +782,17 @@ bool SharedData::is_initialized()
 //=============================================================================
 int SharedData::nb_sig_to_subscribe()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 
 	int	nb = 0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].event_id == ERR)
 		{
 			nb++;
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return nb;
 }
@@ -1010,11 +803,7 @@ int SharedData::nb_sig_to_subscribe()
 //=============================================================================
 void SharedData::put_signal_property()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 
 	if (action==UPDATE_PROP)
 	{
@@ -1034,11 +823,7 @@ void SharedData::put_signal_property()
 //=============================================================================
 vector<string>  SharedData::get_sig_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
@@ -1054,21 +839,13 @@ vector<string>  SharedData::get_sig_list()
 //=============================================================================
 vector<bool>  SharedData::get_sig_source_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<bool>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		list.push_back(signals[i].isZMQ);
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1080,22 +857,14 @@ vector<bool>  SharedData::get_sig_source_list()
 bool  SharedData::get_sig_source(string &signame)
 {
 	bool retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].isZMQ;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1108,13 +877,9 @@ bool  SharedData::get_sig_source(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].isZMQ;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1134,25 +899,17 @@ bool  SharedData::get_sig_source(string &signame)
 //=============================================================================
 vector<string>  SharedData::get_sig_on_error_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].evstate==Tango::ALARM && signals[i].running)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1163,24 +920,16 @@ vector<string>  SharedData::get_sig_on_error_list()
 //=============================================================================
 int  SharedData::get_sig_on_error_num()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].evstate==Tango::ALARM && signals[i].running)
 		{
 			num++;
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return num;
 }
@@ -1191,25 +940,17 @@ int  SharedData::get_sig_on_error_num()
 //=============================================================================
 vector<string>  SharedData::get_sig_not_on_error_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].evstate==Tango::ON || (signals[i].evstate==Tango::ALARM && !signals[i].running))
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1220,24 +961,16 @@ vector<string>  SharedData::get_sig_not_on_error_list()
 //=============================================================================
 int  SharedData::get_sig_not_on_error_num()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].evstate==Tango::ON || (signals[i].evstate==Tango::ALARM && !signals[i].running))
 		{
 			num++;
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return num;
 }
@@ -1248,25 +981,17 @@ int  SharedData::get_sig_not_on_error_num()
 //=============================================================================
 vector<string>  SharedData::get_sig_started_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].running)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1277,24 +1002,16 @@ vector<string>  SharedData::get_sig_started_list()
 //=============================================================================
 int  SharedData::get_sig_started_num()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].running)
 		{
 			num++;
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return num;
 }
@@ -1305,25 +1022,17 @@ int  SharedData::get_sig_started_num()
 //=============================================================================
 vector<string>  SharedData::get_sig_not_started_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (!signals[i].running)
 		{
 			string	signame(signals[i].name);
 			list.push_back(signame);
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1334,17 +1043,11 @@ vector<string>  SharedData::get_sig_not_started_list()
 //=============================================================================
 vector<string>  SharedData::get_error_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<string>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		//if (signals[i].status != STATUS_SUBSCRIBED)
 		if (signals[i].evstate != Tango::ON)
 		{
@@ -1354,9 +1057,7 @@ vector<string>  SharedData::get_error_list()
 		{
 			list.push_back(string(""));
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1367,21 +1068,13 @@ vector<string>  SharedData::get_error_list()
 //=============================================================================
 vector<uint32_t>  SharedData::get_ev_counter_list()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	vector<uint32_t>	list;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		list.push_back(signals[i].okev_counter + signals[i].nokev_counter);
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return list;
 }
@@ -1392,24 +1085,16 @@ vector<uint32_t>  SharedData::get_ev_counter_list()
 //=============================================================================
 int  SharedData::get_sig_not_started_num()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	int num=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (!signals[i].running)
 		{
 			num++;
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 	}
 	return num;
 }
@@ -1426,9 +1111,7 @@ void  SharedData::set_ok_event(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].evstate = Tango::ON;
 			signals[i].status = "Event received";
 			signals[i].okev_counter++;
@@ -1436,9 +1119,7 @@ void  SharedData::set_ok_event(string &signame)
 			signals[i].first_err = true;
 			gettimeofday(&signals[i].last_okev, NULL);
 			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -1450,9 +1131,7 @@ void  SharedData::set_ok_event(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].evstate = Tango::ON;
 			signals[i].status = "Event received";
 			signals[i].okev_counter++;
@@ -1460,9 +1139,7 @@ void  SharedData::set_ok_event(string &signame)
 			signals[i].first_err = true;
 			gettimeofday(&signals[i].last_okev, NULL);
 			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -1480,22 +1157,14 @@ void  SharedData::set_ok_event(string &signame)
 uint32_t  SharedData::get_ok_event(string &signame)
 {
 	uint32_t retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].okev_counter;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1508,13 +1177,9 @@ uint32_t  SharedData::get_ok_event(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].okev_counter;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1535,22 +1200,14 @@ uint32_t  SharedData::get_ok_event(string &signame)
 uint32_t  SharedData::get_ok_event_freq(string &signame)
 {
 	uint32_t retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].okev_counter_freq;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1563,13 +1220,9 @@ uint32_t  SharedData::get_ok_event_freq(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].okev_counter_freq;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1590,22 +1243,14 @@ uint32_t  SharedData::get_ok_event_freq(string &signame)
 timeval  SharedData::get_last_okev(string &signame)
 {
 	timeval retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].last_okev;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1618,13 +1263,9 @@ timeval  SharedData::get_last_okev(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].last_okev;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1651,16 +1292,12 @@ void  SharedData::set_nok_event(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].nokev_counter++;
 			signals[i].nokev_counter_freq++;
 			gettimeofday(&signals[i].last_nokev, NULL);
 			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -1672,16 +1309,12 @@ void  SharedData::set_nok_event(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].nokev_counter++;
 			signals[i].nokev_counter_freq++;
 			gettimeofday(&signals[i].last_nokev, NULL);
 			clock_gettime(CLOCK_MONOTONIC, &signals[i].last_ev);
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -1699,22 +1332,14 @@ void  SharedData::set_nok_event(string &signame)
 uint32_t  SharedData::get_nok_event(string &signame)
 {
 	uint32_t retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].nokev_counter;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1727,13 +1352,9 @@ uint32_t  SharedData::get_nok_event(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].nokev_counter;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1754,22 +1375,14 @@ uint32_t  SharedData::get_nok_event(string &signame)
 uint32_t  SharedData::get_nok_event_freq(string &signame)
 {
 	uint32_t retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].nokev_counter_freq;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1782,13 +1395,9 @@ uint32_t  SharedData::get_nok_event_freq(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].nokev_counter_freq;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1809,22 +1418,14 @@ uint32_t  SharedData::get_nok_event_freq(string &signame)
 timeval  SharedData::get_last_nokev(string &signame)
 {
 	timeval retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].last_nokev;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1837,13 +1438,9 @@ timeval  SharedData::get_last_nokev(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].last_nokev;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1870,14 +1467,10 @@ void  SharedData::set_nok_periodic_event(string &signame)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].evstate = Tango::ALARM;
 			signals[i].status = "Timeout on periodic event";
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -1889,14 +1482,10 @@ void  SharedData::set_nok_periodic_event(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].evstate = Tango::ALARM;
 			signals[i].status = "Timeout on periodic event";
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -1914,22 +1503,14 @@ void  SharedData::set_nok_periodic_event(string &signame)
 string  SharedData::get_sig_status(string &signame)
 {
 	string retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].status;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1942,13 +1523,9 @@ string  SharedData::get_sig_status(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].status;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1968,22 +1545,14 @@ string  SharedData::get_sig_status(string &signame)
 Tango::DevState  SharedData::get_sig_state(string &signame)
 {
 	Tango::DevState retval;
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].evstate;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -1996,13 +1565,9 @@ Tango::DevState  SharedData::get_sig_state(string &signame)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerIn();
-#endif
 			retval = signals[i].evstate;
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			return retval;
 		}
 	}
@@ -2026,13 +1591,9 @@ void SharedData::set_conf_periodic_event(string &signame, string period)
 	{
 		if (signals[i].name==signame)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].periodic_ev = atoi(period.c_str());
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -2044,13 +1605,9 @@ void SharedData::set_conf_periodic_event(string &signame, string period)
 		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
 #endif
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].periodic_ev = atoi(period.c_str());
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 			return;
 		}
 	}
@@ -2067,55 +1624,37 @@ void SharedData::set_conf_periodic_event(string &signame, string period)
 //=============================================================================
 int  SharedData::check_periodic_event_timeout(int delay_tolerance_ms)
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	double min_time_to_timeout_ms = 10000;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if(!signals[i].running)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			continue;
 		}
 		if(signals[i].evstate != Tango::ON)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			continue;
 		}
 		if(signals[i].periodic_ev <= 0)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->readerOut();
-#endif
 			continue;
 		}
 		double diff_time_ms = (now.tv_sec - signals[i].last_ev.tv_sec) * 1000 + ((double)(now.tv_nsec - signals[i].last_ev.tv_nsec))/1000000;
 		double time_to_timeout_ms = (double)(signals[i].periodic_ev + delay_tolerance_ms) - diff_time_ms;
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 		if(time_to_timeout_ms <= 0)
 		{
-#ifdef _RWLOCK
 			signals[i].siglock->writerIn();
-#endif
 			signals[i].evstate = Tango::ALARM;
 			signals[i].status = "Timeout on periodic event";
-#ifdef _RWLOCK
 			signals[i].siglock->writerOut();
-#endif
 		}
 		else if(time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0)
 			min_time_to_timeout_ms = time_to_timeout_ms;
@@ -2129,21 +1668,13 @@ int  SharedData::check_periodic_event_timeout(int delay_tolerance_ms)
 //=============================================================================
 void SharedData::reset_statistics()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->writerIn();
-#endif
 		signals[i].nokev_counter=0;
 		signals[i].okev_counter=0;
-#ifdef _RWLOCK
 		signals[i].siglock->writerOut();
-#endif
 	}
 }
 //=============================================================================
@@ -2153,21 +1684,13 @@ void SharedData::reset_statistics()
 //=============================================================================
 void SharedData::reset_freq_statistics()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->writerIn();
-#endif
 		signals[i].nokev_counter_freq=0;
 		signals[i].okev_counter_freq=0;
-#ifdef _RWLOCK
 		signals[i].siglock->writerOut();
-#endif
 	}
 }
 //=============================================================================
@@ -2177,25 +1700,17 @@ void SharedData::reset_freq_statistics()
 //=============================================================================
 Tango::DevState SharedData::state()
 {
-#ifdef _RWLOCK
 	ReaderLock lock(veclock);
-#else
-	omni_mutex_lock sync(*this);
-#endif
 	Tango::DevState	state = Tango::ON;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
-#ifdef _RWLOCK
 		signals[i].siglock->readerIn();
-#endif
 		if (signals[i].evstate==Tango::ALARM && signals[i].running)
 		{
 			state = Tango::ALARM;
 
 		}
-#ifdef _RWLOCK
 		signals[i].siglock->readerOut();
-#endif
 		if(state == Tango::ALARM)
 			break;
 	}
