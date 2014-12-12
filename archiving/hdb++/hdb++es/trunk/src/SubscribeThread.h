@@ -43,7 +43,6 @@
 #include <eventconsumer.h>
 #include <stdint.h>
 
-#define _RWLOCK
 
 /**
  * @author	$Author: graziano $
@@ -89,9 +88,7 @@ typedef struct
 	timespec last_ev;
 	int periodic_ev;
 	bool running;
-#ifdef _RWLOCK
 	ReadersWritersLock *siglock;
-#endif
 }
 HdbSignal;
 
@@ -120,9 +117,7 @@ private:
 public:
 	//omni_condition condition;
 	vector<HdbSignal>	signals;
-#ifdef _RWLOCK
 	ReadersWritersLock      veclock;
-#endif
 
 
 	/**

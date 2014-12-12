@@ -229,6 +229,19 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeMaxPendingNumber_allowed(ty);}
 };
 
+//	Attribute StatisticsResetTime class definition
+class StatisticsResetTimeAttrib: public Tango::Attr
+{
+public:
+	StatisticsResetTimeAttrib():Attr("StatisticsResetTime",
+			Tango::DEV_DOUBLE, Tango::READ) {};
+	~StatisticsResetTimeAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_StatisticsResetTime(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_StatisticsResetTime_allowed(ty);}
+};
+
 //	Attribute AttributeList class definition
 class AttributeListAttrib: public Tango::SpectrumAttr
 {

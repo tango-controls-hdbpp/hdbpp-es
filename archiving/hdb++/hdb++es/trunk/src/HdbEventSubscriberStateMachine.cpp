@@ -268,6 +268,22 @@ bool HdbEventSubscriber::is_AttributeMaxPendingNumber_allowed(TANGO_UNUSED(Tango
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_StatisticsResetTime_allowed()
+ *	Description : Execution allowed for StatisticsResetTime attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_StatisticsResetTime_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for StatisticsResetTime attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::StatisticsResetTimeStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::StatisticsResetTimeStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeList_allowed()
  *	Description : Execution allowed for AttributeList attribute
  */
