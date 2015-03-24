@@ -169,6 +169,7 @@ void SharedData::remove(string &signame)
 						cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 					}
 					sig->siglock->writerOut();
+					delete sig->siglock;
 					cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
 					signals.erase(pos);
 					break;
@@ -184,7 +185,7 @@ void SharedData::remove(string &signame)
 	}
 	//	then, update property
 	action = UPDATE_PROP;
-	put_signal_property();
+	put_signal_property();	//TODO: wakeup thread and let it do it? -> signal()
 }
 //=============================================================================
 /**
@@ -199,7 +200,12 @@ void SharedData::start(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].siglock->writerIn();
-			signals[i].running=true;
+			if(!signals[i].running)
+			{
+				signals[i].running=true;
+				hdb_dev->attr_AttributeStoppedNumber_read--;
+				hdb_dev->attr_AttributeStartedNumber_read++;
+			}
 			signals[i].siglock->writerOut();
 			return;
 		}
@@ -213,7 +219,12 @@ void SharedData::start(string &signame)
 #endif
 		{
 			signals[i].siglock->writerIn();
-			signals[i].running=true;
+			if(!signals[i].running)
+			{
+				signals[i].running=true;
+				hdb_dev->attr_AttributeStoppedNumber_read--;
+				hdb_dev->attr_AttributeStartedNumber_read++;
+			}
 			signals[i].siglock->writerOut();
 			return;
 		}
@@ -238,7 +249,12 @@ void SharedData::stop(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].siglock->writerIn();
-			signals[i].running=false;
+			if(signals[i].running)
+			{
+				signals[i].running=false;
+				hdb_dev->attr_AttributeStoppedNumber_read++;
+				hdb_dev->attr_AttributeStartedNumber_read--;
+			}
 			signals[i].siglock->writerOut();
 			return;
 		}
@@ -252,7 +268,12 @@ void SharedData::stop(string &signame)
 #endif
 		{
 			signals[i].siglock->writerIn();
-			signals[i].running=false;
+			if(signals[i].running)
+			{
+				signals[i].running=false;
+				hdb_dev->attr_AttributeStoppedNumber_read++;
+				hdb_dev->attr_AttributeStartedNumber_read--;
+			}
 			signals[i].siglock->writerOut();
 			return;
 		}
@@ -278,6 +299,8 @@ void SharedData::start_all()
 		signals[i].running=true;
 		signals[i].siglock->writerOut();
 	}
+	hdb_dev->attr_AttributeStoppedNumber_read=0;
+	hdb_dev->attr_AttributeStartedNumber_read=signals.size();
 }
 //=============================================================================
 /**
@@ -293,6 +316,8 @@ void SharedData::stop_all()
 		signals[i].running=false;
 		signals[i].siglock->writerOut();
 	}
+	hdb_dev->attr_AttributeStoppedNumber_read=signals.size();
+	hdb_dev->attr_AttributeStartedNumber_read=0;
 }
 //=============================================================================
 /**
@@ -657,6 +682,8 @@ void SharedData::add(string &signame, int to_do)
 		veclock.writerIn();
 		//	Add in vector
 		signals.push_back(signal);
+		hdb_dev->attr_AttributeNumber_read++;
+		hdb_dev->attr_AttributeStoppedNumber_read++;
 		veclock.writerOut();
 
 		action = to_do;
@@ -691,7 +718,11 @@ void SharedData::subscribe_events()
 			Tango::AttributeInfo	info;
 			try
 			{
+				sig->siglock->writerOut();
+				sig->siglock->readerIn();
 				info = sig->attr->get_config();
+				sig->siglock->readerOut();
+				sig->siglock->writerIn();
 			}
 			catch (Tango::DevFailed &e)
 			{
@@ -700,7 +731,8 @@ void SharedData::subscribe_events()
 				sig->status = e.errors[0].desc;
 				sig->event_id = ERR;
 				delete sig->archive_cb;
-				sig->siglock->writerOut();
+				//sig->siglock->writerOut();
+				sig->siglock->readerOut();
 				continue;
 			}
 			sig->first  = true;
@@ -742,6 +774,7 @@ void SharedData::subscribe_events()
 			}
 			catch (Tango::DevFailed &e)
 			{
+				cout <<__func__<< " sig->attr->subscribe_event EXCEPTION:" << endl;
 				err = true;
 				Tango::Except::print_exception(e);
 				sig->siglock->writerIn();
@@ -803,15 +836,15 @@ int SharedData::nb_sig_to_subscribe()
 //=============================================================================
 void SharedData::put_signal_property()
 {
-	ReaderLock lock(veclock);
-
+	//ReaderLock lock(veclock);
 	if (action==UPDATE_PROP)
 	{
 		vector<string>	v;
+		veclock.readerIn();
 		for (unsigned int i=0 ; i<signals.size() ; i++)
 			v.push_back(signals[i].name);
 //			v.push_back(signals[i].name + ",	" + signals[i].taco_type);
-
+		veclock.readerOut();
 		hdb_dev->put_signal_property(v);
 		action = NOTHING;
 	}
@@ -1097,6 +1130,33 @@ int  SharedData::get_sig_not_started_num()
 		signals[i].siglock->readerOut();
 	}
 	return num;
+}
+//=============================================================================
+/**
+ *	Return the complete, started and stopped lists of signals
+ */
+//=============================================================================
+void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_stop_list)
+{
+	ReaderLock lock(veclock);
+	int stop_num_=0;
+	int start_num_=0;
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		string	signame(signals[i].name);
+		s_list.push_back(signame);
+		signals[i].siglock->readerIn();
+		if (!signals[i].running)
+		{
+			s_stop_list.push_back(signame);
+		}
+		else
+		{
+			s_start_list.push_back(signame);
+		}
+		signals[i].siglock->readerOut();
+	}
+	return;
 }
 
 //=============================================================================
@@ -1771,6 +1831,7 @@ void *SubscribeThread::run_undetached(void *ptr)
 				//cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
 				//shared->condition.wait();
 				shared->wait();
+				//shared->wait(3*period*1000);
 			}
 			else
 			{
@@ -1779,6 +1840,7 @@ void *SubscribeThread::run_undetached(void *ptr)
 				//omni_thread::get_time(&s,&n,period,0);
 				//shared->condition.timedwait(s,n);
 				shared->wait(period*1000);
+				shared->action=UPDATE_PROP;	//could have been overwritten to NOTHING in the meanwhile
 			}
 			//shared->unlock();
 		}

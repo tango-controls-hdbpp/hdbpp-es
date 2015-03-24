@@ -66,6 +66,13 @@ HdbDevice::~HdbDevice()
 	DEBUG_STREAM << "	Stopping stats thread" << endl;
 	stats_thread->abortflag=true;
 	check_periodic_thread->abortflag=true;
+	poller_thread->abortflag=true;
+	check_periodic_thread->join(0);
+	DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
+	stats_thread->join(0);
+	DEBUG_STREAM << "	Stats thread Joined " << endl;
+	poller_thread->join(0);
+	DEBUG_STREAM << "	Polling thread Joined " << endl;
 	DEBUG_STREAM << "	Stopping subscribe thread" << endl;
 	shared->stop_thread();
 	DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
@@ -77,10 +84,6 @@ HdbDevice::~HdbDevice()
 	DEBUG_STREAM << "	Push thread Stopped " << endl;
 	push_thread->join(0);
 	DEBUG_STREAM << "	Push thread Joined " << endl;
-	check_periodic_thread->join(0);
-	DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
-	stats_thread->join(0);
-	DEBUG_STREAM << "	Stats thread Joined " << endl;
 	delete shared;
 	DEBUG_STREAM << "	shared deleted " << endl;
 	delete push_shared;
@@ -88,10 +91,11 @@ HdbDevice::~HdbDevice()
 }
 //=============================================================================
 //=============================================================================
-HdbDevice::HdbDevice(int p, int s, int c, Tango::DeviceImpl *device)
+HdbDevice::HdbDevice(int p, int pp, int s, int c, Tango::DeviceImpl *device)
 				:Tango::LogAdapter(device)
 {
 	this->period = p;
+	this->poller_period = pp;
 	this->stats_window = s;
 	this->check_periodic_delay = c;
 	_device = device;
@@ -119,6 +123,9 @@ HdbDevice::HdbDevice(int p, int s, int c, Tango::DeviceImpl *device)
 void HdbDevice::initialize()
 {
 	vector<string>	list = get_hdb_signal_list();
+	attr_AttributeNumber_read = 0;
+	attr_AttributeStartedNumber_read = 0;
+	attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
 
 	//	Create a thread to subscribe events
 	shared = new SharedData(this);	
@@ -132,10 +139,14 @@ void HdbDevice::initialize()
 			(static_cast<HdbEventSubscriber *>(_device))->dbName,
 			(static_cast<HdbEventSubscriber *>(_device))->dbPort);
 
-
+	attr_AttributeMinStoreTime_read = -1;
+	attr_AttributeMaxStoreTime_read = -1;
+	attr_AttributeMinProcessingTime_read = -1;
+	attr_AttributeMaxProcessingTime_read = -1;
 	push_thread = new PushThread(push_shared);
 	stats_thread = new StatsThread(this);
 	stats_thread->period = stats_window;
+	poller_thread = new PollerThread(this);
 	check_periodic_thread = new CheckPeriodicThread(this);
 	check_periodic_thread->delay_tolerance_ms = check_periodic_delay*1000;
 
@@ -143,6 +154,7 @@ void HdbDevice::initialize()
 
 	stats_thread->start();
 	push_thread->start();
+	poller_thread->start();
 	thread->start();
 	check_periodic_thread->start();
 
@@ -499,8 +511,12 @@ void  HdbDevice::reset_freq_statistics()
 }
 //=============================================================================
 //=============================================================================
-
-
+void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_stop_list)
+{
+	shared->get_lists(_list, _start_list, _stop_list);
+}
+//=============================================================================
+//=============================================================================
 
 
 

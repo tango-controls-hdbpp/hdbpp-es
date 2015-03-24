@@ -71,17 +71,9 @@ void *StatsThread::run_undetached(void *ptr)
 			string signame(attribute_list_tmp[i]);
 			try
 			{
-#ifdef _RWLOCK
 				hdb_dev->shared->veclock.readerIn();
-#else
-				hdb_dev->shared->lock();
-#endif
 				bool is_running = hdb_dev->shared->is_running(signame);
-#ifdef _RWLOCK
 				hdb_dev->shared->veclock.readerOut();
-#else
-				hdb_dev->shared->unlock();
-#endif
 				if(!is_running)
 					continue;
 			}catch(Tango::DevFailed &e)
@@ -106,9 +98,34 @@ void *StatsThread::run_undetached(void *ptr)
 		try
 		{
 			(hdb_dev->_device)->push_change_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
-			(hdb_dev->_device)->push_change_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
 			(hdb_dev->_device)->push_archive_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
+		}catch(Tango::DevFailed &e)
+		{
+			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+		}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
 			(hdb_dev->_device)->push_archive_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
+		}catch(Tango::DevFailed &e)
+		{
+			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+		}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeRecordFreqList",&hdb_dev->AttributeRecordFreqList[0], attribute_list_tmp.size());
+			(hdb_dev->_device)->push_archive_event("AttributeRecordFreqList",&hdb_dev->AttributeRecordFreqList[0], attribute_list_tmp.size());
+		}catch(Tango::DevFailed &e)
+		{
+			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+		}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeFailureFreqList",&hdb_dev->AttributeFailureFreqList[0], attribute_list_tmp.size());
+			(hdb_dev->_device)->push_archive_event("AttributeFailureFreqList",&hdb_dev->AttributeFailureFreqList[0], attribute_list_tmp.size());
 		}catch(Tango::DevFailed &e)
 		{
 			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;

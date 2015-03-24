@@ -597,6 +597,8 @@ public:
 		Tango::DevLong	statisticsTimeWindow;
 		//	CheckPeriodicTimeoutDelay:	Delay in seconds before timeout when checking periodic events
 		Tango::DevLong	checkPeriodicTimeoutDelay;
+		//	PollingThreadPeriod:	Polling thread period in seconds.
+		Tango::DevLong	pollingThreadPeriod;
 	public:
 		//	write class properties data members
 		Tango::DbData	cl_prop;
