@@ -39,11 +39,13 @@
 #ifndef _HDBDEVICE_H
 #define _HDBDEVICE_H
 
+#define MAX_ATTRIBUTES		10000
 
 #include <tango.h>
 #include <SubscribeThread.h>
 #include <PushThread.h>
 #include <StatsThread.h>
+#include <PollerThread.h>
 #include <CheckPeriodicThread.h>
 /**
  * @author	$Author: graziano $
@@ -94,7 +96,9 @@ public:
 	PushThread			*push_thread;
 	StatsThread			*stats_thread;
 	CheckPeriodicThread	*check_periodic_thread;
+	PollerThread		*poller_thread;
 	int					period;
+	int					poller_period;
 	int					stats_window;
 	int					check_periodic_delay;
 	/**
@@ -108,11 +112,52 @@ public:
 
 	Tango::DevDouble	AttributeRecordFreq;
 	Tango::DevDouble	AttributeFailureFreq;
-	Tango::DevDouble	AttributeRecordFreqList[10000];
-	Tango::DevDouble	AttributeFailureFreqList[10000];
-	Tango::DevLong		AttributeEventNumberList[10000];
+	Tango::DevDouble	AttributeRecordFreqList[MAX_ATTRIBUTES];
+	Tango::DevDouble	AttributeFailureFreqList[MAX_ATTRIBUTES];
+	Tango::DevLong		AttributeEventNumberList[MAX_ATTRIBUTES];
 	Tango::DevLong		AttributePendingNumber;
 	Tango::DevLong		AttributeMaxPendingNumber;
+
+	Tango::DevLong	attr_AttributeOkNumber_read;
+	Tango::DevLong	attr_AttributeNokNumber_read;
+	Tango::DevLong	attr_AttributeNumber_read;
+	Tango::DevLong	attr_AttributeStartedNumber_read;
+	Tango::DevLong	attr_AttributeStoppedNumber_read;
+
+	Tango::DevDouble	attr_AttributeMaxStoreTime_read;
+	Tango::DevDouble	attr_AttributeMinStoreTime_read;
+	Tango::DevDouble	attr_AttributeMaxProcessingTime_read;
+	Tango::DevDouble	attr_AttributeMinProcessingTime_read;
+
+	Tango::DevString	attr_AttributeList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributeOkList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributeNokList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributePendingList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributeStartedList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributeStoppedList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributeErrorList_read[MAX_ATTRIBUTES];
+
+	vector<string> attribute_list_str;
+	vector<string> old_attribute_list_str;
+	size_t attribute_list_str_size;
+	vector<string> attribute_ok_list_str;
+	vector<string> old_attribute_ok_list_str;
+	size_t attribute_ok_list_str_size;
+	vector<string> attribute_nok_list_str;
+	vector<string> old_attribute_nok_list_str;
+	size_t attribute_nok_list_str_size;
+	vector<string> attribute_pending_list_str;
+	vector<string> old_attribute_pending_list_str;
+	size_t attribute_pending_list_str_size;
+	vector<string> attribute_started_list_str;
+	vector<string> old_attribute_started_list_str;
+	size_t attribute_started_list_str_size;
+	vector<string> attribute_stopped_list_str;
+	vector<string> old_attribute_stopped_list_str;
+	size_t attribute_stopped_list_str_size;
+	vector<string> attribute_error_list_str;
+	vector<string> old_attribute_error_list_str;
+	size_t attribute_error_list_str_size;
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -125,10 +170,11 @@ public:
 	 *
 	 *	@param devname 	Device Name
 	 *	@param p	 	Period to retry subscribe event
+	 *	@param pp	 	Poller thread Period
 	 *	@param s	 	Period to compute statistics
 	 *	@param c	 	Delay before timeout on periodic events
 	 */
-	HdbDevice(int p, int s, int c, Tango::DeviceImpl *device);
+	HdbDevice(int p, int pp, int s, int c, Tango::DeviceImpl *device);
 	~HdbDevice();
 	/**
 	 * initialize object
@@ -229,6 +275,10 @@ public:
 	 *	Reset statistic freq counters
 	 */
 	 void reset_freq_statistics();
+	/**
+	 *	Return the complete, started  and stopped lists of signals
+	 */
+	void  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_stop_list);
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */

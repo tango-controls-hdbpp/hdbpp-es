@@ -43,6 +43,11 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>5</DefaultPropValue>
     </classProperties>
+    <classProperties name="PollingThreadPeriod" description="Polling thread period in seconds.">
+      <type xsi:type="pogoDsl:IntType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>3</DefaultPropValue>
+    </classProperties>
     <deviceProperties name="SubscribeRetryPeriod" description="Subscribe event retrying period in seconds.">
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
@@ -84,6 +89,11 @@
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>5</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="PollingThreadPeriod" description="Polling Thread period in seconds.">
+      <type xsi:type="pogoDsl:IntType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>3</DefaultPropValue>
     </deviceProperties>
     <commands name="State" description="This command gets the device state (stored in its &lt;i>device_state&lt;/i> data member) and returns it to the caller." execMethod="dev_state" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="none.">
@@ -175,47 +185,47 @@
       </argout>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
-    <attributes name="AttributeOkNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeOkNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Number of archived attributes not in error" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period=""/>
     </attributes>
-    <attributes name="AttributeNokNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeNokNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Number of archived attributes in error" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="1" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period=""/>
     </attributes>
-    <attributes name="AttributePendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributePendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Number of attributes waiting to be archived" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <eventCriteria relChange="" absChange="2" period=""/>
       <evArchiveCriteria relChange="" absChange="2" period=""/>
     </attributes>
-    <attributes name="AttributeNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Number of configured attributes" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period=""/>
     </attributes>
-    <attributes name="AttributeMaxStoreTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeMaxStoreTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="false" libCheckCriteria="true"/>
       <archiveEvent fire="false" libCheckCriteria="true"/>
@@ -223,7 +233,7 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Maximum storing time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="AttributeMinStoreTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeMinStoreTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="false" libCheckCriteria="true"/>
       <archiveEvent fire="false" libCheckCriteria="true"/>
@@ -231,7 +241,7 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Minimum storing time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="AttributeMaxProcessingTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeMaxProcessingTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="false" libCheckCriteria="true"/>
       <archiveEvent fire="false" libCheckCriteria="true"/>
@@ -239,7 +249,7 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Maximum processing (from event reception to storage) time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="AttributeMinProcessingTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeMinProcessingTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="false" libCheckCriteria="true"/>
       <archiveEvent fire="false" libCheckCriteria="true"/>
@@ -254,6 +264,8 @@
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Record frequency" label="" unit="ev/period" standardUnit="1" displayUnit="ev/period" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="5" period=""/>
+      <evArchiveCriteria relChange="" absChange="5" period=""/>
     </attributes>
     <attributes name="AttributeFailureFreq" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
@@ -262,31 +274,33 @@
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Failure frequency" label="" unit="ev/period" standardUnit="1" displayUnit="ev/period" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="5" period=""/>
+      <evArchiveCriteria relChange="" absChange="5" period=""/>
     </attributes>
-    <attributes name="AttributeStartedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeStartedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Number of archived attributes started" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period=""/>
     </attributes>
-    <attributes name="AttributeStoppedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeStoppedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Number of archived attributes stopped" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period=""/>
     </attributes>
-    <attributes name="AttributeMaxPendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="true" isDynamic="false">
+    <attributes name="AttributeMaxPendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Max number of attributes waiting to be archived" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
@@ -303,80 +317,84 @@
     </attributes>
     <attributes name="AttributeList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the configured attribute list" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributeOkList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the attributes not on error list" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributeNokList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the attributes on error list" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributePendingList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the list attributes waiting to be archived" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributeRecordFreqList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the list of record frequencies" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="5" period=""/>
+      <evArchiveCriteria relChange="" absChange="5" period=""/>
     </attributes>
     <attributes name="AttributeFailureFreqList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the list of failure frequencies" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="1" period=""/>
+      <evArchiveCriteria relChange="" absChange="1" period=""/>
     </attributes>
     <attributes name="AttributeStartedList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the attributes started list" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributeStoppedList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the attributes stopped list" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributeEventNumberList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the list of numbers of events received" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributeErrorList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
-      <changeEvent fire="false" libCheckCriteria="false"/>
-      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <changeEvent fire="true" libCheckCriteria="false"/>
+      <archiveEvent fire="true" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Returns the list of attribute errors" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>

@@ -83,13 +83,6 @@ public:
 
 
 private:
-	vector<string> attribute_list_str;
-	vector<string> attribute_ok_list_str;
-	vector<string> attribute_nok_list_str;
-	vector<string> attribute_pending_list_str;
-	vector<string> attribute_started_list_str;
-	vector<string> attribute_stopped_list_str;
-	vector<string> attribute_error_list_str;
 
 	double last_statistics_reset_time;
 
@@ -124,6 +117,8 @@ public:
 	Tango::DevLong	statisticsTimeWindow;
 	//	CheckPeriodicTimeoutDelay:	Delay in seconds before timeout when checking periodic events
 	Tango::DevLong	checkPeriodicTimeoutDelay;
+	//	PollingThreadPeriod:	Polling Thread period in seconds.
+	Tango::DevLong	pollingThreadPeriod;
 
 //	Attribute data members
 public:

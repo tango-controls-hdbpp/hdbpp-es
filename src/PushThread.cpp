@@ -136,7 +136,13 @@ vector<string> PushThreadShared::get_sig_list_waiting()
 	for (unsigned int i=0 ; i<events.size() ; i++)
 	{
 		HdbCmdData *ev = events[i];
-		string	signame(ev->ev_data->attr_name);
+		string	signame;
+		if(ev->op_code == DB_INSERT)
+			signame = string(ev->ev_data->attr_name);
+		else if(ev->op_code == DB_INSERT_PARAM)
+			signame = string(ev->ev_data_param->attr_name);
+		else
+			signame = string(ev->attr_name);
 		list.push_back(signame);
 	}
 	return list;
@@ -157,6 +163,10 @@ void PushThreadShared::reset_statistics()
 		signals[i].process_time_min = -1;
 		signals[i].process_time_max = -1;
 	}
+	hdb_dev->attr_AttributeMinStoreTime_read = -1;
+	hdb_dev->attr_AttributeMaxStoreTime_read = -1;
+	hdb_dev->attr_AttributeMinProcessingTime_read = -1;
+	hdb_dev->attr_AttributeMaxProcessingTime_read = -1;
 	max_waiting = 0;
 	sig_lock->unlock();
 }
@@ -758,23 +768,48 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		{
 			signals[i].dbstate = Tango::ON;
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
+			//signal store min
 			if(signals[i].store_time_min == -1)
 				signals[i].store_time_min = store_time;
 			else if(store_time < signals[i].store_time_min)
 				signals[i].store_time_min = store_time;
+			//global store min
+			if(hdb_dev->attr_AttributeMinStoreTime_read == -1)
+				hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+			else if(store_time < hdb_dev->attr_AttributeMinStoreTime_read)
+				hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+			//signal store max
 			if(signals[i].store_time_max == -1)
 				signals[i].store_time_max = store_time;
 			else if(store_time > signals[i].store_time_max)
 				signals[i].store_time_max = store_time;
+			//global store max
+			if(hdb_dev->attr_AttributeMaxStoreTime_read == -1)
+				hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
+			else if(store_time > hdb_dev->attr_AttributeMaxStoreTime_read)
+				hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
+
 			signals[i].process_time_avg = ((signals[i].process_time_avg * signals[i].okdb_counter) + process_time)/(signals[i].okdb_counter+1);
+			//signal process min
 			if(signals[i].process_time_min == -1)
 				signals[i].process_time_min = process_time;
 			else if(store_time < signals[i].process_time_min)
 				signals[i].process_time_min = process_time;
+			//global process min
+			if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
+				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+			else if(store_time < hdb_dev->attr_AttributeMinProcessingTime_read)
+				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+			//signal process max
 			if(signals[i].process_time_max == -1)
 				signals[i].process_time_max = process_time;
 			else if(store_time > signals[i].process_time_max)
 				signals[i].process_time_max = process_time;
+			//global process max
+			if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
+				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
+			else if(store_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
+				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
 			signals[i].okdb_counter++;
 			sig_lock->unlock();
 			return;
@@ -790,23 +825,47 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		{
 			signals[i].dbstate = Tango::ON;
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
+			//signal store min
 			if(signals[i].store_time_min == -1)
 				signals[i].store_time_min = store_time;
 			else if(store_time < signals[i].store_time_min)
 				signals[i].store_time_min = store_time;
+			//global store min
+			if(hdb_dev->attr_AttributeMinStoreTime_read == -1)
+				hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+			else if(store_time < hdb_dev->attr_AttributeMinStoreTime_read)
+				hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+			//signal store max
 			if(signals[i].store_time_max == -1)
 				signals[i].store_time_max = store_time;
 			else if(store_time > signals[i].store_time_max)
 				signals[i].store_time_max = store_time;
+			//global store max
+			if(hdb_dev->attr_AttributeMaxStoreTime_read == -1)
+				hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
+			else if(store_time > hdb_dev->attr_AttributeMaxStoreTime_read)
+				hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
 			signals[i].process_time_avg = ((signals[i].process_time_avg * signals[i].okdb_counter) + process_time)/(signals[i].okdb_counter+1);
+			//signal process min
 			if(signals[i].process_time_min == -1)
 				signals[i].process_time_min = process_time;
 			else if(store_time < signals[i].process_time_min)
 				signals[i].process_time_min = process_time;
+			//global process min
+			if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
+				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+			else if(store_time < hdb_dev->attr_AttributeMinProcessingTime_read)
+				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+			//signal process max
 			if(signals[i].process_time_max == -1)
 				signals[i].process_time_max = process_time;
 			else if(store_time > signals[i].process_time_max)
 				signals[i].process_time_max = process_time;
+			//global process max
+			if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
+				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
+			else if(store_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
+				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
 			signals[i].okdb_counter++;
 			sig_lock->unlock();
 			return;
@@ -827,6 +886,26 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		sig.process_time_max = process_time;
 		sig.dbstate = Tango::ON;
 		signals.push_back(sig);
+		//global store min
+		if(hdb_dev->attr_AttributeMinStoreTime_read == -1)
+			hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+		else if(store_time < hdb_dev->attr_AttributeMinStoreTime_read)
+			hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+		//global store max
+		if(hdb_dev->attr_AttributeMaxStoreTime_read == -1)
+			hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
+		else if(store_time > hdb_dev->attr_AttributeMaxStoreTime_read)
+			hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
+		//global process min
+		if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
+			hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+		else if(store_time < hdb_dev->attr_AttributeMinProcessingTime_read)
+			hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+		//global process max
+		if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
+			hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
+		else if(store_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
+			hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
 	}
 	sig_lock->unlock();
 }

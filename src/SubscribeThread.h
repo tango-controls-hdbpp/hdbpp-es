@@ -110,11 +110,11 @@ private:
 	 */
 	HdbDevice	*hdb_dev;
 
-	int		action;
 	bool	stop_it;
 	bool	initialized;
 
 public:
+	int		action;
 	//omni_condition condition;
 	vector<HdbSignal>	signals;
 	ReadersWritersLock      veclock;
@@ -242,6 +242,10 @@ public:
 	 *	Return the number of signals not started
 	 */
 	int  get_sig_not_started_num();
+	/**
+	 *	Return the complete, started and stopped lists of signals
+	 */
+	void  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_stop_list);
 	/**
 	 *	Increment the ok counter of event rx
 	 */
