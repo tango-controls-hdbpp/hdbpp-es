@@ -88,6 +88,8 @@ typedef struct
 	timespec last_ev;
 	int periodic_ev;
 	bool running;
+	bool paused;
+	bool stopped;
 	ReadersWritersLock *siglock;
 }
 HdbSignal;
@@ -129,15 +131,19 @@ public:
 	 * Add a new signal.
 	 */
 	void add(string &signame);
-	void add(string &signame, int to_do);
+	void add(string &signame, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
-	void remove(string &signame);
+	void remove(string &signame, bool start);
 	/**
 	 * Start saving on DB a signal.
 	 */
 	void start(string &signame);
+	/**
+	 * Pause saving on DB a signal.
+	 */
+	void pause(string &signame);
 	/**
 	 * Stop saving on DB a signal.
 	 */
@@ -147,6 +153,10 @@ public:
 	 */
 	void start_all();
 	/**
+	 * Pause saving on DB all signals.
+	 */
+	void pause_all();
+	/**
 	 * Stop saving on DB all signals.
 	 */
 	void stop_all();
@@ -154,6 +164,14 @@ public:
 	 * Is a signal saved on DB?
 	 */
 	bool is_running(string &signame);
+	/**
+	 * Is a signal saved on DB?
+	 */
+	bool is_paused(string &signame);
+	/**
+	 * Is a signal not subscribed?
+	 */
+	bool is_stopped(string &signame);
 	/**
 	 * Is a signal first event arrived?
 	 */
@@ -245,7 +263,7 @@ public:
 	/**
 	 *	Return the complete, started and stopped lists of signals
 	 */
-	void  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_stop_list);
+	void  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list);
 	/**
 	 *	Increment the ok counter of event rx
 	 */

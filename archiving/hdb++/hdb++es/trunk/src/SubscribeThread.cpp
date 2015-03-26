@@ -78,35 +78,41 @@ HdbSignal *SharedData::get_signal(string signame)
  * Remove a signal in the list.
  */
 //=============================================================================
-void SharedData::remove(string &signame)
+void SharedData::remove(string &signame, bool stop)
 {
 	//	Remove in signals list (vector)
 	{
-		veclock.readerIn();
+		if(!stop)
+			veclock.readerIn();
 		HdbSignal	*sig = get_signal(signame);
 		int event_id = sig->event_id;
 		int event_conf_id = sig->event_conf_id;
 		Tango::AttributeProxy *attr = sig->attr;
-		veclock.readerOut();
-		try
+		if(!stop)
+			veclock.readerOut();
+		if(stop)
 		{
-			if(event_id != ERR)
+			try
 			{
+				if(event_id != ERR)
+				{
 
-				cout <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
-				attr->unsubscribe_event(event_id);
-				attr->unsubscribe_event(event_conf_id);
-				cout <<"SharedData::"<< __func__<<": unsubscribed... "<< signame << endl;
+					cout <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
+					attr->unsubscribe_event(event_id);
+					attr->unsubscribe_event(event_conf_id);
+					cout <<"SharedData::"<< __func__<<": unsubscribed... "<< signame << endl;
+				}
+			}
+			catch (Tango::DevFailed &e)
+			{
+				//	Do nothing
+				//	Unregister failed means Register has also failed
+				cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 			}
 		}
-		catch (Tango::DevFailed &e)
-		{
-			//	Do nothing
-			//	Unregister failed means Register has also failed
-			cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
-		}
 
-		veclock.writerIn();
+		if(!stop)
+			veclock.writerIn();
 		vector<HdbSignal>::iterator	pos = signals.begin();
 		
 		bool	found = false;
@@ -116,42 +122,8 @@ void SharedData::remove(string &signame)
 			if (sig->name==signame)
 			{
 				found = true;
-				cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
-				sig->siglock->writerIn();
-				try
+				if(stop)
 				{
-					if(sig->event_id != ERR)
-					{
-						delete sig->archive_cb;
-					}
-					delete sig->attr;
-				}
-				catch (Tango::DevFailed &e)
-				{
-					//	Do nothing
-					//	Unregister failed means Register has also failed
-					cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
-				}
-				sig->siglock->writerOut();
-				delete sig->siglock;
-				cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
-				signals.erase(pos);
-				break;
-			}
-		}
-		pos = signals.begin();
-		if (!found)
-		{
-			for (unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
-			{
-				HdbSignal	*sig = &signals[i];
-#ifndef _MULTI_TANGO_HOST
-				if (hdb_dev->compare_without_domain(sig->name,signame))
-#else					
-				if (!hdb_dev->compare_tango_names(sig->name,signame))
-#endif
-				{
-					found = true;
 					cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
 					sig->siglock->writerIn();
 					try
@@ -169,14 +141,77 @@ void SharedData::remove(string &signame)
 						cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 					}
 					sig->siglock->writerOut();
+					cout <<"SharedData::"<< __func__<<": stopped " << signame << endl;
+				}
+				if(!stop)
+				{
 					delete sig->siglock;
-					cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
 					signals.erase(pos);
+					if(sig->running)
+						hdb_dev->attr_AttributeStartedNumber_read--;
+					if(sig->paused)
+						hdb_dev->attr_AttributePausedNumber_read--;
+					if(sig->stopped)
+						hdb_dev->attr_AttributeStoppedNumber_read--;
+					hdb_dev->attr_AttributeNumber_read--;
+					cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
+				}
+				break;
+			}
+		}
+		pos = signals.begin();
+		if (!found)
+		{
+			for (unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
+			{
+				HdbSignal	*sig = &signals[i];
+#ifndef _MULTI_TANGO_HOST
+				if (hdb_dev->compare_without_domain(sig->name,signame))
+#else					
+				if (!hdb_dev->compare_tango_names(sig->name,signame))
+#endif
+				{
+					found = true;
+					cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
+					if(stop)
+					{
+						sig->siglock->writerIn();
+						try
+						{
+							if(sig->event_id != ERR)
+							{
+								delete sig->archive_cb;
+							}
+							delete sig->attr;
+						}
+						catch (Tango::DevFailed &e)
+						{
+							//	Do nothing
+							//	Unregister failed means Register has also failed
+							cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+						}
+						sig->siglock->writerOut();
+						cout <<"SharedData::"<< __func__<<": stopped " << signame << endl;
+					}
+					if(!stop)
+					{
+						delete sig->siglock;
+						signals.erase(pos);
+						if(sig->running)
+							hdb_dev->attr_AttributeStartedNumber_read--;
+						if(sig->paused)
+							hdb_dev->attr_AttributePausedNumber_read--;
+						if(sig->stopped)
+							hdb_dev->attr_AttributeStoppedNumber_read--;
+						hdb_dev->attr_AttributeNumber_read--;
+						cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
+					}
 					break;
 				}
 			}
 		}
-		veclock.writerOut();
+		if(!stop)
+			veclock.writerOut();
 		if (!found)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
@@ -184,8 +219,11 @@ void SharedData::remove(string &signame)
 						(const char *)"SharedData::remove()");
 	}
 	//	then, update property
-	action = UPDATE_PROP;
-	put_signal_property();	//TODO: wakeup thread and let it do it? -> signal()
+	if(!stop)
+	{
+		action = UPDATE_PROP;
+		put_signal_property();	//TODO: wakeup thread and let it do it? -> signal()
+	}
 }
 //=============================================================================
 /**
@@ -202,9 +240,25 @@ void SharedData::start(string &signame)
 			signals[i].siglock->writerIn();
 			if(!signals[i].running)
 			{
+				if(signals[i].stopped)
+				{
+					hdb_dev->attr_AttributeStoppedNumber_read--;
+					try
+					{
+						add(signame, NOTHING, true);
+					}
+					catch (Tango::DevFailed &e)
+					{
+						//Tango::Except::print_exception(e);
+						cout << "SharedData::start: error adding  " << signame << endl;
+					}
+				}
 				signals[i].running=true;
-				hdb_dev->attr_AttributeStoppedNumber_read--;
+				if(signals[i].paused)
+					hdb_dev->attr_AttributePausedNumber_read--;
 				hdb_dev->attr_AttributeStartedNumber_read++;
+				signals[i].paused=false;
+				signals[i].stopped=false;
 			}
 			signals[i].siglock->writerOut();
 			return;
@@ -221,9 +275,25 @@ void SharedData::start(string &signame)
 			signals[i].siglock->writerIn();
 			if(!signals[i].running)
 			{
+				if(signals[i].stopped)
+				{
+					hdb_dev->attr_AttributeStoppedNumber_read--;
+					try
+					{
+						add(signame, NOTHING, true);
+					}
+					catch (Tango::DevFailed &e)
+					{
+						//Tango::Except::print_exception(e);
+						cout << "SharedData::start: error adding  " << signame << endl;
+					}
+				}
 				signals[i].running=true;
-				hdb_dev->attr_AttributeStoppedNumber_read--;
+				if(signals[i].paused)
+					hdb_dev->attr_AttributePausedNumber_read--;
 				hdb_dev->attr_AttributeStartedNumber_read++;
+				signals[i].paused=false;
+				signals[i].stopped=false;
 			}
 			signals[i].siglock->writerOut();
 			return;
@@ -238,6 +308,65 @@ void SharedData::start(string &signame)
 }
 //=============================================================================
 /**
+ * Pause saving on DB a signal.
+ */
+//=============================================================================
+void SharedData::pause(string &signame)
+{
+	ReaderLock lock(veclock);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].siglock->writerIn();
+			if(!signals[i].paused)
+			{
+				signals[i].paused=true;
+				hdb_dev->attr_AttributePausedNumber_read++;
+				if(signals[i].running)
+					hdb_dev->attr_AttributeStartedNumber_read--;
+				if(signals[i].stopped)
+					hdb_dev->attr_AttributeStoppedNumber_read--;
+				signals[i].running=false;
+				signals[i].stopped=false;
+			}
+			signals[i].siglock->writerOut();
+			return;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].siglock->writerIn();
+			if(!signals[i].paused)
+			{
+				signals[i].paused=true;
+				hdb_dev->attr_AttributePausedNumber_read++;
+				if(signals[i].running)
+					hdb_dev->attr_AttributeStartedNumber_read--;
+				if(signals[i].stopped)
+					hdb_dev->attr_AttributeStoppedNumber_read--;
+				signals[i].running=false;
+				signals[i].stopped=false;
+			}
+			signals[i].siglock->writerOut();
+			return;
+		}
+	}
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::pause()");
+}
+//=============================================================================
+/**
  * Stop saving on DB a signal.
  */
 //=============================================================================
@@ -249,11 +378,38 @@ void SharedData::stop(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].siglock->writerIn();
-			if(signals[i].running)
+			if(!signals[i].stopped)
 			{
-				signals[i].running=false;
+				signals[i].stopped=true;
 				hdb_dev->attr_AttributeStoppedNumber_read++;
-				hdb_dev->attr_AttributeStartedNumber_read--;
+				if(signals[i].running)
+				{
+					hdb_dev->attr_AttributeStartedNumber_read--;
+					try
+					{
+						remove(signame, true);
+					}
+					catch (Tango::DevFailed &e)
+					{
+						//Tango::Except::print_exception(e);
+						cout << "SharedData::stop: error removing  " << signame << endl;
+					}
+				}
+				if(signals[i].paused)
+				{
+					hdb_dev->attr_AttributePausedNumber_read--;
+					try
+					{
+						remove(signame, true);
+					}
+					catch (Tango::DevFailed &e)
+					{
+						//Tango::Except::print_exception(e);
+						cout << "SharedData::stop: error removing  " << signame << endl;
+					}
+				}
+				signals[i].running=false;
+				signals[i].paused=false;
 			}
 			signals[i].siglock->writerOut();
 			return;
@@ -268,11 +424,38 @@ void SharedData::stop(string &signame)
 #endif
 		{
 			signals[i].siglock->writerIn();
-			if(signals[i].running)
+			if(!signals[i].stopped)
 			{
-				signals[i].running=false;
+				signals[i].stopped=true;
 				hdb_dev->attr_AttributeStoppedNumber_read++;
-				hdb_dev->attr_AttributeStartedNumber_read--;
+				if(signals[i].running)
+				{
+					hdb_dev->attr_AttributeStartedNumber_read--;
+					try
+					{
+						remove(signame, true);
+					}
+					catch (Tango::DevFailed &e)
+					{
+						//Tango::Except::print_exception(e);
+						cout << "SharedData::stop: error removing  " << signame << endl;
+					}
+				}
+				if(signals[i].paused)
+				{
+					hdb_dev->attr_AttributePausedNumber_read--;
+					try
+					{
+						remove(signame, true);
+					}
+					catch (Tango::DevFailed &e)
+					{
+						//Tango::Except::print_exception(e);
+						cout << "SharedData::stop: error removing  " << signame << endl;
+					}
+				}
+				signals[i].running=false;
+				signals[i].paused=false;
 			}
 			signals[i].siglock->writerOut();
 			return;
@@ -297,10 +480,33 @@ void SharedData::start_all()
 	{
 		signals[i].siglock->writerIn();
 		signals[i].running=true;
+		signals[i].paused=false;
+		signals[i].stopped=false;
 		signals[i].siglock->writerOut();
 	}
 	hdb_dev->attr_AttributeStoppedNumber_read=0;
+	hdb_dev->attr_AttributePausedNumber_read=0;
 	hdb_dev->attr_AttributeStartedNumber_read=signals.size();
+}
+//=============================================================================
+/**
+ * Pause saving on DB all signals.
+ */
+//=============================================================================
+void SharedData::pause_all()
+{
+	ReaderLock lock(veclock);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		signals[i].siglock->writerIn();
+		signals[i].running=false;
+		signals[i].paused=true;
+		signals[i].stopped=false;
+		signals[i].siglock->writerOut();
+	}
+	hdb_dev->attr_AttributeStoppedNumber_read=0;
+	hdb_dev->attr_AttributePausedNumber_read=signals.size();
+	hdb_dev->attr_AttributeStartedNumber_read=0;
 }
 //=============================================================================
 /**
@@ -314,9 +520,12 @@ void SharedData::stop_all()
 	{
 		signals[i].siglock->writerIn();
 		signals[i].running=false;
+		signals[i].paused=false;
+		signals[i].stopped=true;
 		signals[i].siglock->writerOut();
 	}
 	hdb_dev->attr_AttributeStoppedNumber_read=signals.size();
+	hdb_dev->attr_AttributePausedNumber_read=0;
 	hdb_dev->attr_AttributeStartedNumber_read=0;
 }
 //=============================================================================
@@ -359,6 +568,92 @@ bool SharedData::is_running(string &signame)
 				(const char *)"BadSignalName",
 				"Signal NOT subscribed",
 				(const char *)"SharedData::is_running()");
+
+	return true;
+}
+//=============================================================================
+/**
+ * Is a signal saved on DB?
+ */
+//=============================================================================
+bool SharedData::is_paused(string &signame)
+{
+	bool retval=true;
+	//to be locked if called outside lock in ArchiveCB::push_event
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].siglock->readerIn();
+			retval = signals[i].paused;
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	for (unsigned int i=0 ; i<signals.size(); i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].siglock->readerIn();
+			retval = signals[i].paused;
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::is_paused()");
+
+	return true;
+}
+//=============================================================================
+/**
+ * Is a signal not subscribed?
+ */
+//=============================================================================
+bool SharedData::is_stopped(string &signame)
+{
+	bool retval=true;
+	//to be locked if called outside lock in ArchiveCB::push_event
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].siglock->readerIn();
+			retval = signals[i].stopped;
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	for (unsigned int i=0 ; i<signals.size(); i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].siglock->readerIn();
+			retval = signals[i].stopped;
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal NOT subscribed",
+				(const char *)"SharedData::is_stopped()");
 
 	return true;
 }
@@ -557,6 +852,7 @@ void SharedData::unsubscribe_events()
 			{
 				//	Do nothing
 				//	Unregister failed means Register has also failed
+				cout <<"SharedData::"<<__func__<< "    ERROR unsubscribing " << sig->name << " err="<<e.errors[0].desc<< endl;
 			}
 		}
 	}
@@ -596,29 +892,29 @@ void SharedData::unsubscribe_events()
 //=============================================================================
 void SharedData::add(string &signame)
 {
-	add(signame, NOTHING);
+	add(signame, NOTHING, false);
 }
 //=============================================================================
 /**
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame, int to_do)
+void SharedData::add(string &signame, int to_do, bool start)
 {
-	cout << "Adding " << signame << endl;
+	cout << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
 	{
 		veclock.readerIn();
-		
+		HdbSignal	*sig;
 		//	Check if already subscribed
 		bool	found = false;
 		for (unsigned int i=0 ; i<signals.size() && !found ; i++)
 		{
-			HdbSignal	*sig = &signals[i];
+			sig = &signals[i];
 			found = (sig->name==signame);
 		}
 		for (unsigned int i=0 ; i<signals.size() && !found ; i++)
 		{
-			HdbSignal	*sig = &signals[i];
+			sig = &signals[i];
 #ifndef _MULTI_TANGO_HOST
 			found = hdb_dev->compare_without_domain(sig->name,signame);
 #else	
@@ -626,65 +922,93 @@ void SharedData::add(string &signame, int to_do)
 #endif
 		}
 		veclock.readerOut();
-		if (found)
+		//cout << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << " start="<<(start ? "Y" : "N")<< endl;
+		if (found && !start)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
 						"Signal already subscribed",
 						(const char *)"SharedData::add()");
-
-		//	Build Hdb Signal object
-		HdbSignal	signal;
-		signal.name      = signame;
-		signal.siglock = new(ReadersWritersLock);
-		signal.status = "Syntax error in signal name";
-		//	on name, split device name and attrib name
-		string::size_type idx = signal.name.find_last_of("/");
-		if (idx==string::npos)
-			Tango::Except::throw_exception(
-						(const char *)"SyntaxError",
-						"Syntax error in signal name",
-						(const char *)"SharedData::add()");
-		signal.devname = signal.name.substr(0, idx);
-		signal.attname = signal.name.substr(idx+1);
-		signal.status = "NOT connected";
-		//cout << "created proxy to " << signame << endl;
-		//	create Attribute proxy
-		signal.attr = new Tango::AttributeProxy(signal.name);
-		signal.event_id = ERR;
-		signal.event_conf_id = ERR;
-		signal.evstate    = Tango::ALARM;
-		signal.isZMQ    = false;
-		signal.okev_counter = 0;
-		signal.okev_counter_freq = 0;
-		signal.nokev_counter = 0;
-		signal.nokev_counter_freq = 0;
-		signal.running = false;
-		signal.first = true;
-		signal.first_err = true;
-		signal.periodic_ev = -1;
-		clock_gettime(CLOCK_MONOTONIC, &signal.last_ev);
-
-		try
+		HdbSignal	*signal;
+		if (!found && !start)
 		{
-			Tango::AttributeInfo	info = signal.attr->get_config();
-			signal.data_type = info.data_type;
-			signal.data_format = info.data_format;
-			signal.write_type = info.writable;
-			signal.max_dim_x = info.max_dim_x;
-			signal.max_dim_y = info.max_dim_y;
+			signal = new HdbSignal();
+			//	Build Hdb Signal object
+			signal->name      = signame;
+			signal->siglock = new(ReadersWritersLock);
+			signal->status = "Syntax error in signal name";
+			//	on name, split device name and attrib name
+			string::size_type idx = signal->name.find_last_of("/");
+			if (idx==string::npos)
+			{
+				delete signal;
+				Tango::Except::throw_exception(
+							(const char *)"SyntaxError",
+							"Syntax error in signal name",
+							(const char *)"SharedData::add()");
+			}
+			signal->devname = signal->name.substr(0, idx);
+			signal->attname = signal->name.substr(idx+1);
+			signal->status = "NOT connected";
+			//cout << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
 		}
-		catch (Tango::DevFailed &e)
+		else if(found && start)
 		{
-			cout <<"SubscribeThread::"<<__func__<< " ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
+			signal = sig;
+			signal->status = "NOT connected";
+			//cout << "created proxy to " << signame << endl;
+			//	create Attribute proxy
+			signal->attr = new Tango::AttributeProxy(signal->name);
+			cout << "SharedData::"<<__func__<<": signame="<<signame<<" created proxy"<< endl;
+		}
+		signal->event_id = ERR;
+		signal->event_conf_id = ERR;
+		signal->evstate    = Tango::ALARM;
+		signal->isZMQ    = false;
+		signal->okev_counter = 0;
+		signal->okev_counter_freq = 0;
+		signal->nokev_counter = 0;
+		signal->nokev_counter_freq = 0;
+		signal->running = false;
+		signal->stopped = true;
+		signal->paused = false;
+		signal->first = true;
+		signal->first_err = true;
+		signal->periodic_ev = -1;
+		clock_gettime(CLOCK_MONOTONIC, &signal->last_ev);
+
+		if(found && start)
+		{
+			try
+			{
+				Tango::AttributeInfo	info = signal->attr->get_config();
+				signal->data_type = info.data_type;
+				signal->data_format = info.data_format;
+				signal->write_type = info.writable;
+				signal->max_dim_x = info.max_dim_x;
+				signal->max_dim_y = info.max_dim_y;
+			}
+			catch (Tango::DevFailed &e)
+			{
+				cout <<"SubscribeThread::"<<__func__<< " ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
+			}
 		}
 
-		cout <<"SubscribeThread::"<< __func__<< " created proxy to " << signame << endl;
-		veclock.writerIn();
-		//	Add in vector
-		signals.push_back(signal);
-		hdb_dev->attr_AttributeNumber_read++;
-		hdb_dev->attr_AttributeStoppedNumber_read++;
-		veclock.writerOut();
+		//cout <<"SubscribeThread::"<< __func__<< " created proxy to " << signame << endl;
+		if (!found && !start)
+		{
+			veclock.writerIn();
+			//	Add in vector
+			signals.push_back(*signal);
+			delete signal;
+			hdb_dev->attr_AttributeNumber_read++;
+			hdb_dev->attr_AttributeStoppedNumber_read++;
+			veclock.writerOut();
+			//cout << "SharedData::"<<__func__<<": signame="<<signame<<" push_back signal"<< endl;
+		}
+		else if(found && start)
+		{
+
+		}
 
 		action = to_do;
 	}
@@ -712,7 +1036,7 @@ void SharedData::subscribe_events()
 	{
 		HdbSignal	*sig = &signals[i];
 		sig->siglock->writerIn();
-		if (sig->event_id==ERR)
+		if (sig->event_id==ERR && !sig->stopped)
 		{
 			sig->archive_cb = new ArchiveCB(hdb_dev);
 			Tango::AttributeInfo	info;
@@ -821,7 +1145,7 @@ int SharedData::nb_sig_to_subscribe()
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].siglock->readerIn();
-		if (signals[i].event_id == ERR)
+		if (signals[i].event_id == ERR && !signals[i].stopped)
 		{
 			nb++;
 		}
@@ -1136,23 +1460,25 @@ int  SharedData::get_sig_not_started_num()
  *	Return the complete, started and stopped lists of signals
  */
 //=============================================================================
-void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_stop_list)
+void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list)
 {
 	ReaderLock lock(veclock);
-	int stop_num_=0;
-	int start_num_=0;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		string	signame(signals[i].name);
 		s_list.push_back(signame);
 		signals[i].siglock->readerIn();
-		if (!signals[i].running)
-		{
-			s_stop_list.push_back(signame);
-		}
-		else
+		if (signals[i].running)
 		{
 			s_start_list.push_back(signame);
+		}
+		else if(signals[i].paused)
+		{
+			s_pause_list.push_back(signame);
+		}
+		else if(signals[i].stopped)
+		{
+			s_stop_list.push_back(signame);
 		}
 		signals[i].siglock->readerOut();
 	}
@@ -1818,8 +2144,9 @@ void *SubscribeThread::run_undetached(void *ptr)
 	while(shared->get_if_stop()==false)
 	{
 		//	Try to subscribe
-		shared->subscribe_events();
+		cout << __func__<<": AWAKE"<<endl;
 		updateProperty();
+		shared->subscribe_events();
 		int	nb_to_subscribe = shared->nb_sig_to_subscribe();
 		//	And wait a bit before next time or
 		//	wait a long time if all signals subscribed
@@ -1828,14 +2155,14 @@ void *SubscribeThread::run_undetached(void *ptr)
 			//shared->lock();
 			if (nb_to_subscribe==0)
 			{
-				//cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
+				cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
 				//shared->condition.wait();
 				shared->wait();
 				//shared->wait(3*period*1000);
 			}
 			else
 			{
-				//cout << __func__<<": going to wait period="<<period<<endl;
+				cout << __func__<<": going to wait period="<<period<<endl;
 				//unsigned long s,n;
 				//omni_thread::get_time(&s,&n,period,0);
 				//shared->condition.timedwait(s,n);
@@ -1851,7 +2178,6 @@ void *SubscribeThread::run_undetached(void *ptr)
 }
 //=============================================================================
 //=============================================================================
-
 
 
 

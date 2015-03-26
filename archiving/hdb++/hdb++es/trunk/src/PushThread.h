@@ -188,9 +188,11 @@ public:
 	void  set_ok_db(string &signame, double store_time, double process_time);
 
 	void  start_attr(string &signame);
+	void  pause_attr(string &signame);
 	void  stop_attr(string &signame);
 	void  remove_attr(string &signame);
 	void  start_all();
+	void  pause_all();
 	void  stop_all();
 
 	/**

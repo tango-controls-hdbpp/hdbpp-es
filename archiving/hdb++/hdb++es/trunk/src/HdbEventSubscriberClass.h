@@ -242,6 +242,19 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_StatisticsResetTime_allowed(ty);}
 };
 
+//	Attribute AttributePausedNumber class definition
+class AttributePausedNumberAttrib: public Tango::Attr
+{
+public:
+	AttributePausedNumberAttrib():Attr("AttributePausedNumber",
+			Tango::DEV_LONG, Tango::READ) {};
+	~AttributePausedNumberAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributePausedNumber(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePausedNumber_allowed(ty);}
+};
+
 //	Attribute AttributeList class definition
 class AttributeListAttrib: public Tango::SpectrumAttr
 {
@@ -370,6 +383,19 @@ public:
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeErrorList(att);}
 	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeErrorList_allowed(ty);}
+};
+
+//	Attribute AttributePausedList class definition
+class AttributePausedListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributePausedListAttrib():SpectrumAttr("AttributePausedList",
+			Tango::DEV_STRING, Tango::READ, 10000) {};
+	~AttributePausedListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributePausedList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePausedList_allowed(ty);}
 };
 
 
@@ -558,6 +584,52 @@ public:
 	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
 	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
 	{return (static_cast<HdbEventSubscriber *>(dev))->is_ResetStatistics_allowed(any);}
+};
+
+//	Command Pause class definition
+class PauseClass : public Tango::Command
+{
+public:
+	PauseClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	PauseClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~PauseClass() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_Pause_allowed(any);}
+};
+
+//	Command AttributePause class definition
+class AttributePauseClass : public Tango::Command
+{
+public:
+	AttributePauseClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	AttributePauseClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~AttributePauseClass() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePause_allowed(any);}
 };
 
 

@@ -69,7 +69,7 @@ void *StatsThread::run_undetached(void *ptr)
 		for (size_t i=0 ; i<attribute_list_tmp.size() ; i++)
 		{
 			string signame(attribute_list_tmp[i]);
-			try
+			/*try
 			{
 				hdb_dev->shared->veclock.readerIn();
 				bool is_running = hdb_dev->shared->is_running(signame);
@@ -79,7 +79,7 @@ void *StatsThread::run_undetached(void *ptr)
 			}catch(Tango::DevFailed &e)
 			{
 				continue;
-			}
+			}*/
 			long ok_ev_t=0;
 			long nok_ev_t=0;
 			long nok_db_t=0;

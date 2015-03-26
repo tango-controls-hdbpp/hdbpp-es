@@ -122,6 +122,7 @@ public:
 	Tango::DevLong	attr_AttributeNokNumber_read;
 	Tango::DevLong	attr_AttributeNumber_read;
 	Tango::DevLong	attr_AttributeStartedNumber_read;
+	Tango::DevLong	attr_AttributePausedNumber_read;
 	Tango::DevLong	attr_AttributeStoppedNumber_read;
 
 	Tango::DevDouble	attr_AttributeMaxStoreTime_read;
@@ -134,6 +135,7 @@ public:
 	Tango::DevString	attr_AttributeNokList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributePendingList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeStartedList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributePausedList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeStoppedList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeErrorList_read[MAX_ATTRIBUTES];
 
@@ -152,6 +154,9 @@ public:
 	vector<string> attribute_started_list_str;
 	vector<string> old_attribute_started_list_str;
 	size_t attribute_started_list_str_size;
+	vector<string> attribute_paused_list_str;
+	vector<string> old_attribute_paused_list_str;
+	size_t attribute_paused_list_str_size;
 	vector<string> attribute_stopped_list_str;
 	vector<string> old_attribute_stopped_list_str;
 	size_t attribute_stopped_list_str_size;
@@ -278,7 +283,7 @@ public:
 	/**
 	 *	Return the complete, started  and stopped lists of signals
 	 */
-	void  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_stop_list);
+	void  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list);
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */

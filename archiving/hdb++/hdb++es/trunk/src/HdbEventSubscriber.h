@@ -136,6 +136,7 @@ public:
 	Tango::DevLong	*attr_AttributeStoppedNumber_read;
 	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
 	Tango::DevDouble	*attr_StatisticsResetTime_read;
+	Tango::DevLong	*attr_AttributePausedNumber_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
 	Tango::DevString	*attr_AttributeNokList_read;
@@ -146,6 +147,7 @@ public:
 	Tango::DevString	*attr_AttributeStoppedList_read;
 	Tango::DevLong	*attr_AttributeEventNumberList_read;
 	Tango::DevString	*attr_AttributeErrorList_read;
+	Tango::DevString	*attr_AttributePausedList_read;
 
 //	Constructors and destructors
 public:
@@ -334,6 +336,15 @@ public:
 	virtual void read_StatisticsResetTime(Tango::Attribute &attr);
 	virtual bool is_StatisticsResetTime_allowed(Tango::AttReqType type);
 /**
+ *	Attribute AttributePausedNumber related methods
+ *	Description: Number of archived attributes paused
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributePausedNumber(Tango::Attribute &attr);
+	virtual bool is_AttributePausedNumber_allowed(Tango::AttReqType type);
+/**
  *	Attribute AttributeList related methods
  *	Description: Returns the configured attribute list
  *
@@ -423,6 +434,15 @@ public:
  */
 	virtual void read_AttributeErrorList(Tango::Attribute &attr);
 	virtual bool is_AttributeErrorList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributePausedList related methods
+ *	Description: Returns the attributes stopped list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributePausedList(Tango::Attribute &attr);
+	virtual bool is_AttributePausedList_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------
@@ -499,6 +519,21 @@ public:
 	 */
 	virtual void reset_statistics();
 	virtual bool is_ResetStatistics_allowed(const CORBA::Any &any);
+	/**
+	 *	Command Pause related method
+	 *	Description: Pause archiving
+	 *
+	 */
+	virtual void pause();
+	virtual bool is_Pause_allowed(const CORBA::Any &any);
+	/**
+	 *	Command AttributePause related method
+	 *	Description: Pause archiving single attribute
+	 *
+	 *	@param argin Attribute name
+	 */
+	virtual void attribute_pause(Tango::DevString argin);
+	virtual bool is_AttributePause_allowed(const CORBA::Any &any);
 
 
 /*----- PROTECTED REGION ID(HdbEventSubscriber::Additional Method prototypes) ENABLED START -----*/

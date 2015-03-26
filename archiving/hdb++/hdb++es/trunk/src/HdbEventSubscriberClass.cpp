@@ -319,6 +319,44 @@ CORBA::Any *ResetStatisticsClass::execute(Tango::DeviceImpl *device, TANGO_UNUSE
 	return new CORBA::Any();
 }
 
+//--------------------------------------------------------
+/**
+ * method : 		PauseClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *PauseClass::execute(Tango::DeviceImpl *device, TANGO_UNUSED(const CORBA::Any &in_any))
+{
+	cout2 << "PauseClass::execute(): arrived" << endl;
+	((static_cast<HdbEventSubscriber *>(device))->pause());
+	return new CORBA::Any();
+}
+
+//--------------------------------------------------------
+/**
+ * method : 		AttributePauseClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *AttributePauseClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+{
+	cout2 << "AttributePauseClass::execute(): arrived" << endl;
+	Tango::DevString argin;
+	extract(in_any, argin);
+	((static_cast<HdbEventSubscriber *>(device))->attribute_pause(argin));
+	return new CORBA::Any();
+}
+
 
 //===================================================================
 //	Properties management
@@ -1403,6 +1441,34 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	att_list.push_back(statisticsresettime);
 
+	//	Attribute : AttributePausedNumber
+	AttributePausedNumberAttrib	*attributepausednumber = new AttributePausedNumberAttrib();
+	Tango::UserDefaultAttrProp	attributepausednumber_prop;
+	attributepausednumber_prop.set_description("Number of archived attributes paused");
+	//	label	not set for AttributePausedNumber
+	//	unit	not set for AttributePausedNumber
+	//	standard_unit	not set for AttributePausedNumber
+	//	display_unit	not set for AttributePausedNumber
+	//	format	not set for AttributePausedNumber
+	//	max_value	not set for AttributePausedNumber
+	//	min_value	not set for AttributePausedNumber
+	//	max_alarm	not set for AttributePausedNumber
+	//	min_alarm	not set for AttributePausedNumber
+	//	max_warning	not set for AttributePausedNumber
+	//	min_warning	not set for AttributePausedNumber
+	//	delta_t	not set for AttributePausedNumber
+	//	delta_val	not set for AttributePausedNumber
+	attributepausednumber_prop.set_event_abs_change("1");
+	attributepausednumber_prop.set_archive_event_abs_change("1");
+	
+	attributepausednumber->set_default_properties(attributepausednumber_prop);
+	//	Not Polled
+	attributepausednumber->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	attributepausednumber->set_change_event(true, true);
+	attributepausednumber->set_archive_event(true, true);
+	att_list.push_back(attributepausednumber);
+
 	//	Attribute : AttributeList
 	AttributeListAttrib	*attributelist = new AttributeListAttrib();
 	Tango::UserDefaultAttrProp	attributelist_prop;
@@ -1667,6 +1733,32 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributeerrorlist->set_archive_event(true, false);
 	att_list.push_back(attributeerrorlist);
 
+	//	Attribute : AttributePausedList
+	AttributePausedListAttrib	*attributepausedlist = new AttributePausedListAttrib();
+	Tango::UserDefaultAttrProp	attributepausedlist_prop;
+	attributepausedlist_prop.set_description("Returns the attributes stopped list");
+	//	label	not set for AttributePausedList
+	//	unit	not set for AttributePausedList
+	//	standard_unit	not set for AttributePausedList
+	//	display_unit	not set for AttributePausedList
+	//	format	not set for AttributePausedList
+	//	max_value	not set for AttributePausedList
+	//	min_value	not set for AttributePausedList
+	//	max_alarm	not set for AttributePausedList
+	//	min_alarm	not set for AttributePausedList
+	//	max_warning	not set for AttributePausedList
+	//	min_warning	not set for AttributePausedList
+	//	delta_t	not set for AttributePausedList
+	//	delta_val	not set for AttributePausedList
+	
+	attributepausedlist->set_default_properties(attributepausedlist_prop);
+	//	Not Polled
+	attributepausedlist->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	attributepausedlist->set_change_event(true, false);
+	attributepausedlist->set_archive_event(true, false);
+	att_list.push_back(attributepausedlist);
+
 	//	Create a list of static attributes
 	create_static_attribute_list(get_class_attr()->get_attr_list());
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::attribute_factory_after) ENABLED START -----*/
@@ -1760,6 +1852,24 @@ void HdbEventSubscriberClass::command_factory()
 			"",
 			Tango::OPERATOR);
 	command_list.push_back(pResetStatisticsCmd);
+
+	//	Command Pause
+	PauseClass	*pPauseCmd =
+		new PauseClass("Pause",
+			Tango::DEV_VOID, Tango::DEV_VOID,
+			"",
+			"",
+			Tango::OPERATOR);
+	command_list.push_back(pPauseCmd);
+
+	//	Command AttributePause
+	AttributePauseClass	*pAttributePauseCmd =
+		new AttributePauseClass("AttributePause",
+			Tango::DEV_STRING, Tango::DEV_VOID,
+			"Attribute name",
+			"",
+			Tango::OPERATOR);
+	command_list.push_back(pAttributePauseCmd);
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::command_factory_after) ENABLED START -----*/
 

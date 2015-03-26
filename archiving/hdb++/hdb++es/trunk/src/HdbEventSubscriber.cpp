@@ -86,6 +86,8 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeStart   |  attribute_start
 //  AttributeStop    |  attribute_stop
 //  ResetStatistics  |  reset_statistics
+//  Pause            |  pause
+//  AttributePause   |  attribute_pause
 //================================================================
 
 //================================================================
@@ -105,6 +107,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeStoppedNumber      |  Tango::DevLong	Scalar
 //  AttributeMaxPendingNumber   |  Tango::DevLong	Scalar
 //  StatisticsResetTime         |  Tango::DevDouble	Scalar
+//  AttributePausedNumber       |  Tango::DevLong	Scalar
 //  AttributeList               |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeOkList             |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeNokList            |  Tango::DevString	Spectrum  ( max = 10000)
@@ -115,6 +118,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeStoppedList        |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeEventNumberList    |  Tango::DevLong	Spectrum  ( max = 10000)
 //  AttributeErrorList          |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributePausedList         |  Tango::DevString	Spectrum  ( max = 10000)
 //================================================================
 
 namespace HdbEventSubscriber_ns
@@ -175,25 +179,10 @@ void HdbEventSubscriber::delete_device()
 
 	//	Delete device allocated objects
 	cout << "-------- Delete device's allocated object --------" << endl;
-	stop();
+	pause();
 	delete hdb_dev;
 	cout << "-------- Delete device's allocated object done !--------" << endl;
 	//Tango::client_leavefunc();
-
-	if(attr_AttributeList_read != NULL)
-		delete [] attr_AttributeList_read;
-	if(attr_AttributeOkList_read != NULL)
-		delete [] attr_AttributeOkList_read;
-	if(attr_AttributeNokList_read != NULL)
-		delete [] attr_AttributeNokList_read;
-	if(attr_AttributePendingList_read != NULL)
-		delete [] attr_AttributePendingList_read;
-	if(attr_AttributeErrorList_read != NULL)
-		delete [] attr_AttributeErrorList_read;
-	if(attr_AttributeStartedList_read != NULL)
-		delete [] attr_AttributeStartedList_read;
-	if(attr_AttributeStoppedList_read != NULL)
-		delete [] attr_AttributeStoppedList_read;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
 	delete[] attr_StatisticsResetTime_read;
@@ -222,13 +211,6 @@ void HdbEventSubscriber::init_device()
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
-	attr_AttributeList_read = NULL;
-	attr_AttributeOkList_read = NULL;
-	attr_AttributeNokList_read = NULL;
-	attr_AttributePendingList_read = NULL;
-	attr_AttributeStartedList_read = NULL;
-	attr_AttributeStoppedList_read = NULL;
-	attr_AttributeErrorList_read = NULL;
 
 	//	Initialize device
 	initialized = false;
@@ -699,8 +681,6 @@ void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
 {
 	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedNumber) ENABLED START -----*/
-	//hdb_dev->shared->is_running(signame)
-
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeStartedNumber_read);
 	
@@ -761,6 +741,23 @@ void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
 	attr.set_value(attr_StatisticsResetTime_read);
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_StatisticsResetTime
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributePausedNumber related method
+ *	Description: Number of archived attributes paused
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
+{
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedNumber) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(&hdb_dev->attr_AttributePausedNumber_read);
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedNumber
 }
 //--------------------------------------------------------
 /**
@@ -947,6 +944,23 @@ void HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr)
 	attr.set_value(hdb_dev->attr_AttributeErrorList_read, hdb_dev->attribute_error_list_str_size);
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeErrorList
 }
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributePausedList related method
+ *	Description: Returns the attributes stopped list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr)
+{
+	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedList) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(hdb_dev->attr_AttributePausedList_read, hdb_dev->attribute_paused_list_str_size);
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedList
+}
 
 //--------------------------------------------------------
 /**
@@ -1003,8 +1017,9 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
 
 	hdb_dev->shared->veclock.readerIn();
 	bool is_running = hdb_dev->shared->is_running(signame);
+	bool is_paused = hdb_dev->shared->is_paused(signame);
 	hdb_dev->shared->veclock.readerOut();
-	if(is_running)
+	if(is_running || is_paused)
 	{
 		hdb_dev->shared->stop(signame);
 		hdb_dev->push_shared->stop_attr(signame);
@@ -1044,7 +1059,9 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	attr_status << "Events engine      : "<<(hdb_dev->shared->get_sig_source(signame) ? "ZMQ" : "Notifd");
 	attr_status << endl;
 	hdb_dev->shared->veclock.readerIn();
-	attr_status << "Archiving          : "<<(hdb_dev->shared->is_running(signame) ? "Started" : "Stopped");
+	bool is_running = hdb_dev->shared->is_running(signame);
+	bool is_paused = hdb_dev->shared->is_paused(signame);
+	attr_status << "Archiving          : "<<((is_running && !is_paused) ? "Started" : (is_paused ? "Paused" : "Stopped"));
 	hdb_dev->shared->veclock.readerOut();
 	attr_status << endl;
 
@@ -1185,9 +1202,10 @@ void HdbEventSubscriber::attribute_start(Tango::DevString argin)
 	string	signame(argin);
 	hdb_dev->fix_tango_host(signame);
 	hdb_dev->shared->veclock.readerIn();
-	bool is_running = hdb_dev->shared->is_running(signame);
+	bool is_paused = hdb_dev->shared->is_paused(signame);
+	bool is_stopped = hdb_dev->shared->is_stopped(signame);
 	hdb_dev->shared->veclock.readerOut();
-	if(!is_running)
+	if(is_paused || is_stopped)
 	{
 		hdb_dev->push_shared->start_attr(signame);
 		hdb_dev->shared->start(signame);
@@ -1214,8 +1232,9 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 	hdb_dev->fix_tango_host(signame);
 	hdb_dev->shared->veclock.readerIn();
 	bool is_running = hdb_dev->shared->is_running(signame);
+	bool is_paused = hdb_dev->shared->is_paused(signame);
 	hdb_dev->shared->veclock.readerOut();
-	if(is_running)
+	if(is_running || is_paused)
 	{
 		hdb_dev->shared->stop(signame);
 		hdb_dev->push_shared->stop_attr(signame);
@@ -1243,6 +1262,73 @@ void HdbEventSubscriber::reset_statistics()
 	last_statistics_reset_time = dnow;
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::reset_statistics
+}
+//--------------------------------------------------------
+/**
+ *	Command Pause related method
+ *	Description: Pause archiving
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::pause()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::Pause()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::pause) ENABLED START -----*/
+	//	Add your own code
+#if 0
+	hdb_dev->shared->pause_all();
+	hdb_dev->push_shared->pause_all();
+#else
+	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
+	{
+		hdb_dev->shared->veclock.readerIn();
+		bool is_running = hdb_dev->shared->is_running(att_list_tmp[i]);
+		hdb_dev->shared->veclock.readerOut();
+		if(is_running)
+		{
+			try
+			{
+				attribute_pause((Tango::DevString)att_list_tmp[i].c_str());
+			}
+			catch(Tango::DevFailed &e)
+			{}
+		}
+	}
+#endif
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::pause
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributePause related method
+ *	Description: Pause archiving single attribute
+ *
+ *	@param argin Attribute name
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_pause(Tango::DevString argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributePause()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_pause) ENABLED START -----*/
+	//	Add your own code
+	string	signame(argin);
+	hdb_dev->fix_tango_host(signame);
+	hdb_dev->shared->veclock.readerIn();
+	bool is_running = hdb_dev->shared->is_running(signame);
+	hdb_dev->shared->veclock.readerOut();
+	if(is_running)
+	{
+		hdb_dev->shared->pause(signame);
+		hdb_dev->push_shared->pause_attr(signame);
+	}
+	else
+	{
+		Tango::Except::throw_exception(
+					(const char *)"Not started",
+					"Signal NOT started",
+					(const char *)"attribute_pause");
+	}
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_pause
 }
 
 /*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_ending) ENABLED START -----*/
