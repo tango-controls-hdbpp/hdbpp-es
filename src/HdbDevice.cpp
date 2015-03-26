@@ -126,6 +126,7 @@ void HdbDevice::initialize()
 	attr_AttributeNumber_read = 0;
 	attr_AttributeStartedNumber_read = 0;
 	attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
+	attr_AttributePausedNumber_read = attr_AttributeNumber_read;
 
 	//	Create a thread to subscribe events
 	shared = new SharedData(this);	
@@ -196,14 +197,14 @@ void HdbDevice::build_signal_vector(vector<string> list)
 void HdbDevice::add(string &signame)
 {
 	fix_tango_host(signame);
-	shared->add(signame, UPDATE_PROP);
+	shared->add(signame, UPDATE_PROP, false);
 }
 //=============================================================================
 //=============================================================================
 void HdbDevice::remove(string &signame)
 {
 	fix_tango_host(signame);
-	shared->remove(signame);
+	shared->remove(signame, false);
 	push_shared->remove(signame);
 	push_shared->remove_attr(signame);
 }
@@ -398,18 +399,18 @@ void  HdbDevice::get_event_number_list()
 	for (size_t i=0 ; i<attribute_list_tmp.size() ; i++)
 	{
 		string signame(attribute_list_tmp[i]);
-		try
+		/*try
 		{
 			shared->veclock.readerIn();
-			bool is_running = shared->is_running(signame);
+			bool is_stopped = shared->is_stopped(signame);
 			shared->veclock.readerOut();
-			if(!is_running)
+			if(is_stopped)
 				continue;
 		}catch(Tango::DevFailed &e)
 		{
 			shared->veclock.readerOut();
 			continue;
-		}
+		}*/
 		long ok_ev_t=0;
 		long nok_ev_t=0;
 		ok_ev_t = shared->get_ok_event(signame);
@@ -511,9 +512,9 @@ void  HdbDevice::reset_freq_statistics()
 }
 //=============================================================================
 //=============================================================================
-void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_stop_list)
+void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list)
 {
-	shared->get_lists(_list, _start_list, _stop_list);
+	shared->get_lists(_list, _start_list, _pause_list, _stop_list);
 }
 //=============================================================================
 //=============================================================================

@@ -917,6 +917,13 @@ void  PushThreadShared::start_attr(string &signame)
 	push_back_cmd(cmd);
 }
 
+void  PushThreadShared::pause_attr(string &signame)
+{
+	//------Configure DB------------------------------------------------
+	HdbCmdData *cmd = new HdbCmdData(DB_PAUSE, signame);
+	push_back_cmd(cmd);
+}
+
 void  PushThreadShared::stop_attr(string &signame)
 {
 	//------Configure DB------------------------------------------------
@@ -938,6 +945,17 @@ void  PushThreadShared::start_all()
 	for (i=0 ; i<signals.size() ; i++)
 	{
 		start_attr(signals[i].name);
+	}
+	sig_lock->unlock();
+}
+
+void  PushThreadShared::pause_all()
+{
+	sig_lock->lock();
+	unsigned int i;
+	for (i=0 ; i<signals.size() ; i++)
+	{
+		pause_attr(signals[i].name);
 	}
 	sig_lock->unlock();
 }
@@ -1037,6 +1055,16 @@ void *PushThread::run_undetached(void *ptr)
 					{
 						//	Send it to DB
 						int ret = shared->mdb->stop_Attr(cmd->attr_name);
+						if(ret < 0)
+						{
+							//TODO
+						}
+						break;
+					}
+					case DB_PAUSE:
+					{
+						//	Send it to DB
+						int ret = shared->mdb->pause_Attr(cmd->attr_name);
 						if(ret < 0)
 						{
 							//TODO

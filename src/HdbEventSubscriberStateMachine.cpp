@@ -284,6 +284,22 @@ bool HdbEventSubscriber::is_StatisticsResetTime_allowed(TANGO_UNUSED(Tango::AttR
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_AttributePausedNumber_allowed()
+ *	Description : Execution allowed for AttributePausedNumber attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributePausedNumber_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributePausedNumber attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributePausedNumberStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributePausedNumberStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeList_allowed()
  *	Description : Execution allowed for AttributeList attribute
  */
@@ -442,6 +458,22 @@ bool HdbEventSubscriber::is_AttributeErrorList_allowed(TANGO_UNUSED(Tango::AttRe
 	return true;
 }
 
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributePausedList_allowed()
+ *	Description : Execution allowed for AttributePausedList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributePausedList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributePausedList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributePausedListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributePausedListStateAllowed_READ
+	return true;
+}
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
@@ -563,6 +595,36 @@ bool HdbEventSubscriber::is_ResetStatistics_allowed(TANGO_UNUSED(const CORBA::An
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::ResetStatisticsStateAllowed) ENABLED START -----*/
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::ResetStatisticsStateAllowed
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_Pause_allowed()
+ *	Description : Execution allowed for Pause attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_Pause_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for Pause command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::PauseStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::PauseStateAllowed
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributePause_allowed()
+ *	Description : Execution allowed for AttributePause attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributePause_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for AttributePause command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributePauseStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributePauseStateAllowed
 	return true;
 }
 
