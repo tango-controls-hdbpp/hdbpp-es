@@ -47,7 +47,7 @@ namespace HdbEventSubscriber_ns
 {
 //=============================================================================
 //=============================================================================
-PushThreadShared::PushThreadShared(HdbDevice *dev, string host, string user, string password, string dbname, int port)
+PushThreadShared::PushThreadShared(HdbDevice *dev, string host, string user, string password, string dbname, int port):Tango::LogAdapter(dev->_device)
 {
 	max_waiting=0; stop_it=false;
 
@@ -57,7 +57,7 @@ PushThreadShared::PushThreadShared(HdbDevice *dev, string host, string user, str
 	}
 	catch (string &err)
 	{
-		cout << __func__ << ": error connecting DB: " << err << endl;
+		FATAL_STREAM << __func__ << ": error connecting DB: " << err << endl;
 		exit(-1);
 	}
 	hdb_dev = dev;
@@ -97,7 +97,7 @@ void PushThreadShared::push_back_cmd(HdbCmdData *argin)
 	}
 	catch(Tango::DevFailed &e)
 	{
-		cout <<"PushThreadShared::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+		INFO_STREAM <<"PushThreadShared::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 	}
 #endif
 	//	And awake thread
@@ -1069,7 +1069,7 @@ void *PushThread::run_undetached(void *ptr)
 		{
 			omni_mutex_lock sync(*shared);
 			//shared->wait();
-			//cout <<"PushThread::"<< __func__<<": before shared->wait(2*1000)..."<<endl;
+			//DEBUG_STREAM <<"PushThread::"<< __func__<<": before shared->wait(2*1000)..."<<endl;
 			shared->wait(2*1000);
 		}
 	}

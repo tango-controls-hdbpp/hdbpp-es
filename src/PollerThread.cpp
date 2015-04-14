@@ -31,12 +31,12 @@ namespace HdbEventSubscriber_ns
 
 //=============================================================================
 //=============================================================================
-PollerThread::PollerThread(HdbDevice *dev)
+PollerThread::PollerThread(HdbDevice *dev): Tango::LogAdapter(dev->_device)
 {
 	hdb_dev = dev;
 	abortflag = false;
 	period  = dev->poller_period;
-	cout <<__func__<< "period="<<period<<" dev->poller_period="<<dev->poller_period<<endl;
+	DEBUG_STREAM <<__func__<< "period="<<period<<" dev->poller_period="<<dev->poller_period<<endl;
 	last_stat.tv_sec = 0;
 	last_stat.tv_usec = 0;
 }
@@ -44,17 +44,17 @@ PollerThread::PollerThread(HdbDevice *dev)
 //=============================================================================
 void *PollerThread::run_undetached(void *ptr)
 {
-	cout << "PollerThread id="<<omni_thread::self()->id()<<endl;
+	INFO_STREAM << "PollerThread id="<<omni_thread::self()->id()<<endl;
 	hdb_dev->AttributeRecordFreq = -1;
 	hdb_dev->AttributeFailureFreq = -1;
 	while(abortflag==false)
 	{
-		//cout << "PollerThread sleeping period="<<period<<endl;
+		//DEBUG_STREAM << "PollerThread sleeping period="<<period<<endl;
 		if(period > 0)
 			abort_sleep((double)period);
 		else
 			abort_sleep(3.0);
-		//cout << "PollerThread awake!"<<endl;
+		//DEBUG_STREAM << "PollerThread awake!"<<endl;
 
 		//vector<string> attribute_list_tmp = hdb_dev->get_sig_list();
 
@@ -155,7 +155,7 @@ void *PollerThread::run_undetached(void *ptr)
 			(hdb_dev->_device)->push_archive_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
 		}catch(Tango::DevFailed &e)
 		{
-			cout <<"PollerThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+			INFO_STREAM <<"PollerThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 		}*/
 		/*hdb_dev->attribute_list_str = hdb_dev->get_sig_list();
 		hdb_dev->attribute_started_list_str = hdb_dev->get_sig_started_list();
@@ -302,7 +302,7 @@ void *PollerThread::run_undetached(void *ptr)
 		usleep(1000);
 
 	}
-	cout <<"PollerThread::"<< __func__<<": exiting..."<<endl;
+	INFO_STREAM <<"PollerThread::"<< __func__<<": exiting..."<<endl;
 	return NULL;
 }
 //=============================================================================

@@ -81,7 +81,7 @@ class HdbDevice;
  *	Shared data between DS and thread.
  */
 //=========================================================
-class PushThreadShared: public Tango::TangoMonitor
+class PushThreadShared: public Tango::TangoMonitor, public Tango::LogAdapter
 {
 private:
 	/**

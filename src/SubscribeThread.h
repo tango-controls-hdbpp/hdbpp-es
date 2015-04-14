@@ -104,7 +104,7 @@ class SubscribeThread;
  */
 //=========================================================
 //class SharedData: public omni_mutex
-class SharedData: public Tango::TangoMonitor
+class SharedData: public Tango::TangoMonitor, public Tango::LogAdapter
 {
 private:
 	/**
@@ -126,7 +126,7 @@ public:
 	 * Constructor
 	 */
 	//SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
-	SharedData(HdbDevice *dev){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
+	SharedData(HdbDevice *dev);
 	/**
 	 * Add a new signal.
 	 */
@@ -347,7 +347,7 @@ public:
  *	Create a thread retry to subscribe event.
  */
 //=========================================================
-class SubscribeThread: public omni_thread
+class SubscribeThread: public omni_thread, public Tango::LogAdapter
 {
 private:
 	/**

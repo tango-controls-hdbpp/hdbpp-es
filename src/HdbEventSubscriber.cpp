@@ -178,10 +178,10 @@ void HdbEventSubscriber::delete_device()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::delete_device) ENABLED START -----*/
 
 	//	Delete device allocated objects
-	cout << "-------- Delete device's allocated object --------" << endl;
+	INFO_STREAM << "-------- Delete device's allocated object --------" << endl;
 	pause();
 	delete hdb_dev;
-	cout << "-------- Delete device's allocated object done !--------" << endl;
+	INFO_STREAM << "-------- Delete device's allocated object done !--------" << endl;
 	//Tango::client_leavefunc();
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
@@ -218,7 +218,7 @@ void HdbEventSubscriber::init_device()
 	set_status("Initializing....");
 
 	//	Create one event handler by HDB access device
-	cout << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
+	INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
 	string	status("");
 	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, this);
 	hdb_dev->startArchivingAtStartup = startArchivingAtStartup;
@@ -249,7 +249,7 @@ void HdbEventSubscriber::init_device()
 	{
 		set_state(Tango::ALARM);
 		set_status(status);
-		cout << status << endl;
+		INFO_STREAM << status << endl;
 	}
 	timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -430,8 +430,8 @@ void HdbEventSubscriber::get_device_property()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_after) ENABLED START -----*/
 
 	//	Check device property data members init
-	//cout << "hdbAccessDevice      = " << hdbAccessDevice << endl;
-	cout << "subscribeRetryPeriod = " << subscribeRetryPeriod << endl;
+	//DEBUG_STREAM << "hdbAccessDevice      = " << hdbAccessDevice << endl;
+	DEBUG_STREAM << "subscribeRetryPeriod = " << subscribeRetryPeriod << endl;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_device_property_after
 }
