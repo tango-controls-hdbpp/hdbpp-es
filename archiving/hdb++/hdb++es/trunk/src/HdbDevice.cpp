@@ -62,7 +62,7 @@ namespace HdbEventSubscriber_ns
 //=============================================================================
 HdbDevice::~HdbDevice()
 {
-	DEBUG_STREAM << "	Deleting HdbDevice" << endl;
+	INFO_STREAM << "	Deleting HdbDevice" << endl;
 	DEBUG_STREAM << "	Stopping stats thread" << endl;
 	stats_thread->abortflag=true;
 	check_periodic_thread->abortflag=true;
@@ -188,7 +188,7 @@ void HdbDevice::build_signal_vector(vector<string> list)
 		catch (Tango::DevFailed &e)
 		{
 			Tango::Except::print_exception(e);
-			cout << "!!! Do not add " << list[i] << endl;
+			INFO_STREAM << "HdbDevice::" << __func__<< " NOT added " << list[i] << endl;
 		}	
 	}
 }
@@ -264,7 +264,7 @@ DECLARE_TIME_VAR	t0, t1;
 GET_TIME(t0);
 		//put_property(data);
 GET_TIME(t1);
-cout << ELAPSED(t0, t1) << " ms" << endl;
+DEBUG_STREAM << ELAPSED(t0, t1) << " ms" << endl;
 	}
 	catch (Tango::DevFailed &e)
 	{
@@ -519,7 +519,10 @@ void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, v
 //=============================================================================
 //=============================================================================
 
-
+ArchiveCB::ArchiveCB(HdbDevice	*dev):Tango::LogAdapter(dev->_device)
+{
+	hdb_dev=dev;
+}
 
 //=============================================================================
 /**
@@ -530,7 +533,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 {
 
 	//time_t	t = time(NULL);
-	//cout << __func__<<": Event '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
+	//DEBUG_STREAM << __func__<<": Event '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
 
 	hdb_dev->shared->veclock.readerIn();
@@ -538,7 +541,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 
 	if(signal==NULL)
 	{
-		cout << __func__<<": Event '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
+		ERROR_STREAM << __func__<<": Event '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
 		hdb_dev->shared->veclock.readerOut();
 		return;
 	}
@@ -565,7 +568,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch (Tango::DevFailed &e)
 		{
-			cout<< __func__ << ": FIRST exception in get_config: " << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
+			INFO_STREAM<< __func__ << ": FIRST exception in get_config: " << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
 			hdb_dev->shared->veclock.readerOut();
 			return;
 		}
@@ -578,15 +581,15 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		signal->status.clear();
 		signal->status = data->errors[0].desc;
 
-		cout<< __func__ << ": Exception on " << data->attr_name << endl;
-		cout << data->errors[0].desc  << endl;
+		INFO_STREAM<< __func__ << ": Exception on " << data->attr_name << endl;
+		INFO_STREAM << data->errors[0].desc  << endl;
 		try
 		{
 			hdb_dev->shared->set_nok_event(data->attr_name);
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 		}
 
 		try
@@ -599,7 +602,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
 		}
 		try
 		{
@@ -607,20 +610,20 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
 #if 0	//storing quality factor
 	else if ( data->attr_value->get_quality() == Tango::ATTR_INVALID )
 	{
-		cout << "Attribute " << data->attr_name << " is invalid !" << endl;
+		INFO_STREAM << "Attribute " << data->attr_name << " is invalid !" << endl;
 		try
 		{
 			hdb_dev->shared->set_nok_event(data->attr_name);
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 		}
 //		hdb_dev->error_attribute(data);
 		//	Check if already OK
@@ -639,7 +642,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
 		}
 		try
 		{
@@ -647,7 +650,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to set first err: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
 #endif
@@ -659,7 +662,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to set_ok_event: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to set_ok_event: " << e.errors[0].desc << "'"<<endl;
 		}
 		//	Check if already OK
 		if (signal->evstate!=Tango::ON)
@@ -679,7 +682,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
 		}
 		try
 		{
@@ -688,7 +691,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		}
 		catch(Tango::DevFailed &e)
 		{
-			cout << __func__ << " Unable to set first: " << e.errors[0].desc << "'"<<endl;
+			WARN_STREAM << __func__ << " Unable to set first: " << e.errors[0].desc << "'"<<endl;
 		}
 	}
 	hdb_dev->shared->veclock.readerOut();
@@ -716,14 +719,14 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 {
 
 	time_t	t = time(NULL);
-	//cout << __func__<<": AttrConfEvent '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
+	//DEBUG_STREAM << __func__<<": AttrConfEvent '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
 
 	//	Check if event is an error event.
 	if (data->err)
 	{
-		cout<< __func__ << ": AttrConfEvent Exception on " << data->attr_name << endl;
-		cout << data->errors[0].desc  << endl;
+		INFO_STREAM<< __func__ << ": AttrConfEvent Exception on " << data->attr_name << endl;
+		INFO_STREAM << data->errors[0].desc  << endl;
 		return;
 	}
 	HdbEventDataType ev_data_type;
@@ -732,7 +735,7 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	HdbSignal	*signal=hdb_dev->shared->get_signal(data->attr_name);
 	if(signal==NULL)
 	{
-		cout << __func__<<": AttrConfEvent '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
+		ERROR_STREAM << __func__<<": AttrConfEvent '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
 		hdb_dev->shared->veclock.readerOut();
 		return;
 	}
@@ -748,7 +751,7 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	}
 	catch(Tango::DevFailed &e)
 	{
-		cout << __func__ << " AttrConfEvent Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
+		WARN_STREAM << __func__ << " AttrConfEvent Unable to check if is_running: " << e.errors[0].desc << "'"<<endl;
 	}
 
 	try
@@ -757,7 +760,7 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 	}
 	catch(Tango::DevFailed &e)
 	{
-		cout << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
+		WARN_STREAM << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
 	}
 	hdb_dev->shared->veclock.readerOut();
 
@@ -980,11 +983,11 @@ void HdbDevice::add_domain(string &str)
 			if(it_domain != domain_map.end())
 			{
 				with_domain = it_domain->second;
-				//cout << __func__ <<": found domain in map -> " << with_domain<<endl;
+				//DEBUG_STREAM << __func__ <<": found domain in map -> " << with_domain<<endl;
 				strresult += with_domain+port;
 				if(it != facilities.end()-1)
 					strresult += ",";
-				//cout<<__func__<<": strresult 1 "<<strresult<<endl;
+				//DEBUG_STREAM<<__func__<<": strresult 1 "<<strresult<<endl;
 				continue;
 			}
 
@@ -1086,17 +1089,17 @@ string HdbDevice::remove_domain(string str)
  */
 int HdbDevice::compare_tango_names(string str1, string str2)
 {
-	//cout << __func__<< ": entering with '" << str1<<"' - '" << str2<<"'" << endl;
+	//DEBUG_STREAM << __func__<< ": entering with '" << str1<<"' - '" << str2<<"'" << endl;
 	if(str1 == str2)
 	{
-		//cout << __func__<< ": EQUAL 1 -> '" << str1<<"'=='" << str2<<"'" << endl;
+		//DEBUG_STREAM << __func__<< ": EQUAL 1 -> '" << str1<<"'=='" << str2<<"'" << endl;
 		return 0;
 	}
 	fix_tango_host(str1);
 	fix_tango_host(str2);
 	if(str1 == str2)
 	{
-		//cout << __func__<< ": EQUAL 2 -> '" << str1<<"'=='" << str2<<"'" << endl;
+		//DEBUG_STREAM << __func__<< ": EQUAL 2 -> '" << str1<<"'=='" << str2<<"'" << endl;
 		return 0;
 	}
 
@@ -1119,10 +1122,10 @@ int HdbDevice::compare_tango_names(string str1, string str2)
 		{
 			string name1 = string("tango://")+ *it1 + string("/") + attr_name1;
 			string name2 = string("tango://")+ *it2 + string("/") + attr_name2;
-			//cout << __func__<< ": checking all possible combinations: '" << str1<<"' - '" << str2<<"'" << endl;
+			//DEBUG_STREAM << __func__<< ": checking all possible combinations: '" << str1<<"' - '" << str2<<"'" << endl;
 			if(name1 == name2)
 			{
-				//cout << __func__<< ": EQUAL 3 -> '" << name1<<"'=='" << name2<<"'" << endl;
+				//DEBUG_STREAM << __func__<< ": EQUAL 3 -> '" << name1<<"'=='" << name2<<"'" << endl;
 				return 0;
 			}
 		}
@@ -1132,7 +1135,7 @@ int HdbDevice::compare_tango_names(string str1, string str2)
 	string str2_nd = remove_domain(str2);
 	if(str1_nd == str2_nd)
 	{
-//		cout << __func__<< ": EQUAL 3 -> '" << str1_nd<<"'=='" << str2_nd<<"'" << endl;
+//		DEBUG_STREAM << __func__<< ": EQUAL 3 -> '" << str1_nd<<"'=='" << str2_nd<<"'" << endl;
 		return 0;
 	}
 	string facility1_nd = get_only_tango_host(str1_nd);
@@ -1150,17 +1153,17 @@ int HdbDevice::compare_tango_names(string str1, string str2)
 		{
 			string name1 = string("tango://")+ *it1 + string("/") + attr_name1;
 			string name2 = string("tango://")+ *it2 + string("/") + attr_name2;
-			//cout << __func__<< ": checking all possible combinations without domain: '" << str1<<"' - '" << str2<<"'" << endl;
+			//DEBUG_STREAM << __func__<< ": checking all possible combinations without domain: '" << str1<<"' - '" << str2<<"'" << endl;
 			if(name1 == name2)
 			{
-				//cout << __func__<< ": EQUAL 4 -> '" << name1<<"'=='" << name2<<"'" << endl;
+				//DEBUG_STREAM << __func__<< ": EQUAL 4 -> '" << name1<<"'=='" << name2<<"'" << endl;
 				return 0;
 			}
 		}
 	}
 
 	int result=strcmp(str1_nd.c_str(),str2_nd.c_str());
-//	cout << __func__<< ": DIFFERENTS -> '" << str1_nd<< (result ? "'<'" : "'>'") << str2_nd<<"'" << endl;
+//	DEBUG_STREAM << __func__<< ": DIFFERENTS -> '" << str1_nd<< (result ? "'<'" : "'>'") << str2_nd<<"'" << endl;
 	return result;
 }
 //=============================================================================
@@ -1189,16 +1192,16 @@ void HdbDevice::error_attribute(Tango::EventData *data)
 {
 	if (data->err)
 	{
-		ERROR_STREAM << "Exception on " << data->attr_name << endl;
+		INFO_STREAM << "Exception on " << data->attr_name << endl;
 	
 		for (unsigned int i=0; i<data->errors.length(); i++)
 		{
-			ERROR_STREAM << data->errors[i].reason << endl;
-			ERROR_STREAM << data->errors[i].desc << endl;
-			ERROR_STREAM << data->errors[i].origin << endl;
+			INFO_STREAM << data->errors[i].reason << endl;
+			INFO_STREAM << data->errors[i].desc << endl;
+			INFO_STREAM << data->errors[i].origin << endl;
 		}
 			
-		ERROR_STREAM << endl;		
+		INFO_STREAM << endl;
 	}
 	else
 	{
@@ -1217,7 +1220,7 @@ void HdbDevice::storage_time(Tango::EventData *data, double elapsed)
 	char *el_ptr = el_time;
 	sprintf (el_ptr, "%.3f ms", elapsed);
 	
-	WARN_STREAM << "Storage time : " << el_time << " for " << data->attr_name << endl;
+	INFO_STREAM << "Storage time : " << el_time << " for " << data->attr_name << endl;
 
 	if ( elapsed > 50 )
 		ERROR_STREAM << "LONG Storage time : " << el_time << " for " << data->attr_name << endl;

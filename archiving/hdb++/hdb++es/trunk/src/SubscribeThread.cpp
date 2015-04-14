@@ -46,7 +46,13 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 namespace HdbEventSubscriber_ns
 {
-
+SharedData::SharedData(HdbDevice *dev):Tango::LogAdapter(dev->_device)
+{
+	hdb_dev=dev;
+	action=NOTHING;
+	stop_it=false;
+	initialized=false;
+}
 //=============================================================================
 /**
  *	get signal by name.
@@ -97,17 +103,17 @@ void SharedData::remove(string &signame, bool stop)
 				if(event_id != ERR)
 				{
 
-					cout <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
 					attr->unsubscribe_event(event_id);
 					attr->unsubscribe_event(event_conf_id);
-					cout <<"SharedData::"<< __func__<<": unsubscribed... "<< signame << endl;
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed... "<< signame << endl;
 				}
 			}
 			catch (Tango::DevFailed &e)
 			{
 				//	Do nothing
 				//	Unregister failed means Register has also failed
-				cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+				INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 			}
 		}
 
@@ -124,7 +130,7 @@ void SharedData::remove(string &signame, bool stop)
 				found = true;
 				if(stop)
 				{
-					cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
+					DEBUG_STREAM <<"SharedData::"<<__func__<< ": removing " << signame << endl;
 					sig->siglock->writerIn();
 					try
 					{
@@ -138,10 +144,10 @@ void SharedData::remove(string &signame, bool stop)
 					{
 						//	Do nothing
 						//	Unregister failed means Register has also failed
-						cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+						INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 					}
 					sig->siglock->writerOut();
-					cout <<"SharedData::"<< __func__<<": stopped " << signame << endl;
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": stopped " << signame << endl;
 				}
 				if(!stop)
 				{
@@ -154,7 +160,7 @@ void SharedData::remove(string &signame, bool stop)
 					if(sig->stopped)
 						hdb_dev->attr_AttributeStoppedNumber_read--;
 					hdb_dev->attr_AttributeNumber_read--;
-					cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
 				}
 				break;
 			}
@@ -172,7 +178,7 @@ void SharedData::remove(string &signame, bool stop)
 #endif
 				{
 					found = true;
-					cout <<"SharedData::"<<__func__<< ": removing " << signame << endl;
+					DEBUG_STREAM <<"SharedData::"<<__func__<< ": removing " << signame << endl;
 					if(stop)
 					{
 						sig->siglock->writerIn();
@@ -188,10 +194,10 @@ void SharedData::remove(string &signame, bool stop)
 						{
 							//	Do nothing
 							//	Unregister failed means Register has also failed
-							cout <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+							INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 						}
 						sig->siglock->writerOut();
-						cout <<"SharedData::"<< __func__<<": stopped " << signame << endl;
+						DEBUG_STREAM <<"SharedData::"<< __func__<<": stopped " << signame << endl;
 					}
 					if(!stop)
 					{
@@ -204,7 +210,7 @@ void SharedData::remove(string &signame, bool stop)
 						if(sig->stopped)
 							hdb_dev->attr_AttributeStoppedNumber_read--;
 						hdb_dev->attr_AttributeNumber_read--;
-						cout <<"SharedData::"<< __func__<<": removed " << signame << endl;
+						DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
 					}
 					break;
 				}
@@ -250,7 +256,7 @@ void SharedData::start(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						cout << "SharedData::start: error adding  " << signame << endl;
+						INFO_STREAM << "SharedData::start: error adding  " << signame << endl;
 					}
 				}
 				signals[i].running=true;
@@ -285,7 +291,7 @@ void SharedData::start(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						cout << "SharedData::start: error adding  " << signame << endl;
+						INFO_STREAM << "SharedData::start: error adding  " << signame << endl;
 					}
 				}
 				signals[i].running=true;
@@ -392,7 +398,7 @@ void SharedData::stop(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						cout << "SharedData::stop: error removing  " << signame << endl;
+						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
 				if(signals[i].paused)
@@ -405,7 +411,7 @@ void SharedData::stop(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						cout << "SharedData::stop: error removing  " << signame << endl;
+						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
 				signals[i].running=false;
@@ -438,7 +444,7 @@ void SharedData::stop(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						cout << "SharedData::stop: error removing  " << signame << endl;
+						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
 				if(signals[i].paused)
@@ -451,7 +457,7 @@ void SharedData::stop(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						cout << "SharedData::stop: error removing  " << signame << endl;
+						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
 				signals[i].running=false;
@@ -832,7 +838,7 @@ void SharedData::set_first_err(string &signame)
 //=============================================================================
 void SharedData::unsubscribe_events()
 {
-	cout <<"SharedData::"<<__func__<< "    entering..."<< endl;
+	DEBUG_STREAM <<"SharedData::"<<__func__<< "    entering..."<< endl;
 	veclock.readerIn();
 	vector<HdbSignal>	local_signals(signals);
 	veclock.readerOut();
@@ -841,18 +847,18 @@ void SharedData::unsubscribe_events()
 		HdbSignal	*sig = &local_signals[i];
 		if (signals[i].event_id != ERR)
 		{
-			cout <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << " id="<<omni_thread::self()->id()<< endl;
+			DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << " id="<<omni_thread::self()->id()<< endl;
 			try
 			{
 				sig->attr->unsubscribe_event(sig->event_id);
 				sig->attr->unsubscribe_event(sig->event_conf_id);
-				cout <<"SharedData::"<<__func__<< "    unsubscribed " << sig->name << endl;
+				DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribed " << sig->name << endl;
 			}
 			catch (Tango::DevFailed &e)
 			{
 				//	Do nothing
 				//	Unregister failed means Register has also failed
-				cout <<"SharedData::"<<__func__<< "    ERROR unsubscribing " << sig->name << " err="<<e.errors[0].desc<< endl;
+				INFO_STREAM <<"SharedData::"<<__func__<< "    ERROR unsubscribing " << sig->name << " err="<<e.errors[0].desc<< endl;
 			}
 		}
 	}
@@ -864,15 +870,15 @@ void SharedData::unsubscribe_events()
 		if (signals[i].event_id != ERR)
 		{
 			delete sig->archive_cb;
-			cout <<"SharedData::"<<__func__<< "    deleted cb " << sig->name << endl;
+			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted cb " << sig->name << endl;
 		}
 		delete sig->attr;
-		cout <<"SharedData::"<<__func__<< "    deleted proxy " << sig->name << endl;
+		DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted proxy " << sig->name << endl;
 		sig->siglock->writerOut();
 		delete sig->siglock;
-		cout <<"SharedData::"<<__func__<< "    deleted lock " << sig->name << endl;
+		DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted lock " << sig->name << endl;
 	}
-	cout <<"SharedData::"<<__func__<< "    ended loop, deleting vector" << endl;
+	DEBUG_STREAM <<"SharedData::"<<__func__<< "    ended loop, deleting vector" << endl;
 
 	/*for (unsigned int j=0 ; j<signals.size() ; j++, pos++)
 	{
@@ -883,7 +889,7 @@ void SharedData::unsubscribe_events()
 	}*/
 	signals.clear();
 	veclock.writerOut();
-	cout <<"SharedData::"<< __func__<< ": exiting..."<<endl;
+	DEBUG_STREAM <<"SharedData::"<< __func__<< ": exiting..."<<endl;
 }
 //=============================================================================
 /**
@@ -901,7 +907,7 @@ void SharedData::add(string &signame)
 //=============================================================================
 void SharedData::add(string &signame, int to_do, bool start)
 {
-	cout << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
+	DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
 	{
 		veclock.readerIn();
 		HdbSignal	*sig;
@@ -922,7 +928,7 @@ void SharedData::add(string &signame, int to_do, bool start)
 #endif
 		}
 		veclock.readerOut();
-		//cout << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << " start="<<(start ? "Y" : "N")<< endl;
+		//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << " start="<<(start ? "Y" : "N")<< endl;
 		if (found && !start)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
@@ -949,16 +955,16 @@ void SharedData::add(string &signame, int to_do, bool start)
 			signal->devname = signal->name.substr(0, idx);
 			signal->attname = signal->name.substr(idx+1);
 			signal->status = "NOT connected";
-			//cout << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
+			//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
 		}
 		else if(found && start)
 		{
 			signal = sig;
 			signal->status = "NOT connected";
-			//cout << "created proxy to " << signame << endl;
+			//DEBUG_STREAM << "created proxy to " << signame << endl;
 			//	create Attribute proxy
 			signal->attr = new Tango::AttributeProxy(signal->name);
-			cout << "SharedData::"<<__func__<<": signame="<<signame<<" created proxy"<< endl;
+			DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created proxy"<< endl;
 		}
 		signal->event_id = ERR;
 		signal->event_conf_id = ERR;
@@ -989,11 +995,11 @@ void SharedData::add(string &signame, int to_do, bool start)
 			}
 			catch (Tango::DevFailed &e)
 			{
-				cout <<"SubscribeThread::"<<__func__<< " ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
+				INFO_STREAM <<"SubscribeThread::"<<__func__<< " ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
 			}
 		}
 
-		//cout <<"SubscribeThread::"<< __func__<< " created proxy to " << signame << endl;
+		//DEBUG_STREAM <<"SubscribeThread::"<< __func__<< " created proxy to " << signame << endl;
 		if (!found && !start)
 		{
 			veclock.writerIn();
@@ -1003,7 +1009,7 @@ void SharedData::add(string &signame, int to_do, bool start)
 			hdb_dev->attr_AttributeNumber_read++;
 			hdb_dev->attr_AttributeStoppedNumber_read++;
 			veclock.writerOut();
-			//cout << "SharedData::"<<__func__<<": signame="<<signame<<" push_back signal"<< endl;
+			//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" push_back signal"<< endl;
 		}
 		else if(found && start)
 		{
@@ -1012,7 +1018,7 @@ void SharedData::add(string &signame, int to_do, bool start)
 
 		action = to_do;
 	}
-	cout <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
+	DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
 	signal();
 	//condition.signal();
 }
@@ -1027,7 +1033,7 @@ void SharedData::subscribe_events()
 	{
 		HdbSignal	*sig2 = &signals[ii];
 		int ret = pthread_rwlock_trywrlock(&sig2->siglock);
-		cout << __func__<<": pthread_rwlock_trywrlock i="<<ii<<" name="<<sig2->name<<" just entered " << ret << endl;
+		DEBUG_STREAM << __func__<<": pthread_rwlock_trywrlock i="<<ii<<" name="<<sig2->name<<" just entered " << ret << endl;
 		if(ret == 0) pthread_rwlock_unlock(&sig2->siglock);
 	}*/
 	//omni_mutex_lock sync(*this);
@@ -1066,7 +1072,7 @@ void SharedData::subscribe_events()
 			sig->max_dim_x = info.max_dim_x;
 			sig->max_dim_y = info.max_dim_y;
 			sig->first_err  = true;
-			cout << "Subscribing for " << sig->name << " data_type=" << sig->data_type << " " << (sig->first ? "FIRST" : "NOT FIRST") << endl;
+			DEBUG_STREAM << "Subscribing for " << sig->name << " data_type=" << sig->data_type << " " << (sig->first ? "FIRST" : "NOT FIRST") << endl;
 			sig->siglock->writerOut();
 			int		event_id = ERR;
 			int		event_conf_id = ERR;
@@ -1087,18 +1093,18 @@ void SharedData::subscribe_events()
 				//sig->first  = false;	//first event already arrived at subscribe_event
 				sig->status.clear();
 				sig->status = "Subscribed";
-				cout << sig->name <<  "  Subscribed" << endl;*/
+				DEBUG_STREAM << sig->name <<  "  Subscribed" << endl;*/
 				
 				//	Check event source  ZMQ/Notifd ?
 				Tango::ZmqEventConsumer	*consumer = 
 						Tango::ApiUtil::instance()->get_zmq_event_consumer();
 				isZMQ = (consumer->get_event_system_for_event_id(event_id) == Tango::ZMQ);
 				
-				cout << sig->name << "(id="<< event_id <<"):	Subscribed " << ((isZMQ)? "ZMQ Event" : "NOTIFD Event") << endl;
+				DEBUG_STREAM << sig->name << "(id="<< event_id <<"):	Subscribed " << ((isZMQ)? "ZMQ Event" : "NOTIFD Event") << endl;
 			}
 			catch (Tango::DevFailed &e)
 			{
-				cout <<__func__<< " sig->attr->subscribe_event EXCEPTION:" << endl;
+				INFO_STREAM <<__func__<< " sig->attr->subscribe_event EXCEPTION:" << endl;
 				err = true;
 				Tango::Except::print_exception(e);
 				sig->siglock->writerIn();
@@ -2124,7 +2130,7 @@ void SharedData::stop_thread()
 
 //=============================================================================
 //=============================================================================
-SubscribeThread::SubscribeThread(HdbDevice *dev)
+SubscribeThread::SubscribeThread(HdbDevice *dev):Tango::LogAdapter(dev->_device)
 {
 	hdb_dev = dev;
 	period  = dev->period;
@@ -2140,11 +2146,11 @@ void SubscribeThread::updateProperty()
 //=============================================================================
 void *SubscribeThread::run_undetached(void *ptr)
 {
-	cout << "SubscribeThread id="<<omni_thread::self()->id()<<endl;
+	INFO_STREAM << "SubscribeThread id="<<omni_thread::self()->id()<<endl;
 	while(shared->get_if_stop()==false)
 	{
 		//	Try to subscribe
-		cout << __func__<<": AWAKE"<<endl;
+		DEBUG_STREAM << __func__<<": AWAKE"<<endl;
 		updateProperty();
 		shared->subscribe_events();
 		int	nb_to_subscribe = shared->nb_sig_to_subscribe();
@@ -2155,14 +2161,14 @@ void *SubscribeThread::run_undetached(void *ptr)
 			//shared->lock();
 			if (nb_to_subscribe==0)
 			{
-				cout << __func__<<": going to wait nb_to_subscribe=0"<<endl;
+				DEBUG_STREAM << __func__<<": going to wait nb_to_subscribe=0"<<endl;
 				//shared->condition.wait();
 				shared->wait();
 				//shared->wait(3*period*1000);
 			}
 			else
 			{
-				cout << __func__<<": going to wait period="<<period<<endl;
+				DEBUG_STREAM << __func__<<": going to wait period="<<period<<endl;
 				//unsigned long s,n;
 				//omni_thread::get_time(&s,&n,period,0);
 				//shared->condition.timedwait(s,n);
@@ -2173,7 +2179,7 @@ void *SubscribeThread::run_undetached(void *ptr)
 		}
 	}
 	shared->unsubscribe_events();
-	cout <<"SubscribeThread::"<< __func__<<": exiting..."<<endl;
+	INFO_STREAM <<"SubscribeThread::"<< __func__<<": exiting..."<<endl;
 	return NULL;
 }
 //=============================================================================

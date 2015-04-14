@@ -43,7 +43,7 @@ namespace HdbEventSubscriber_ns
  *	Create a thread retry to check periodic event.
  */
 //=========================================================
-class CheckPeriodicThread: public omni_thread
+class CheckPeriodicThread: public omni_thread, public Tango::LogAdapter
 {
 private:
 	/**

@@ -30,7 +30,7 @@ namespace HdbEventSubscriber_ns
 
 //=============================================================================
 //=============================================================================
-StatsThread::StatsThread(HdbDevice *dev)
+StatsThread::StatsThread(HdbDevice *dev):Tango::LogAdapter(dev->_device)
 {
 	hdb_dev = dev;
 	abortflag = false;
@@ -42,7 +42,7 @@ StatsThread::StatsThread(HdbDevice *dev)
 //=============================================================================
 void *StatsThread::run_undetached(void *ptr)
 {
-	cout << "StatsThread id="<<omni_thread::self()->id()<<endl;
+	DEBUG_STREAM << "StatsThread id="<<omni_thread::self()->id()<<endl;
 	hdb_dev->AttributeRecordFreq = -1;
 	hdb_dev->AttributeFailureFreq = -1;
 	while(abortflag==false)
@@ -101,7 +101,7 @@ void *StatsThread::run_undetached(void *ptr)
 			(hdb_dev->_device)->push_archive_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
 		}catch(Tango::DevFailed &e)
 		{
-			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+			INFO_STREAM <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 		}
 		usleep(1000);
 		try
@@ -110,7 +110,7 @@ void *StatsThread::run_undetached(void *ptr)
 			(hdb_dev->_device)->push_archive_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
 		}catch(Tango::DevFailed &e)
 		{
-			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+			INFO_STREAM <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 		}
 		usleep(1000);
 		try
@@ -119,7 +119,7 @@ void *StatsThread::run_undetached(void *ptr)
 			(hdb_dev->_device)->push_archive_event("AttributeRecordFreqList",&hdb_dev->AttributeRecordFreqList[0], attribute_list_tmp.size());
 		}catch(Tango::DevFailed &e)
 		{
-			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+			INFO_STREAM <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 		}
 		usleep(1000);
 		try
@@ -128,13 +128,13 @@ void *StatsThread::run_undetached(void *ptr)
 			(hdb_dev->_device)->push_archive_event("AttributeFailureFreqList",&hdb_dev->AttributeFailureFreqList[0], attribute_list_tmp.size());
 		}catch(Tango::DevFailed &e)
 		{
-			cout <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+			INFO_STREAM <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 		}
 
 		gettimeofday(&last_stat, NULL);
 		hdb_dev->reset_freq_statistics();
 	}
-	cout <<"StatsThread::"<< __func__<<": exiting..."<<endl;
+	DEBUG_STREAM <<"StatsThread::"<< __func__<<": exiting..."<<endl;
 	return NULL;
 }
 //=============================================================================

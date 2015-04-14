@@ -30,7 +30,7 @@ namespace HdbEventSubscriber_ns
 
 //=============================================================================
 //=============================================================================
-CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev)
+CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): Tango::LogAdapter(dev->_device)
 {
 	hdb_dev = dev;
 	abortflag = false;
@@ -42,7 +42,7 @@ CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev)
 //=============================================================================
 void *CheckPeriodicThread::run_undetached(void *ptr)
 {
-	cout << "CheckPeriodicThread id="<<omni_thread::self()->id()<<endl;
+	INFO_STREAM << "CheckPeriodicThread id="<<omni_thread::self()->id()<<endl;
 	while(abortflag==false)
 	{
 		double min_time_to_timeout_ms = 0;
@@ -55,7 +55,7 @@ void *CheckPeriodicThread::run_undetached(void *ptr)
 		//sleep 1 second more than the first expiration time calculated
 		abort_sleep(1.0 + 0.001*min_time_to_timeout_ms);
 	}
-	cout <<"CheckPeriodicThread::"<< __func__<<": exiting..."<<endl;
+	INFO_STREAM <<"CheckPeriodicThread::"<< __func__<<": exiting..."<<endl;
 	return NULL;
 }
 //=============================================================================

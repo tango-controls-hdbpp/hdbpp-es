@@ -356,12 +356,12 @@ protected :
  * This class manage archive events
  */
 //==========================================================
-class ArchiveCB : public Tango::CallBack
+class ArchiveCB : public Tango::CallBack, public Tango::LogAdapter
 {
 public:
 	HdbDevice	*hdb_dev;
 //	HdbSignal	*signal;
-	ArchiveCB(HdbDevice	*dev) { hdb_dev=dev; };
+	ArchiveCB(HdbDevice	*dev);// { hdb_dev=dev; };
 
 	virtual void push_event(Tango::EventData *data);
 	virtual void push_event(Tango::AttrConfEventData* data);

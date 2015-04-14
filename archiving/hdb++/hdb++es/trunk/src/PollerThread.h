@@ -43,7 +43,7 @@ namespace HdbEventSubscriber_ns
  *	Create a thread retry to subscribe event.
  */
 //=========================================================
-class PollerThread: public omni_thread
+class PollerThread: public omni_thread, public Tango::LogAdapter
 {
 private:
 	/**
