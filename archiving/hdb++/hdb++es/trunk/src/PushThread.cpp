@@ -1042,39 +1042,12 @@ void *PushThread::run_undetached(void *ptr)
 						break;
 					}
 					case DB_START:
-					{
-						//	Send it to DB
-						int ret = shared->mdb->start_Attr(cmd->attr_name);
-						if(ret < 0)
-						{
-							//TODO
-						}
-						break;
-					}
 					case DB_STOP:
-					{
-						//	Send it to DB
-						int ret = shared->mdb->stop_Attr(cmd->attr_name);
-						if(ret < 0)
-						{
-							//TODO
-						}
-						break;
-					}
 					case DB_PAUSE:
-					{
-						//	Send it to DB
-						int ret = shared->mdb->pause_Attr(cmd->attr_name);
-						if(ret < 0)
-						{
-							//TODO
-						}
-						break;
-					}
 					case DB_REMOVE:
 					{
 						//	Send it to DB
-						int ret = shared->mdb->remove_Attr(cmd->attr_name);
+						int ret = shared->mdb->event_Attr(cmd->attr_name, cmd->op_code);
 						if(ret < 0)
 						{
 							//TODO
