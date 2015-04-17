@@ -172,56 +172,56 @@ void *PollerThread::run_undetached(void *ptr)
 			for (unsigned int i=0 ; i<hdb_dev->attribute_list_str.size() ; i++)
 				hdb_dev->attr_AttributeList_read[i] = (char *)hdb_dev->attribute_list_str[i].c_str();
 			hdb_dev->attribute_list_str_size = hdb_dev->attribute_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributeList",&hdb_dev->attr_AttributeList_read[0], hdb_dev->attribute_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributeList",&hdb_dev->attr_AttributeList_read[0], hdb_dev->attribute_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeList",&hdb_dev->attr_AttributeList_read[0], hdb_dev->attribute_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeList",&hdb_dev->attr_AttributeList_read[0], hdb_dev->attribute_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 		changed = is_list_changed(hdb_dev->attribute_started_list_str, hdb_dev->old_attribute_started_list_str);
 		if(changed)
 		{
 			for (unsigned int i=0 ; i<hdb_dev->attribute_started_list_str.size() ; i++)
 				hdb_dev->attr_AttributeStartedList_read[i] = (char *)hdb_dev->attribute_started_list_str[i].c_str();
 			hdb_dev->attribute_started_list_str_size = hdb_dev->attribute_started_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributeStartedList",&hdb_dev->attr_AttributeStartedList_read[0], hdb_dev->attribute_started_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributeStartedList",&hdb_dev->attr_AttributeStartedList_read[0], hdb_dev->attribute_started_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeStartedList",&hdb_dev->attr_AttributeStartedList_read[0], hdb_dev->attribute_started_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeStartedList",&hdb_dev->attr_AttributeStartedList_read[0], hdb_dev->attribute_started_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 		changed = is_list_changed(hdb_dev->attribute_paused_list_str, hdb_dev->old_attribute_paused_list_str);
 		if(changed)
 		{
 			for (unsigned int i=0 ; i<hdb_dev->attribute_paused_list_str.size() ; i++)
 				hdb_dev->attr_AttributePausedList_read[i] = (char *)hdb_dev->attribute_paused_list_str[i].c_str();
 			hdb_dev->attribute_paused_list_str_size = hdb_dev->attribute_paused_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributePausedList",&hdb_dev->attr_AttributePausedList_read[0], hdb_dev->attribute_paused_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributePausedList",&hdb_dev->attr_AttributePausedList_read[0], hdb_dev->attribute_paused_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributePausedList",&hdb_dev->attr_AttributePausedList_read[0], hdb_dev->attribute_paused_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributePausedList",&hdb_dev->attr_AttributePausedList_read[0], hdb_dev->attribute_paused_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 		changed = is_list_changed(hdb_dev->attribute_stopped_list_str, hdb_dev->old_attribute_stopped_list_str);
 		if(changed)
 		{
 			for (unsigned int i=0 ; i<hdb_dev->attribute_stopped_list_str.size() ; i++)
 				hdb_dev->attr_AttributeStoppedList_read[i] = (char *)hdb_dev->attribute_stopped_list_str[i].c_str();
 			hdb_dev->attribute_stopped_list_str_size = hdb_dev->attribute_stopped_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributeStoppedList",&hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributeStoppedList",&hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeStoppedList",&hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeStoppedList",&hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 		hdb_dev->attribute_ok_list_str.clear();
 		hdb_dev->attribute_ok_list_str = hdb_dev->get_sig_not_on_error_list();
@@ -231,14 +231,14 @@ void *PollerThread::run_undetached(void *ptr)
 			for (unsigned int i=0 ; i<hdb_dev->attribute_ok_list_str.size() ; i++)
 				hdb_dev->attr_AttributeOkList_read[i] = (char *)hdb_dev->attribute_ok_list_str[i].c_str();
 			hdb_dev->attribute_ok_list_str_size = hdb_dev->attribute_ok_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributeOkList",&hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributeOkList",&hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeOkList",&hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeOkList",&hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 		hdb_dev->attribute_nok_list_str.clear();
 		hdb_dev->attribute_nok_list_str = hdb_dev->get_sig_on_error_list();
@@ -248,14 +248,14 @@ void *PollerThread::run_undetached(void *ptr)
 			for (unsigned int i=0 ; i<hdb_dev->attribute_nok_list_str.size() ; i++)
 				hdb_dev->attr_AttributeNokList_read[i] = (char *)hdb_dev->attribute_nok_list_str[i].c_str();
 			hdb_dev->attribute_nok_list_str_size = hdb_dev->attribute_nok_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributeNokList",&hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributeNokList",&hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeNokList",&hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeNokList",&hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 		hdb_dev->attribute_pending_list_str.clear();
 		hdb_dev->attribute_pending_list_str = hdb_dev->get_sig_list_waiting();
@@ -265,14 +265,14 @@ void *PollerThread::run_undetached(void *ptr)
 			for (unsigned int i=0 ; i<hdb_dev->attribute_pending_list_str.size() ; i++)
 				hdb_dev->attr_AttributePendingList_read[i] = (char *)hdb_dev->attribute_pending_list_str[i].c_str();
 			hdb_dev->attribute_pending_list_str_size = hdb_dev->attribute_pending_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributePendingList",&hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributePendingList",&hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributePendingList",&hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributePendingList",&hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 		hdb_dev->attribute_error_list_str.clear();
 		hdb_dev->attribute_error_list_str = hdb_dev->get_error_list();
@@ -282,14 +282,14 @@ void *PollerThread::run_undetached(void *ptr)
 			for (unsigned int i=0 ; i<hdb_dev->attribute_error_list_str.size() ; i++)
 				hdb_dev->attr_AttributeErrorList_read[i] = (char *)hdb_dev->attribute_error_list_str[i].c_str();
 			hdb_dev->attribute_error_list_str_size = hdb_dev->attribute_error_list_str.size();
-			try
-			{
-				(hdb_dev->_device)->push_change_event("AttributeErrorList",&hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size);
-				(hdb_dev->_device)->push_archive_event("AttributeErrorList",&hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size);
-			}
-			catch(Tango::DevFailed &e){}
-			usleep(1000);
 		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeErrorList",&hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeErrorList",&hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 
 		hdb_dev->get_event_number_list();

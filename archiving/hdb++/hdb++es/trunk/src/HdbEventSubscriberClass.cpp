@@ -1087,6 +1087,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeOkNumber
 	//	delta_val	not set for AttributeOkNumber
 	attributeoknumber_prop.set_event_abs_change("1");
+	attributeoknumber_prop.set_archive_event_period("3600000");
 	attributeoknumber_prop.set_archive_event_abs_change("1");
 	
 	attributeoknumber->set_default_properties(attributeoknumber_prop);
@@ -1115,6 +1116,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeNokNumber
 	//	delta_val	not set for AttributeNokNumber
 	attributenoknumber_prop.set_event_abs_change("1");
+	attributenoknumber_prop.set_archive_event_period("3600000");
 	attributenoknumber_prop.set_archive_event_abs_change("1");
 	
 	attributenoknumber->set_default_properties(attributenoknumber_prop);
@@ -1143,6 +1145,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributePendingNumber
 	//	delta_val	not set for AttributePendingNumber
 	attributependingnumber_prop.set_event_abs_change("2");
+	attributependingnumber_prop.set_archive_event_period("3600000");
 	attributependingnumber_prop.set_archive_event_abs_change("2");
 	
 	attributependingnumber->set_default_properties(attributependingnumber_prop);
@@ -1171,6 +1174,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeNumber
 	//	delta_val	not set for AttributeNumber
 	attributenumber_prop.set_event_abs_change("1");
+	attributenumber_prop.set_archive_event_period("3600000");
 	attributenumber_prop.set_archive_event_abs_change("1");
 	
 	attributenumber->set_default_properties(attributenumber_prop);
@@ -1294,8 +1298,9 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeRecordFreq
 	//	delta_t	not set for AttributeRecordFreq
 	//	delta_val	not set for AttributeRecordFreq
-	attributerecordfreq_prop.set_event_abs_change("5");
-	attributerecordfreq_prop.set_archive_event_abs_change("5");
+	attributerecordfreq_prop.set_event_abs_change("1");
+	attributerecordfreq_prop.set_archive_event_period("3600000");
+	attributerecordfreq_prop.set_archive_event_abs_change("1");
 	
 	attributerecordfreq->set_default_properties(attributerecordfreq_prop);
 	//	Not Polled
@@ -1322,8 +1327,9 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeFailureFreq
 	//	delta_t	not set for AttributeFailureFreq
 	//	delta_val	not set for AttributeFailureFreq
-	attributefailurefreq_prop.set_event_abs_change("5");
-	attributefailurefreq_prop.set_archive_event_abs_change("5");
+	attributefailurefreq_prop.set_event_abs_change("1");
+	attributefailurefreq_prop.set_archive_event_period("3600000");
+	attributefailurefreq_prop.set_archive_event_abs_change("1");
 	
 	attributefailurefreq->set_default_properties(attributefailurefreq_prop);
 	//	Not Polled
@@ -1351,6 +1357,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeStartedNumber
 	//	delta_val	not set for AttributeStartedNumber
 	attributestartednumber_prop.set_event_abs_change("1");
+	attributestartednumber_prop.set_archive_event_period("3600000");
 	attributestartednumber_prop.set_archive_event_abs_change("1");
 	
 	attributestartednumber->set_default_properties(attributestartednumber_prop);
@@ -1379,6 +1386,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeStoppedNumber
 	//	delta_val	not set for AttributeStoppedNumber
 	attributestoppednumber_prop.set_event_abs_change("1");
+	attributestoppednumber_prop.set_archive_event_period("3600000");
 	attributestoppednumber_prop.set_archive_event_abs_change("1");
 	
 	attributestoppednumber->set_default_properties(attributestoppednumber_prop);
@@ -1407,6 +1415,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeMaxPendingNumber
 	//	delta_val	not set for AttributeMaxPendingNumber
 	attributemaxpendingnumber_prop.set_event_abs_change("1");
+	attributemaxpendingnumber_prop.set_archive_event_period("3600000");
 	attributemaxpendingnumber_prop.set_archive_event_abs_change("1");
 	
 	attributemaxpendingnumber->set_default_properties(attributemaxpendingnumber_prop);
@@ -1459,6 +1468,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributePausedNumber
 	//	delta_val	not set for AttributePausedNumber
 	attributepausednumber_prop.set_event_abs_change("1");
+	attributepausednumber_prop.set_archive_event_period("3600000");
 	attributepausednumber_prop.set_archive_event_abs_change("1");
 	
 	attributepausednumber->set_default_properties(attributepausednumber_prop);
@@ -1486,13 +1496,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeList
 	//	delta_t	not set for AttributeList
 	//	delta_val	not set for AttributeList
+	attributelist_prop.set_archive_event_period("3600000");
 	
 	attributelist->set_default_properties(attributelist_prop);
 	//	Not Polled
 	attributelist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributelist->set_change_event(true, false);
-	attributelist->set_archive_event(true, false);
+	attributelist->set_change_event(true, true);
+	attributelist->set_archive_event(true, true);
 	att_list.push_back(attributelist);
 
 	//	Attribute : AttributeOkList
@@ -1512,13 +1523,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeOkList
 	//	delta_t	not set for AttributeOkList
 	//	delta_val	not set for AttributeOkList
+	attributeoklist_prop.set_archive_event_period("3600000");
 	
 	attributeoklist->set_default_properties(attributeoklist_prop);
 	//	Not Polled
 	attributeoklist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributeoklist->set_change_event(true, false);
-	attributeoklist->set_archive_event(true, false);
+	attributeoklist->set_change_event(true, true);
+	attributeoklist->set_archive_event(true, true);
 	att_list.push_back(attributeoklist);
 
 	//	Attribute : AttributeNokList
@@ -1538,13 +1550,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeNokList
 	//	delta_t	not set for AttributeNokList
 	//	delta_val	not set for AttributeNokList
+	attributenoklist_prop.set_archive_event_period("3600000");
 	
 	attributenoklist->set_default_properties(attributenoklist_prop);
 	//	Not Polled
 	attributenoklist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributenoklist->set_change_event(true, false);
-	attributenoklist->set_archive_event(true, false);
+	attributenoklist->set_change_event(true, true);
+	attributenoklist->set_archive_event(true, true);
 	att_list.push_back(attributenoklist);
 
 	//	Attribute : AttributePendingList
@@ -1564,13 +1577,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributePendingList
 	//	delta_t	not set for AttributePendingList
 	//	delta_val	not set for AttributePendingList
+	attributependinglist_prop.set_archive_event_period("3600000");
 	
 	attributependinglist->set_default_properties(attributependinglist_prop);
 	//	Not Polled
 	attributependinglist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributependinglist->set_change_event(true, false);
-	attributependinglist->set_archive_event(true, false);
+	attributependinglist->set_change_event(true, true);
+	attributependinglist->set_archive_event(true, true);
 	att_list.push_back(attributependinglist);
 
 	//	Attribute : AttributeRecordFreqList
@@ -1590,8 +1604,9 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeRecordFreqList
 	//	delta_t	not set for AttributeRecordFreqList
 	//	delta_val	not set for AttributeRecordFreqList
-	attributerecordfreqlist_prop.set_event_abs_change("5");
-	attributerecordfreqlist_prop.set_archive_event_abs_change("5");
+	attributerecordfreqlist_prop.set_event_abs_change("1");
+	attributerecordfreqlist_prop.set_archive_event_period("3600000");
+	attributerecordfreqlist_prop.set_archive_event_abs_change("1");
 	
 	attributerecordfreqlist->set_default_properties(attributerecordfreqlist_prop);
 	//	Not Polled
@@ -1619,6 +1634,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_t	not set for AttributeFailureFreqList
 	//	delta_val	not set for AttributeFailureFreqList
 	attributefailurefreqlist_prop.set_event_abs_change("1");
+	attributefailurefreqlist_prop.set_archive_event_period("3600000");
 	attributefailurefreqlist_prop.set_archive_event_abs_change("1");
 	
 	attributefailurefreqlist->set_default_properties(attributefailurefreqlist_prop);
@@ -1646,13 +1662,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeStartedList
 	//	delta_t	not set for AttributeStartedList
 	//	delta_val	not set for AttributeStartedList
+	attributestartedlist_prop.set_archive_event_period("3600000");
 	
 	attributestartedlist->set_default_properties(attributestartedlist_prop);
 	//	Not Polled
 	attributestartedlist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributestartedlist->set_change_event(true, false);
-	attributestartedlist->set_archive_event(true, false);
+	attributestartedlist->set_change_event(true, true);
+	attributestartedlist->set_archive_event(true, true);
 	att_list.push_back(attributestartedlist);
 
 	//	Attribute : AttributeStoppedList
@@ -1672,13 +1689,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeStoppedList
 	//	delta_t	not set for AttributeStoppedList
 	//	delta_val	not set for AttributeStoppedList
+	attributestoppedlist_prop.set_archive_event_period("3600000");
 	
 	attributestoppedlist->set_default_properties(attributestoppedlist_prop);
 	//	Not Polled
 	attributestoppedlist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributestoppedlist->set_change_event(true, false);
-	attributestoppedlist->set_archive_event(true, false);
+	attributestoppedlist->set_change_event(true, true);
+	attributestoppedlist->set_archive_event(true, true);
 	att_list.push_back(attributestoppedlist);
 
 	//	Attribute : AttributeEventNumberList
@@ -1698,6 +1716,9 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeEventNumberList
 	//	delta_t	not set for AttributeEventNumberList
 	//	delta_val	not set for AttributeEventNumberList
+	attributeeventnumberlist_prop.set_event_abs_change("1");
+	attributeeventnumberlist_prop.set_archive_event_period("3600000");
+	attributeeventnumberlist_prop.set_archive_event_abs_change("1");
 	
 	attributeeventnumberlist->set_default_properties(attributeeventnumberlist_prop);
 	//	Not Polled
@@ -1724,13 +1745,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeErrorList
 	//	delta_t	not set for AttributeErrorList
 	//	delta_val	not set for AttributeErrorList
+	attributeerrorlist_prop.set_archive_event_period("3600000");
 	
 	attributeerrorlist->set_default_properties(attributeerrorlist_prop);
 	//	Not Polled
 	attributeerrorlist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributeerrorlist->set_change_event(true, false);
-	attributeerrorlist->set_archive_event(true, false);
+	attributeerrorlist->set_change_event(true, true);
+	attributeerrorlist->set_archive_event(true, true);
 	att_list.push_back(attributeerrorlist);
 
 	//	Attribute : AttributePausedList
@@ -1750,13 +1772,14 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributePausedList
 	//	delta_t	not set for AttributePausedList
 	//	delta_val	not set for AttributePausedList
+	attributepausedlist_prop.set_archive_event_period("3600000");
 	
 	attributepausedlist->set_default_properties(attributepausedlist_prop);
 	//	Not Polled
 	attributepausedlist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributepausedlist->set_change_event(true, false);
-	attributepausedlist->set_archive_event(true, false);
+	attributepausedlist->set_change_event(true, true);
+	attributepausedlist->set_archive_event(true, true);
 	att_list.push_back(attributepausedlist);
 
 	//	Create a list of static attributes
