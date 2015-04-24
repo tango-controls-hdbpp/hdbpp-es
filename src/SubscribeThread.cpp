@@ -221,7 +221,7 @@ void SharedData::remove(string &signame, bool stop)
 		if (!found)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
-						"Signal NOT subscribed",
+						"Signal " + signame + " NOT subscribed",
 						(const char *)"SharedData::remove()");
 	}
 	//	then, update property
@@ -309,7 +309,7 @@ void SharedData::start(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::start()");
 }
 //=============================================================================
@@ -368,7 +368,7 @@ void SharedData::pause(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::pause()");
 }
 //=============================================================================
@@ -471,7 +471,7 @@ void SharedData::stop(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::stop()");
 }
 //=============================================================================
@@ -572,7 +572,7 @@ bool SharedData::is_running(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::is_running()");
 
 	return true;
@@ -615,7 +615,7 @@ bool SharedData::is_paused(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::is_paused()");
 
 	return true;
@@ -658,7 +658,7 @@ bool SharedData::is_stopped(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::is_stopped()");
 
 	return true;
@@ -701,7 +701,7 @@ bool SharedData::is_first(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::is_first()");
 
 	return true;
@@ -743,7 +743,7 @@ void SharedData::set_first(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::set_first()");
 
 }
@@ -785,7 +785,7 @@ bool SharedData::is_first_err(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::is_first()");
 
 	return true;
@@ -827,7 +827,7 @@ void SharedData::set_first_err(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::set_first()");
 
 }
@@ -932,7 +932,7 @@ void SharedData::add(string &signame, int to_do, bool start)
 		if (found && !start)
 			Tango::Except::throw_exception(
 						(const char *)"BadSignalName",
-						"Signal already subscribed",
+						"Signal " + signame + " already subscribed",
 						(const char *)"SharedData::add()");
 		HdbSignal	*signal;
 		if (!found && !start)
@@ -949,7 +949,7 @@ void SharedData::add(string &signame, int to_do, bool start)
 				delete signal;
 				Tango::Except::throw_exception(
 							(const char *)"SyntaxError",
-							"Syntax error in signal name",
+							"Syntax error in signal name " + signame,
 							(const char *)"SharedData::add()");
 			}
 			signal->devname = signal->name.substr(0, idx);
@@ -1250,7 +1250,7 @@ bool  SharedData::get_sig_source(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_sig_source()");
 
 	return true;
@@ -1538,7 +1538,7 @@ void  SharedData::set_ok_event(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::set_ok_event()");
 }
 //=============================================================================
@@ -1579,7 +1579,7 @@ uint32_t  SharedData::get_ok_event(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_ok_event()");
 
 	return 0;
@@ -1622,7 +1622,7 @@ uint32_t  SharedData::get_ok_event_freq(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_ok_event()");
 
 	return 0;
@@ -1665,7 +1665,7 @@ timeval  SharedData::get_last_okev(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_last_okev()");
 	timeval ret;
 	ret.tv_sec=0;
@@ -1713,7 +1713,7 @@ void  SharedData::set_nok_event(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::set_nok_event()");
 }
 //=============================================================================
@@ -1754,7 +1754,7 @@ uint32_t  SharedData::get_nok_event(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_nok_event()");
 
 	return 0;
@@ -1797,7 +1797,7 @@ uint32_t  SharedData::get_nok_event_freq(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_nok_event()");
 
 	return 0;
@@ -1840,7 +1840,7 @@ timeval  SharedData::get_last_nokev(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_last_nokev()");
 	timeval ret;
 	ret.tv_sec=0;
@@ -1884,8 +1884,8 @@ void  SharedData::set_nok_periodic_event(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
-				(const char *)"SharedData::set_nok_event()");
+				"Signal " + signame + " NOT subscribed",
+				(const char *)"SharedData::set_nok_periodic_event()");
 }
 //=============================================================================
 /**
@@ -1925,7 +1925,7 @@ string  SharedData::get_sig_status(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_sig_status()");
 	return "";
 }
@@ -1967,7 +1967,7 @@ Tango::DevState  SharedData::get_sig_state(string &signame)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_sig_state()");
 	return Tango::ALARM;
 }
@@ -2006,7 +2006,7 @@ void SharedData::set_conf_periodic_event(string &signame, string period)
 	//	if not found
 	Tango::Except::throw_exception(
 				(const char *)"BadSignalName",
-				"Signal NOT subscribed",
+				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::set_conf_periodic_event()");
 }
 //=============================================================================
