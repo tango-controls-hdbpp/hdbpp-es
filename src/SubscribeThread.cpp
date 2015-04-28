@@ -1412,7 +1412,7 @@ vector<string>  SharedData::get_error_list()
 	{
 		signals[i].siglock->readerIn();
 		//if (signals[i].status != STATUS_SUBSCRIBED)
-		if (signals[i].evstate != Tango::ON)
+		if ((signals[i].evstate != Tango::ON) && (signals[i].running))
 		{
 			list.push_back(signals[i].status);
 		}
