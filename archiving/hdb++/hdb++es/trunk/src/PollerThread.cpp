@@ -54,6 +54,8 @@ void *PollerThread::run_undetached(void *ptr)
 			abort_sleep((double)period);
 		else
 			abort_sleep(3.0);
+		if(abortflag)
+			break;
 		//DEBUG_STREAM << "PollerThread awake!"<<endl;
 
 		//vector<string> attribute_list_tmp = hdb_dev->get_sig_list();

@@ -51,6 +51,8 @@ void *StatsThread::run_undetached(void *ptr)
 			abort_sleep((double)period);
 		else
 			abort_sleep(60.0);
+		if(abortflag)
+			break;
 
 		long ok_ev=0;
 		long nok_ev=0;
