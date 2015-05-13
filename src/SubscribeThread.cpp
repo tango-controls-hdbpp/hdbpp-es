@@ -100,7 +100,7 @@ void SharedData::remove(string &signame, bool stop)
 		{
 			try
 			{
-				if(event_id != ERR)
+				if(event_id != ERR && attr)
 				{
 
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
@@ -138,7 +138,8 @@ void SharedData::remove(string &signame, bool stop)
 						{
 							delete sig->archive_cb;
 						}
-						delete sig->attr;
+						if(sig->attr)
+							delete sig->attr;
 					}
 					catch (Tango::DevFailed &e)
 					{
@@ -188,7 +189,8 @@ void SharedData::remove(string &signame, bool stop)
 							{
 								delete sig->archive_cb;
 							}
-							delete sig->attr;
+							if(sig->attr)
+								delete sig->attr;
 						}
 						catch (Tango::DevFailed &e)
 						{
@@ -256,7 +258,10 @@ void SharedData::start(string &signame)
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
-						INFO_STREAM << "SharedData::start: error adding  " << signame << endl;
+						INFO_STREAM << "SharedData::start: error adding  " << signame <<" err="<< e.errors[0].desc << endl;
+						signals[i].status = e.errors[0].desc;
+						/*signals[i].siglock->writerOut();
+						return;*/
 					}
 				}
 				signals[i].running=true;
@@ -292,6 +297,9 @@ void SharedData::start(string &signame)
 					{
 						//Tango::Except::print_exception(e);
 						INFO_STREAM << "SharedData::start: error adding  " << signame << endl;
+						signals[i].status = e.errors[0].desc;
+						/*signals[i].siglock->writerOut();
+						return;*/
 					}
 				}
 				signals[i].running=true;
@@ -845,7 +853,7 @@ void SharedData::unsubscribe_events()
 	for (unsigned int i=0 ; i<local_signals.size() ; i++)
 	{
 		HdbSignal	*sig = &local_signals[i];
-		if (signals[i].event_id != ERR)
+		if (signals[i].event_id != ERR && sig->attr)
 		{
 			DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << " id="<<omni_thread::self()->id()<< endl;
 			try
@@ -867,13 +875,16 @@ void SharedData::unsubscribe_events()
 	{
 		HdbSignal	*sig = &signals[i];
 		sig->siglock->writerIn();
-		if (signals[i].event_id != ERR)
+		if (signals[i].event_id != ERR && sig->attr)
 		{
 			delete sig->archive_cb;
 			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted cb " << sig->name << endl;
 		}
-		delete sig->attr;
-		DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted proxy " << sig->name << endl;
+		if(sig->attr)
+		{
+			delete sig->attr;
+			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted proxy " << sig->name << endl;
+		}
 		sig->siglock->writerOut();
 		delete sig->siglock;
 		DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted lock " << sig->name << endl;
@@ -937,24 +948,26 @@ void SharedData::add(string &signame, int to_do, bool start)
 		HdbSignal	*signal;
 		if (!found && !start)
 		{
-			signal = new HdbSignal();
-			//	Build Hdb Signal object
-			signal->name      = signame;
-			signal->siglock = new(ReadersWritersLock);
-			signal->status = "Syntax error in signal name";
 			//	on name, split device name and attrib name
-			string::size_type idx = signal->name.find_last_of("/");
+			string::size_type idx = signame.find_last_of("/");
 			if (idx==string::npos)
 			{
-				delete signal;
 				Tango::Except::throw_exception(
 							(const char *)"SyntaxError",
 							"Syntax error in signal name " + signame,
 							(const char *)"SharedData::add()");
 			}
+			signal = new HdbSignal();
+			//	Build Hdb Signal object
+			signal->name      = signame;
+			signal->siglock = new(ReadersWritersLock);
 			signal->devname = signal->name.substr(0, idx);
 			signal->attname = signal->name.substr(idx+1);
 			signal->status = "NOT connected";
+			signal->attr = NULL;
+			signal->running = false;
+			signal->stopped = true;
+			signal->paused = false;
 			//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
 		}
 		else if(found && start)
@@ -974,9 +987,6 @@ void SharedData::add(string &signame, int to_do, bool start)
 		signal->okev_counter_freq = 0;
 		signal->nokev_counter = 0;
 		signal->nokev_counter_freq = 0;
-		signal->running = false;
-		signal->stopped = true;
-		signal->paused = false;
 		signal->first = true;
 		signal->first_err = true;
 		signal->periodic_ev = -1;
@@ -986,12 +996,16 @@ void SharedData::add(string &signame, int to_do, bool start)
 		{
 			try
 			{
-				Tango::AttributeInfo	info = signal->attr->get_config();
-				signal->data_type = info.data_type;
-				signal->data_format = info.data_format;
-				signal->write_type = info.writable;
-				signal->max_dim_x = info.max_dim_x;
-				signal->max_dim_y = info.max_dim_y;
+				Tango::AttributeInfo	info;
+				if(signal->attr)
+				{
+					info = signal->attr->get_config();
+					signal->data_type = info.data_type;
+					signal->data_format = info.data_format;
+					signal->write_type = info.writable;
+					signal->max_dim_x = info.max_dim_x;
+					signal->max_dim_y = info.max_dim_y;
+				}
 			}
 			catch (Tango::DevFailed &e)
 			{
@@ -1044,6 +1058,21 @@ void SharedData::subscribe_events()
 		sig->siglock->writerIn();
 		if (sig->event_id==ERR && !sig->stopped)
 		{
+			if(!sig->attr)
+			{
+				try
+				{
+					add(sig->name, NOTHING, true);
+				}
+				catch (Tango::DevFailed &e)
+				{
+					//Tango::Except::print_exception(e);
+					INFO_STREAM << "SharedData::subscribe_events: error adding  " << sig->name <<" err="<< e.errors[0].desc << endl;
+					signals[i].status = e.errors[0].desc;
+					signals[i].siglock->writerOut();
+					continue;
+				}
+			}
 			sig->archive_cb = new ArchiveCB(hdb_dev);
 			Tango::AttributeInfo	info;
 			try
@@ -2173,7 +2202,8 @@ void *SubscribeThread::run_undetached(void *ptr)
 				//omni_thread::get_time(&s,&n,period,0);
 				//shared->condition.timedwait(s,n);
 				shared->wait(period*1000);
-				shared->action=UPDATE_PROP;	//could have been overwritten to NOTHING in the meanwhile
+				shared->action=UPDATE_PROP;	//could have been overwritten to NOTHING in the meanwhile,
+											//but if subscribe failed then it's going to save the same list
 			}
 			//shared->unlock();
 		}
