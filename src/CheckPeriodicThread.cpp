@@ -42,7 +42,7 @@ CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): Tango::LogAdapter(dev-
 //=============================================================================
 void *CheckPeriodicThread::run_undetached(void *ptr)
 {
-	INFO_STREAM << "CheckPeriodicThread id="<<omni_thread::self()->id()<<endl;
+	INFO_STREAM << "CheckPeriodicThread delay_tolerance_ms="<<delay_tolerance_ms<<" id="<<omni_thread::self()->id()<<endl;
 	while(abortflag==false)
 	{
 		double min_time_to_timeout_ms = 0;
