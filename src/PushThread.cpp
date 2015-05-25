@@ -793,22 +793,22 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 			//signal process min
 			if(signals[i].process_time_min == -1)
 				signals[i].process_time_min = process_time;
-			else if(store_time < signals[i].process_time_min)
+			else if(process_time < signals[i].process_time_min)
 				signals[i].process_time_min = process_time;
 			//global process min
 			if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
 				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
-			else if(store_time < hdb_dev->attr_AttributeMinProcessingTime_read)
+			else if(process_time < hdb_dev->attr_AttributeMinProcessingTime_read)
 				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
 			//signal process max
 			if(signals[i].process_time_max == -1)
 				signals[i].process_time_max = process_time;
-			else if(store_time > signals[i].process_time_max)
+			else if(process_time > signals[i].process_time_max)
 				signals[i].process_time_max = process_time;
 			//global process max
 			if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
 				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
-			else if(store_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
+			else if(process_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
 				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
 			signals[i].okdb_counter++;
 			sig_lock->unlock();
@@ -849,22 +849,22 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 			//signal process min
 			if(signals[i].process_time_min == -1)
 				signals[i].process_time_min = process_time;
-			else if(store_time < signals[i].process_time_min)
+			else if(process_time < signals[i].process_time_min)
 				signals[i].process_time_min = process_time;
 			//global process min
 			if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
 				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
-			else if(store_time < hdb_dev->attr_AttributeMinProcessingTime_read)
+			else if(process_time < hdb_dev->attr_AttributeMinProcessingTime_read)
 				hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
 			//signal process max
 			if(signals[i].process_time_max == -1)
 				signals[i].process_time_max = process_time;
-			else if(store_time > signals[i].process_time_max)
+			else if(process_time > signals[i].process_time_max)
 				signals[i].process_time_max = process_time;
 			//global process max
 			if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
 				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
-			else if(store_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
+			else if(process_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
 				hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
 			signals[i].okdb_counter++;
 			sig_lock->unlock();
@@ -899,12 +899,12 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		//global process min
 		if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
 			hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
-		else if(store_time < hdb_dev->attr_AttributeMinProcessingTime_read)
+		else if(process_time < hdb_dev->attr_AttributeMinProcessingTime_read)
 			hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
 		//global process max
 		if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
 			hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
-		else if(store_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
+		else if(process_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
 			hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
 	}
 	sig_lock->unlock();
