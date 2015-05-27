@@ -171,7 +171,7 @@ void *PollerThread::run_undetached(void *ptr)
 		bool changed = is_list_changed(hdb_dev->attribute_list_str, hdb_dev->old_attribute_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_list_str.size() && i < MAX_ATTRIBUTES; i++)
 				hdb_dev->attr_AttributeList_read[i] = (char *)hdb_dev->attribute_list_str[i].c_str();
 			hdb_dev->attribute_list_str_size = hdb_dev->attribute_list_str.size();
 		}
@@ -185,7 +185,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_started_list_str, hdb_dev->old_attribute_started_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_started_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_started_list_str.size() && i < MAX_ATTRIBUTES ; i++)
 				hdb_dev->attr_AttributeStartedList_read[i] = (char *)hdb_dev->attribute_started_list_str[i].c_str();
 			hdb_dev->attribute_started_list_str_size = hdb_dev->attribute_started_list_str.size();
 		}
@@ -199,7 +199,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_paused_list_str, hdb_dev->old_attribute_paused_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_paused_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_paused_list_str.size() && i < MAX_ATTRIBUTES ; i++)
 				hdb_dev->attr_AttributePausedList_read[i] = (char *)hdb_dev->attribute_paused_list_str[i].c_str();
 			hdb_dev->attribute_paused_list_str_size = hdb_dev->attribute_paused_list_str.size();
 		}
@@ -213,7 +213,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_stopped_list_str, hdb_dev->old_attribute_stopped_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_stopped_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_stopped_list_str.size() && i < MAX_ATTRIBUTES ; i++)
 				hdb_dev->attr_AttributeStoppedList_read[i] = (char *)hdb_dev->attribute_stopped_list_str[i].c_str();
 			hdb_dev->attribute_stopped_list_str_size = hdb_dev->attribute_stopped_list_str.size();
 		}
@@ -230,7 +230,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_ok_list_str, hdb_dev->old_attribute_ok_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_ok_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_ok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
 				hdb_dev->attr_AttributeOkList_read[i] = (char *)hdb_dev->attribute_ok_list_str[i].c_str();
 			hdb_dev->attribute_ok_list_str_size = hdb_dev->attribute_ok_list_str.size();
 		}
@@ -247,7 +247,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_nok_list_str, hdb_dev->old_attribute_nok_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_nok_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_nok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
 				hdb_dev->attr_AttributeNokList_read[i] = (char *)hdb_dev->attribute_nok_list_str[i].c_str();
 			hdb_dev->attribute_nok_list_str_size = hdb_dev->attribute_nok_list_str.size();
 		}
@@ -264,7 +264,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_pending_list_str, hdb_dev->old_attribute_pending_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_pending_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_pending_list_str.size() && i < MAX_ATTRIBUTES; i++)
 				hdb_dev->attr_AttributePendingList_read[i] = (char *)hdb_dev->attribute_pending_list_str[i].c_str();
 			hdb_dev->attribute_pending_list_str_size = hdb_dev->attribute_pending_list_str.size();
 		}
@@ -281,7 +281,7 @@ void *PollerThread::run_undetached(void *ptr)
 		changed = is_list_changed(hdb_dev->attribute_error_list_str, hdb_dev->old_attribute_error_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_error_list_str.size() ; i++)
+			for (unsigned int i=0 ; i<hdb_dev->attribute_error_list_str.size() && i < MAX_ATTRIBUTES ; i++)
 				hdb_dev->attr_AttributeErrorList_read[i] = (char *)hdb_dev->attribute_error_list_str[i].c_str();
 			hdb_dev->attribute_error_list_str_size = hdb_dev->attribute_error_list_str.size();
 		}

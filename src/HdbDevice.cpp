@@ -578,8 +578,9 @@ void ArchiveCB::push_event(Tango::EventData *data)
 	if (data->err)
 	{
 		signal->evstate  = Tango::ALARM;
-		signal->status.clear();
+		signal->siglock->writerIn();
 		signal->status = data->errors[0].desc;
+		signal->siglock->writerOut();
 
 		INFO_STREAM<< __func__ << ": Exception on " << data->attr_name << endl;
 		INFO_STREAM << data->errors[0].desc  << endl;
@@ -667,8 +668,10 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		//	Check if already OK
 		if (signal->evstate!=Tango::ON)
 		{
+			signal->siglock->writerIn();
 			signal->evstate  = Tango::ON;
 			signal->status = "Subscribed";
+			signal->siglock->writerOut();
 		}
 
 		//if attribute stopped, just return

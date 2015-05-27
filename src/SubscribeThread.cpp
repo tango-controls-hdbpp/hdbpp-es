@@ -973,10 +973,12 @@ void SharedData::add(string &signame, int to_do, bool start)
 		else if(found && start)
 		{
 			signal = sig;
+			signal->siglock->writerIn();
 			signal->status = "NOT connected";
+			signal->siglock->writerOut();
 			//DEBUG_STREAM << "created proxy to " << signame << endl;
 			//	create Attribute proxy
-			signal->attr = new Tango::AttributeProxy(signal->name);
+			signal->attr = new Tango::AttributeProxy(signal->name);	//TODO: OK out of siglock? accessed only inside the same thread?
 			DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created proxy"<< endl;
 		}
 		signal->event_id = ERR;
@@ -1086,12 +1088,13 @@ void SharedData::subscribe_events()
 			catch (Tango::DevFailed &e)
 			{
 				Tango::Except::print_exception(e);
-				sig->status.clear();
-				sig->status = e.errors[0].desc;
-				sig->event_id = ERR;
-				delete sig->archive_cb;
 				//sig->siglock->writerOut();
 				sig->siglock->readerOut();
+				sig->siglock->writerIn();
+				sig->event_id = ERR;
+				delete sig->archive_cb;
+				sig->status = e.errors[0].desc;
+				sig->siglock->writerOut();
 				continue;
 			}
 			sig->first  = true;
@@ -1137,7 +1140,6 @@ void SharedData::subscribe_events()
 				err = true;
 				Tango::Except::print_exception(e);
 				sig->siglock->writerIn();
-				sig->status.clear();
 				sig->status = e.errors[0].desc;
 				sig->event_id = ERR;
 				delete sig->archive_cb;
