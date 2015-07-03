@@ -91,6 +91,13 @@ void *PollerThread::run_undetached(void *ptr)
 		usleep(1000);
 		try
 		{
+			(hdb_dev->_device)->push_change_event("AttributePausedNumber",&hdb_dev->attr_AttributePausedNumber_read);
+			(hdb_dev->_device)->push_archive_event("AttributePausedNumber",&hdb_dev->attr_AttributePausedNumber_read);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
+		try
+		{
 			(hdb_dev->_device)->push_change_event("AttributeStoppedNumber",&hdb_dev->attr_AttributeStoppedNumber_read);
 			(hdb_dev->_device)->push_archive_event("AttributeStoppedNumber",&hdb_dev->attr_AttributeStoppedNumber_read);
 		}
