@@ -152,8 +152,6 @@ void SharedData::remove(string &signame, bool stop)
 				}
 				if(!stop)
 				{
-					delete sig->siglock;
-					signals.erase(pos);
 					if(sig->running)
 						hdb_dev->attr_AttributeStartedNumber_read--;
 					if(sig->paused)
@@ -161,6 +159,8 @@ void SharedData::remove(string &signame, bool stop)
 					if(sig->stopped)
 						hdb_dev->attr_AttributeStoppedNumber_read--;
 					hdb_dev->attr_AttributeNumber_read--;
+					delete sig->siglock;
+					signals.erase(pos);
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
 				}
 				break;
@@ -203,8 +203,6 @@ void SharedData::remove(string &signame, bool stop)
 					}
 					if(!stop)
 					{
-						delete sig->siglock;
-						signals.erase(pos);
 						if(sig->running)
 							hdb_dev->attr_AttributeStartedNumber_read--;
 						if(sig->paused)
@@ -212,6 +210,8 @@ void SharedData::remove(string &signame, bool stop)
 						if(sig->stopped)
 							hdb_dev->attr_AttributeStoppedNumber_read--;
 						hdb_dev->attr_AttributeNumber_read--;
+						delete sig->siglock;
+						signals.erase(pos);
 						DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
 					}
 					break;
