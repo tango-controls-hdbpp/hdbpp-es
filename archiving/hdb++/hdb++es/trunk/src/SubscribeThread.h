@@ -135,7 +135,7 @@ public:
 	/**
 	 * Remove a signal in the list.
 	 */
-	void remove(string &signame, bool start);
+	void remove(string &signame, bool stop);
 	/**
 	 * Start saving on DB a signal.
 	 */
