@@ -1202,11 +1202,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMaxStoreTime
 	//	delta_t	not set for AttributeMaxStoreTime
 	//	delta_val	not set for AttributeMaxStoreTime
+	attributemaxstoretime_prop.set_event_abs_change("0.001");
+	attributemaxstoretime_prop.set_archive_event_period("3600000");
+	attributemaxstoretime_prop.set_archive_event_abs_change("0.001");
 	
 	attributemaxstoretime->set_default_properties(attributemaxstoretime_prop);
 	//	Not Polled
 	attributemaxstoretime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributemaxstoretime->set_change_event(true, true);
+	attributemaxstoretime->set_archive_event(true, true);
 	att_list.push_back(attributemaxstoretime);
 
 	//	Attribute : AttributeMinStoreTime
@@ -1226,11 +1231,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMinStoreTime
 	//	delta_t	not set for AttributeMinStoreTime
 	//	delta_val	not set for AttributeMinStoreTime
+	attributeminstoretime_prop.set_event_abs_change("0.00001");
+	attributeminstoretime_prop.set_archive_event_period("3600000");
+	attributeminstoretime_prop.set_archive_event_abs_change("0.00001");
 	
 	attributeminstoretime->set_default_properties(attributeminstoretime_prop);
 	//	Not Polled
 	attributeminstoretime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributeminstoretime->set_change_event(true, true);
+	attributeminstoretime->set_archive_event(true, true);
 	att_list.push_back(attributeminstoretime);
 
 	//	Attribute : AttributeMaxProcessingTime
@@ -1250,11 +1260,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMaxProcessingTime
 	//	delta_t	not set for AttributeMaxProcessingTime
 	//	delta_val	not set for AttributeMaxProcessingTime
+	attributemaxprocessingtime_prop.set_event_abs_change("0.001");
+	attributemaxprocessingtime_prop.set_archive_event_period("3600000");
+	attributemaxprocessingtime_prop.set_archive_event_abs_change("0.001");
 	
 	attributemaxprocessingtime->set_default_properties(attributemaxprocessingtime_prop);
 	//	Not Polled
 	attributemaxprocessingtime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributemaxprocessingtime->set_change_event(true, true);
+	attributemaxprocessingtime->set_archive_event(true, true);
 	att_list.push_back(attributemaxprocessingtime);
 
 	//	Attribute : AttributeMinProcessingTime
@@ -1274,11 +1289,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMinProcessingTime
 	//	delta_t	not set for AttributeMinProcessingTime
 	//	delta_val	not set for AttributeMinProcessingTime
+	attributeminprocessingtime_prop.set_event_abs_change("0.00001");
+	attributeminprocessingtime_prop.set_archive_event_period("3600000");
+	attributeminprocessingtime_prop.set_archive_event_abs_change("0.00001");
 	
 	attributeminprocessingtime->set_default_properties(attributeminprocessingtime_prop);
 	//	Not Polled
 	attributeminprocessingtime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributeminprocessingtime->set_change_event(true, true);
+	attributeminprocessingtime->set_archive_event(true, true);
 	att_list.push_back(attributeminprocessingtime);
 
 	//	Attribute : AttributeRecordFreq

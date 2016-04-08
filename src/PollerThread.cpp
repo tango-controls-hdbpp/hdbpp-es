@@ -109,6 +109,34 @@ void *PollerThread::run_undetached(void *ptr)
 			(hdb_dev->_device)->push_archive_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
 		}
 		catch(Tango::DevFailed &e){}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeMaxStoreTime",&hdb_dev->attr_AttributeMaxStoreTime_read);
+			(hdb_dev->_device)->push_archive_event("AttributeMaxStoreTime",&hdb_dev->attr_AttributeMaxStoreTime_read);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeMinStoreTime",&hdb_dev->attr_AttributeMinStoreTime_read);
+			(hdb_dev->_device)->push_archive_event("AttributeMinStoreTime",&hdb_dev->attr_AttributeMinStoreTime_read);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeMaxProcessingTime",&hdb_dev->attr_AttributeMaxProcessingTime_read);
+			(hdb_dev->_device)->push_archive_event("AttributeMaxProcessingTime",&hdb_dev->attr_AttributeMaxProcessingTime_read);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeMinProcessingTime",&hdb_dev->attr_AttributeMinProcessingTime_read);
+			(hdb_dev->_device)->push_archive_event("AttributeMinProcessingTime",&hdb_dev->attr_AttributeMinProcessingTime_read);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 		if (hdb_dev->shared->is_initialized())
 		{
