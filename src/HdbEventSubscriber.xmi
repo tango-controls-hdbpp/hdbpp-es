@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ASCII"?>
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
-  <classes name="HdbEventSubscriber" pogoRevision="8.1">
+  <classes name="HdbEventSubscriber" pogoRevision="8.4">
     <description description="This class is able to subscribe on archive events and store value in Historical DB" title="Tango Device Server" sourcePath="/home/graziano/workspace/fermi/servers/hdb++/hdb++es/trunk/src" language="Cpp" filestogenerate="XMI   file,Code files" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_4Impl" sourcePath="/segfs/tango/templates/AbstractClasses"/>
       <identification contact="at elettra.eu - graziano.scalamera" author="graziano.scalamera" emailDomain="elettra.eu" classFamily="Miscellaneous" siteSpecific="" platform="Unix Like" bus="Not Applicable" manufacturer="none" reference=""/>
@@ -9,26 +9,6 @@
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>60</DefaultPropValue>
-    </classProperties>
-    <classProperties name="DbHost" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </classProperties>
-    <classProperties name="DbUser" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </classProperties>
-    <classProperties name="DbPassword" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </classProperties>
-    <classProperties name="DbName" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </classProperties>
-    <classProperties name="DbPort" description="">
-      <type xsi:type="pogoDsl:ShortType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </classProperties>
     <classProperties name="StartArchivingAtStartup" description="Start archiving at startup">
       <type xsi:type="pogoDsl:BooleanType"/>
@@ -48,6 +28,10 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>3</DefaultPropValue>
     </classProperties>
+    <classProperties name="LibConfiguration" description="Configuration for the library">
+      <type xsi:type="pogoDsl:StringVectorType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </classProperties>
     <deviceProperties name="SubscribeRetryPeriod" description="Subscribe event retrying period in seconds.">
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
@@ -55,26 +39,6 @@
     </deviceProperties>
     <deviceProperties name="AttributeList" description="List of configured attributes.">
       <type xsi:type="pogoDsl:StringVectorType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </deviceProperties>
-    <deviceProperties name="DbHost" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </deviceProperties>
-    <deviceProperties name="DbUser" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </deviceProperties>
-    <deviceProperties name="DbPassword" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </deviceProperties>
-    <deviceProperties name="DbName" description="">
-      <type xsi:type="pogoDsl:StringType"/>
-      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-    </deviceProperties>
-    <deviceProperties name="DbPort" description="">
-      <type xsi:type="pogoDsl:ShortType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </deviceProperties>
     <deviceProperties name="StartArchivingAtStartup" description="Start archiving at startup">
@@ -94,6 +58,10 @@
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>3</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="LibConfiguration" description="Configuration for the library">
+      <type xsi:type="pogoDsl:StringVectorType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </deviceProperties>
     <commands name="State" description="This command gets the device state (stored in its &lt;i>device_state&lt;/i> data member) and returns it to the caller." execMethod="dev_state" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="none.">
@@ -245,35 +213,43 @@
     </attributes>
     <attributes name="AttributeMaxStoreTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Maximum storing time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="0.001" period=""/>
+      <evArchiveCriteria relChange="" absChange="0.001" period="3600000"/>
     </attributes>
     <attributes name="AttributeMinStoreTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Minimum storing time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="0.00001" period=""/>
+      <evArchiveCriteria relChange="" absChange="0.00001" period="3600000"/>    
     </attributes>
     <attributes name="AttributeMaxProcessingTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Maximum processing (from event reception to storage) time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="0.001" period=""/>
+      <evArchiveCriteria relChange="" absChange="0.001" period="3600000"/>
     </attributes>
     <attributes name="AttributeMinProcessingTime" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
-      <changeEvent fire="false" libCheckCriteria="true"/>
-      <archiveEvent fire="false" libCheckCriteria="true"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Minimum processing (from event reception to storage) time" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <eventCriteria relChange="" absChange="0.00001" period=""/>
+      <evArchiveCriteria relChange="" absChange="0.00001" period="3600000"/>  
     </attributes>
     <attributes name="AttributeRecordFreq" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>

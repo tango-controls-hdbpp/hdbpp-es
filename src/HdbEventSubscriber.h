@@ -101,16 +101,6 @@ public:
 	Tango::DevLong	subscribeRetryPeriod;
 	//	AttributeList:	List of configured attributes.
 	vector<string>	attributeList;
-	//	DbHost:	
-	string	dbHost;
-	//	DbUser:	
-	string	dbUser;
-	//	DbPassword:	
-	string	dbPassword;
-	//	DbName:	
-	string	dbName;
-	//	DbPort:	
-	Tango::DevShort	dbPort;
 	//	StartArchivingAtStartup:	Start archiving at startup
 	Tango::DevBoolean	startArchivingAtStartup;
 	//	StatisticsTimeWindow:	Statistics time window in seconds
@@ -119,6 +109,8 @@ public:
 	Tango::DevLong	checkPeriodicTimeoutDelay;
 	//	PollingThreadPeriod:	Polling Thread period in seconds.
 	Tango::DevLong	pollingThreadPeriod;
+	//	LibConfiguration:	Configuration for the library
+	vector<string>	libConfiguration;
 
 //	Attribute data members
 public:
@@ -535,6 +527,14 @@ public:
 	virtual void attribute_pause(Tango::DevString argin);
 	virtual bool is_AttributePause_allowed(const CORBA::Any &any);
 
+
+	//--------------------------------------------------------
+	/**
+	 *	Method      : HdbEventSubscriber::add_dynamic_commands()
+	 *	Description : Add dynamic commands if any.
+	 */
+	//--------------------------------------------------------
+	void add_dynamic_commands();
 
 /*----- PROTECTED REGION ID(HdbEventSubscriber::Additional Method prototypes) ENABLED START -----*/
 

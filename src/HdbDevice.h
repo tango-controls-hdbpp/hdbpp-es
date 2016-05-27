@@ -74,7 +74,7 @@
 #endif	/*	TIME_VAR	*/
 
 #define STATUS_SUBSCRIBED	string("Subscribed")
-#define STATUS_DB_ERROR		string("DB Error")
+#define STATUS_DB_ERROR		string("Storing Error")
 
 
 namespace HdbEventSubscriber_ns

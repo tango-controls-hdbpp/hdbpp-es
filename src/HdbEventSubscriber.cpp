@@ -209,7 +209,6 @@ void HdbEventSubscriber::init_device()
 	get_device_property();
 	
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
-
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
 
 	//	Initialize device
@@ -281,15 +280,11 @@ void HdbEventSubscriber::get_device_property()
 	Tango::DbData	dev_prop;
 	dev_prop.push_back(Tango::DbDatum("SubscribeRetryPeriod"));
 	dev_prop.push_back(Tango::DbDatum("AttributeList"));
-	dev_prop.push_back(Tango::DbDatum("DbHost"));
-	dev_prop.push_back(Tango::DbDatum("DbUser"));
-	dev_prop.push_back(Tango::DbDatum("DbPassword"));
-	dev_prop.push_back(Tango::DbDatum("DbName"));
-	dev_prop.push_back(Tango::DbDatum("DbPort"));
 	dev_prop.push_back(Tango::DbDatum("StartArchivingAtStartup"));
 	dev_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
 	dev_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	dev_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
+	dev_prop.push_back(Tango::DbDatum("LibConfiguration"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -325,61 +320,6 @@ void HdbEventSubscriber::get_device_property()
 		}
 		//	And try to extract AttributeList value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeList;
-
-		//	Try to initialize DbHost from class property
-		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  dbHost;
-		else {
-			//	Try to initialize DbHost from default device value
-			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  dbHost;
-		}
-		//	And try to extract DbHost value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  dbHost;
-
-		//	Try to initialize DbUser from class property
-		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  dbUser;
-		else {
-			//	Try to initialize DbUser from default device value
-			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  dbUser;
-		}
-		//	And try to extract DbUser value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  dbUser;
-
-		//	Try to initialize DbPassword from class property
-		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  dbPassword;
-		else {
-			//	Try to initialize DbPassword from default device value
-			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  dbPassword;
-		}
-		//	And try to extract DbPassword value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  dbPassword;
-
-		//	Try to initialize DbName from class property
-		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  dbName;
-		else {
-			//	Try to initialize DbName from default device value
-			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  dbName;
-		}
-		//	And try to extract DbName value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  dbName;
-
-		//	Try to initialize DbPort from class property
-		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  dbPort;
-		else {
-			//	Try to initialize DbPort from default device value
-			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  dbPort;
-		}
-		//	And try to extract DbPort value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  dbPort;
 
 		//	Try to initialize StartArchivingAtStartup from class property
 		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
@@ -424,6 +364,17 @@ void HdbEventSubscriber::get_device_property()
 		}
 		//	And try to extract PollingThreadPeriod value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  pollingThreadPeriod;
+
+		//	Try to initialize LibConfiguration from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  libConfiguration;
+		else {
+			//	Try to initialize LibConfiguration from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  libConfiguration;
+		}
+		//	And try to extract LibConfiguration value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  libConfiguration;
 
 	}
 

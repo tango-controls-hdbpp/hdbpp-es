@@ -47,17 +47,17 @@ namespace HdbEventSubscriber_ns
 {
 //=============================================================================
 //=============================================================================
-PushThreadShared::PushThreadShared(HdbDevice *dev, string host, string user, string password, string dbname, int port):Tango::LogAdapter(dev->_device)
+PushThreadShared::PushThreadShared(HdbDevice *dev, vector<string> configuration):Tango::LogAdapter(dev->_device)
 {
 	max_waiting=0; stop_it=false;
 
 	try
 	{
-		mdb = new HdbClient(host, user, password, dbname, port);
+		mdb = new HdbClient(configuration);
 	}
-	catch (string &err)
+	catch (Tango::DevFailed &err)
 	{
-		FATAL_STREAM << __func__ << ": error connecting DB: " << err << endl;
+		FATAL_STREAM << __func__ << ": error connecting DB: " << err.errors[0].desc << endl;
 		exit(-1);
 	}
 	hdb_dev = dev;
@@ -105,12 +105,12 @@ void PushThreadShared::push_back_cmd(HdbCmdData *argin)
 }
 //=============================================================================
 //=============================================================================
-void PushThreadShared::remove_cmd()
+/*void PushThreadShared::remove_cmd()
 {
 	omni_mutex_lock sync(*this);
 	//	Remove first element of vector
 	events.erase(events.begin());
-}
+}*/
 //=============================================================================
 //=============================================================================
 int PushThreadShared::nb_cmd_waiting()
@@ -374,13 +374,46 @@ Tango::DevState  PushThreadShared::get_sig_state(string signame)
 	sig_lock->unlock();
 	return Tango::ON;
 }
+//=============================================================================
+/**
+ *	Return the db error status of the signal
+ */
+//=============================================================================
+string  PushThreadShared::get_sig_status(string signame)
+{
+	sig_lock->lock();
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			string ret = signals[i].dberror;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			string ret = signals[i].dberror;
+			sig_lock->unlock();
+			return ret;
+		}
+	}
 
+	sig_lock->unlock();
+	return STATUS_DB_ERROR;
+}
 //=============================================================================
 /**
  *	Increment the error counter of db saving
  */
 //=============================================================================
-void  PushThreadShared::set_nok_db(string &signame)
+void  PushThreadShared::set_nok_db(string &signame, string error)
 {
 	sig_lock->lock();
 	unsigned int i;
@@ -391,6 +424,9 @@ void  PushThreadShared::set_nok_db(string &signame)
 			signals[i].nokdb_counter++;
 			signals[i].nokdb_counter_freq++;
 			signals[i].dbstate = Tango::ALARM;
+			signals[i].dberror = STATUS_DB_ERROR;
+			if(error.length() > 0)
+				signals[i].dberror += ": " + error;
 			gettimeofday(&signals[i].last_nokdb, NULL);
 			sig_lock->unlock();
 			return;
@@ -407,6 +443,9 @@ void  PushThreadShared::set_nok_db(string &signame)
 			signals[i].nokdb_counter++;
 			signals[i].nokdb_counter_freq++;
 			signals[i].dbstate = Tango::ALARM;
+			signals[i].dberror = STATUS_DB_ERROR;
+			if(error.length() > 0)
+				signals[i].dberror += ": " + error;
 			gettimeofday(&signals[i].last_nokdb, NULL);
 			sig_lock->unlock();
 			return;
@@ -426,6 +465,9 @@ void  PushThreadShared::set_nok_db(string &signame)
 		sig.process_time_min = -1;
 		sig.process_time_max = -1;
 		sig.dbstate = Tango::ALARM;
+		sig.dberror = STATUS_DB_ERROR;
+		if(error.length() > 0)
+			sig.dberror += ": " + error;
 		gettimeofday(&sig.last_nokdb, NULL);
 		signals.push_back(sig);
 	}
@@ -767,6 +809,7 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		if (signals[i].name==signame)
 		{
 			signals[i].dbstate = Tango::ON;
+			signals[i].dberror = "";
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
 			//signal store min
 			if(signals[i].store_time_min == -1)
@@ -824,6 +867,7 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 #endif
 		{
 			signals[i].dbstate = Tango::ON;
+			signals[i].dberror = "";
 			signals[i].store_time_avg = ((signals[i].store_time_avg * signals[i].okdb_counter) + store_time)/(signals[i].okdb_counter+1);
 			//signal store min
 			if(signals[i].store_time_min == -1)
@@ -885,6 +929,7 @@ void  PushThreadShared::set_ok_db(string &signame, double store_time, double pro
 		sig.process_time_min = process_time;
 		sig.process_time_max = process_time;
 		sig.dbstate = Tango::ON;
+		sig.dberror = "";
 		signals.push_back(sig);
 		//global store min
 		if(hdb_dev->attr_AttributeMinStoreTime_read == -1)
@@ -1008,20 +1053,20 @@ void *PushThread::run_undetached(void *ptr)
 		HdbCmdData	*cmd;
 		while ((cmd=shared->get_next_cmd())!=NULL)
 		{
-			try
+			switch(cmd->op_code)
 			{
-				switch(cmd->op_code)
+				case DB_INSERT:
 				{
-					case DB_INSERT:
+					timeval now;
+					gettimeofday(&now, NULL);
+					double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
+					try
 					{
-						timeval now;
-						gettimeofday(&now, NULL);
-						double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
 						//	Send it to DB
 						int ret = shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
 						if(ret < 0)
 						{
-							shared->set_nok_db(cmd->ev_data->attr_name);
+							shared->set_nok_db(cmd->ev_data->attr_name, "");
 						}
 						else
 						{
@@ -1030,21 +1075,36 @@ void *PushThread::run_undetached(void *ptr)
 							double	rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/1.0e6;
 							shared->set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
 						}
-						break;
 					}
-					case DB_INSERT_PARAM:
+					catch(Tango::DevFailed  &e)
 					{
-						timeval now;
-						gettimeofday(&now, NULL);
-						double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
+						shared->set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
+						Tango::Except::print_exception(e);
+					}
+						break;
+				}
+				case DB_INSERT_PARAM:
+				{
+					timeval now;
+					gettimeofday(&now, NULL);
+					double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
+					try
+					{
 						//	Send it to DB
 						/*int ret =*/ shared->mdb->insert_param_Attr(cmd->ev_data_param, cmd->ev_data_type);
-						break;
 					}
-					case DB_START:
-					case DB_STOP:
-					case DB_PAUSE:
-					case DB_REMOVE:
+					catch(Tango::DevFailed  &e)
+					{
+						Tango::Except::print_exception(e);
+					}
+					break;
+				}
+				case DB_START:
+				case DB_STOP:
+				case DB_PAUSE:
+				case DB_REMOVE:
+				{
+					try
 					{
 						//	Send it to DB
 						int ret = shared->mdb->event_Attr(cmd->attr_name, cmd->op_code);
@@ -1052,13 +1112,13 @@ void *PushThread::run_undetached(void *ptr)
 						{
 							//TODO
 						}
-						break;
 					}
+					catch(Tango::DevFailed  &e)
+					{
+						Tango::Except::print_exception(e);
+					}
+					break;
 				}
-			}
-			catch(Tango::DevFailed  &e)
-			{
-				Tango::Except::print_exception(e);
 			}
 			delete cmd;
 
