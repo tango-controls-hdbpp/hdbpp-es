@@ -421,15 +421,11 @@ void HdbEventSubscriberClass::get_class_property()
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriberClass::get_class_property_before
 	//	Read class properties from database.
 	cl_prop.push_back(Tango::DbDatum("SubscribeRetryPeriod"));
-	cl_prop.push_back(Tango::DbDatum("DbHost"));
-	cl_prop.push_back(Tango::DbDatum("DbUser"));
-	cl_prop.push_back(Tango::DbDatum("DbPassword"));
-	cl_prop.push_back(Tango::DbDatum("DbName"));
-	cl_prop.push_back(Tango::DbDatum("DbPort"));
 	cl_prop.push_back(Tango::DbDatum("StartArchivingAtStartup"));
 	cl_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
 	cl_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	cl_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
+	cl_prop.push_back(Tango::DbDatum("LibConfiguration"));
 	
 	//	Call database and extract values
 	if (Tango::Util::instance()->_UseDb==true)
@@ -447,66 +443,6 @@ void HdbEventSubscriberClass::get_class_property()
 		{
 			def_prop    >>  subscribeRetryPeriod;
 			cl_prop[i]  <<  subscribeRetryPeriod;
-		}
-	}
-	//	Try to extract DbHost value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  dbHost;
-	else
-	{
-		//	Check default value for DbHost
-		def_prop = get_default_class_property(cl_prop[i].name);
-		if (def_prop.is_empty()==false)
-		{
-			def_prop    >>  dbHost;
-			cl_prop[i]  <<  dbHost;
-		}
-	}
-	//	Try to extract DbUser value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  dbUser;
-	else
-	{
-		//	Check default value for DbUser
-		def_prop = get_default_class_property(cl_prop[i].name);
-		if (def_prop.is_empty()==false)
-		{
-			def_prop    >>  dbUser;
-			cl_prop[i]  <<  dbUser;
-		}
-	}
-	//	Try to extract DbPassword value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  dbPassword;
-	else
-	{
-		//	Check default value for DbPassword
-		def_prop = get_default_class_property(cl_prop[i].name);
-		if (def_prop.is_empty()==false)
-		{
-			def_prop    >>  dbPassword;
-			cl_prop[i]  <<  dbPassword;
-		}
-	}
-	//	Try to extract DbName value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  dbName;
-	else
-	{
-		//	Check default value for DbName
-		def_prop = get_default_class_property(cl_prop[i].name);
-		if (def_prop.is_empty()==false)
-		{
-			def_prop    >>  dbName;
-			cl_prop[i]  <<  dbName;
-		}
-	}
-	//	Try to extract DbPort value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  dbPort;
-	else
-	{
-		//	Check default value for DbPort
-		def_prop = get_default_class_property(cl_prop[i].name);
-		if (def_prop.is_empty()==false)
-		{
-			def_prop    >>  dbPort;
-			cl_prop[i]  <<  dbPort;
 		}
 	}
 	//	Try to extract StartArchivingAtStartup value
@@ -557,6 +493,18 @@ void HdbEventSubscriberClass::get_class_property()
 			cl_prop[i]  <<  pollingThreadPeriod;
 		}
 	}
+	//	Try to extract LibConfiguration value
+	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  libConfiguration;
+	else
+	{
+		//	Check default value for LibConfiguration
+		def_prop = get_default_class_property(cl_prop[i].name);
+		if (def_prop.is_empty()==false)
+		{
+			def_prop    >>  libConfiguration;
+			cl_prop[i]  <<  libConfiguration;
+		}
+	}
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::get_class_property_after) ENABLED START -----*/
 
 	//	Check class property data members init
@@ -587,71 +535,6 @@ void HdbEventSubscriberClass::set_default_property()
 	prop_def  = "60";
 	vect_data.clear();
 	vect_data.push_back("60");
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		cl_def_prop.push_back(data);
-		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "DbHost";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		cl_def_prop.push_back(data);
-		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "DbUser";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		cl_def_prop.push_back(data);
-		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "DbPassword";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		cl_def_prop.push_back(data);
-		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "DbName";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		cl_def_prop.push_back(data);
-		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "DbPort";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -715,6 +598,19 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_class_prop(prop_name, prop_desc);
+	prop_name = "LibConfiguration";
+	prop_desc = "Configuration for the library";
+	prop_def  = "";
+	vect_data.clear();
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		cl_def_prop.push_back(data);
+		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_class_prop(prop_name, prop_desc);
 
 	//	Set Default device Properties
 	prop_name = "SubscribeRetryPeriod";
@@ -733,71 +629,6 @@ void HdbEventSubscriberClass::set_default_property()
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "AttributeList";
 	prop_desc = "List of configured attributes.";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		dev_def_prop.push_back(data);
-		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "DbHost";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		dev_def_prop.push_back(data);
-		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "DbUser";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		dev_def_prop.push_back(data);
-		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "DbPassword";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		dev_def_prop.push_back(data);
-		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "DbName";
-	prop_desc = "";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		dev_def_prop.push_back(data);
-		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "DbPort";
-	prop_desc = "";
 	prop_def  = "";
 	vect_data.clear();
 	if (prop_def.length()>0)
@@ -854,6 +685,19 @@ void HdbEventSubscriberClass::set_default_property()
 	prop_def  = "3";
 	vect_data.clear();
 	vect_data.push_back("3");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "LibConfiguration";
+	prop_desc = "Configuration for the library";
+	prop_def  = "";
+	vect_data.clear();
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -1028,7 +872,7 @@ void HdbEventSubscriberClass::device_factory(const Tango::DevVarStringArray *dev
 	for (unsigned long i=0 ; i<devlist_ptr->length() ; i++)
 	{
 		cout4 << "Device name : " << (*devlist_ptr)[i].in() << endl;
-		device_list.push_back(new HdbEventSubscriber(this, (*devlist_ptr)[i]));							 
+		device_list.push_back(new HdbEventSubscriber(this, (*devlist_ptr)[i]));
 	}
 
 	//	Manage dynamic attributes if any
@@ -1202,16 +1046,11 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMaxStoreTime
 	//	delta_t	not set for AttributeMaxStoreTime
 	//	delta_val	not set for AttributeMaxStoreTime
-	attributemaxstoretime_prop.set_event_abs_change("0.001");
-	attributemaxstoretime_prop.set_archive_event_period("3600000");
-	attributemaxstoretime_prop.set_archive_event_abs_change("0.001");
 	
 	attributemaxstoretime->set_default_properties(attributemaxstoretime_prop);
 	//	Not Polled
 	attributemaxstoretime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributemaxstoretime->set_change_event(true, true);
-	attributemaxstoretime->set_archive_event(true, true);
 	att_list.push_back(attributemaxstoretime);
 
 	//	Attribute : AttributeMinStoreTime
@@ -1231,16 +1070,11 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMinStoreTime
 	//	delta_t	not set for AttributeMinStoreTime
 	//	delta_val	not set for AttributeMinStoreTime
-	attributeminstoretime_prop.set_event_abs_change("0.00001");
-	attributeminstoretime_prop.set_archive_event_period("3600000");
-	attributeminstoretime_prop.set_archive_event_abs_change("0.00001");
 	
 	attributeminstoretime->set_default_properties(attributeminstoretime_prop);
 	//	Not Polled
 	attributeminstoretime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributeminstoretime->set_change_event(true, true);
-	attributeminstoretime->set_archive_event(true, true);
 	att_list.push_back(attributeminstoretime);
 
 	//	Attribute : AttributeMaxProcessingTime
@@ -1260,16 +1094,11 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMaxProcessingTime
 	//	delta_t	not set for AttributeMaxProcessingTime
 	//	delta_val	not set for AttributeMaxProcessingTime
-	attributemaxprocessingtime_prop.set_event_abs_change("0.001");
-	attributemaxprocessingtime_prop.set_archive_event_period("3600000");
-	attributemaxprocessingtime_prop.set_archive_event_abs_change("0.001");
 	
 	attributemaxprocessingtime->set_default_properties(attributemaxprocessingtime_prop);
 	//	Not Polled
 	attributemaxprocessingtime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributemaxprocessingtime->set_change_event(true, true);
-	attributemaxprocessingtime->set_archive_event(true, true);
 	att_list.push_back(attributemaxprocessingtime);
 
 	//	Attribute : AttributeMinProcessingTime
@@ -1289,16 +1118,11 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMinProcessingTime
 	//	delta_t	not set for AttributeMinProcessingTime
 	//	delta_val	not set for AttributeMinProcessingTime
-	attributeminprocessingtime_prop.set_event_abs_change("0.00001");
-	attributeminprocessingtime_prop.set_archive_event_period("3600000");
-	attributeminprocessingtime_prop.set_archive_event_abs_change("0.00001");
 	
 	attributeminprocessingtime->set_default_properties(attributeminprocessingtime_prop);
 	//	Not Polled
 	attributeminprocessingtime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributeminprocessingtime->set_change_event(true, true);
-	attributeminprocessingtime->set_archive_event(true, true);
 	att_list.push_back(attributeminprocessingtime);
 
 	//	Attribute : AttributeRecordFreq

@@ -134,11 +134,7 @@ void HdbDevice::initialize()
 
 	//	Create thread to send commands to HdbAccess device
 	push_shared = new PushThreadShared(this,
-			(static_cast<HdbEventSubscriber *>(_device))->dbHost,
-			(static_cast<HdbEventSubscriber *>(_device))->dbUser,
-			(static_cast<HdbEventSubscriber *>(_device))->dbPassword,
-			(static_cast<HdbEventSubscriber *>(_device))->dbName,
-			(static_cast<HdbEventSubscriber *>(_device))->dbPort);
+			(static_cast<HdbEventSubscriber *>(_device))->libConfiguration);
 
 	attr_AttributeMinStoreTime_read = -1;
 	attr_AttributeMaxStoreTime_read = -1;
@@ -386,7 +382,7 @@ vector<string>  HdbDevice::get_error_list()
 			vector<string>::iterator itsig_list = find(sig_list.begin(), sig_list.end(), *it);
 			size_t idx = itsig_list - sig_list.begin();
 			if(idx < error_list.size())
-				error_list[idx] = STATUS_DB_ERROR;
+				error_list[idx] = push_shared->get_sig_status(*it);
 		}
 	}
 	return error_list;
@@ -473,7 +469,7 @@ string  HdbDevice::get_sig_status(string &signame)
 	//looking for DB errors
 	if(push_shared->get_sig_state(signame) == Tango::ALARM)
 	{
-		ev_status = STATUS_DB_ERROR;
+		ev_status = push_shared->get_sig_status(signame);
 	}
 
 	return ev_status;

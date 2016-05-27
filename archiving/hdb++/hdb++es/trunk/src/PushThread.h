@@ -64,6 +64,7 @@ typedef struct
 	uint32_t nokdb_counter_freq;
 	uint32_t okdb_counter;
 	Tango::DevState dbstate;
+	string dberror;
 	double process_time_avg;
 	double process_time_min;
 	double process_time_max;
@@ -104,12 +105,12 @@ private:
 
 public:
 	//PushThreadShared() { max_waiting=0; stop_it=false;};
-	PushThreadShared(HdbDevice *dev, string host, string user, string password, string dbname, int port);
+	PushThreadShared(HdbDevice *dev, vector<string> configuration);
 	~PushThreadShared();
 
 	void push_back_cmd(HdbCmdData *argin);
 	//void push_back_cmd(Tango::EventData argin);
-	void remove_cmd();
+//	void remove_cmd();
 	int nb_cmd_waiting();
 	HdbCmdData *get_next_cmd();
 
@@ -141,11 +142,14 @@ public:
 	 *	Return the db state of the signal
 	 */
 	Tango::DevState  get_sig_state(string signame);
-
+	/**
+	 *	Return the db error status of the signal
+	 */
+	string  get_sig_status(string signame);
 	/**
 	 *	Increment the error counter of db saving
 	 */
-	void  set_nok_db(string &signame);
+	void  set_nok_db(string &signame, string error);
 	/**
 	 *	Get the error counter of db saving
 	 */

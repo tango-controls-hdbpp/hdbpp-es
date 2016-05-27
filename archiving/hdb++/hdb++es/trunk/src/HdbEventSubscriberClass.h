@@ -653,16 +653,6 @@ public:
 	public:
 		//	SubscribeRetryPeriod:	Subscribe event retrying period in seconds.
 		Tango::DevLong	subscribeRetryPeriod;
-		//	DbHost:	
-		string	dbHost;
-		//	DbUser:	
-		string	dbUser;
-		//	DbPassword:	
-		string	dbPassword;
-		//	DbName:	
-		string	dbName;
-		//	DbPort:	
-		Tango::DevShort	dbPort;
 		//	StartArchivingAtStartup:	Start archiving at startup
 		Tango::DevBoolean	startArchivingAtStartup;
 		//	StatisticsTimeWindow:	Statistics time window in seconds
@@ -671,6 +661,8 @@ public:
 		Tango::DevLong	checkPeriodicTimeoutDelay;
 		//	PollingThreadPeriod:	Polling thread period in seconds.
 		Tango::DevLong	pollingThreadPeriod;
+		//	LibConfiguration:	Configuration for the library
+		vector<string>	libConfiguration;
 	public:
 		//	write class properties data members
 		Tango::DbData	cl_prop;
