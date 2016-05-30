@@ -229,8 +229,11 @@ void SharedData::remove(string &signame, bool stop)
 	//	then, update property
 	if(!stop)
 	{
-		action = UPDATE_PROP;
-		put_signal_property();	//TODO: wakeup thread and let it do it? -> signal()
+		DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<"++" << endl;
+		if(action <= UPDATE_PROP)
+			action++;
+		//put_signal_property();	//TODO: wakeup thread and let it do it? -> signal()
+		signal();
 	}
 }
 //=============================================================================
@@ -1031,8 +1034,9 @@ void SharedData::add(string &signame, int to_do, bool start)
 		{
 
 		}
-
-		action = to_do;
+		DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<" += " << to_do << endl;
+		if(action <= UPDATE_PROP)
+			action += to_do;
 	}
 	DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
 	signal();
@@ -1197,18 +1201,23 @@ int SharedData::nb_sig_to_subscribe()
 //=============================================================================
 void SharedData::put_signal_property()
 {
+	DEBUG_STREAM << "SharedData::"<<__func__<<": put_signal_property entering action=" << action << endl;
 	//ReaderLock lock(veclock);
-	if (action==UPDATE_PROP)
+	if (action>NOTHING)
 	{
 		vector<string>	v;
 		veclock.readerIn();
 		for (unsigned int i=0 ; i<signals.size() ; i++)
+		{
+			DEBUG_STREAM << "SharedData::"<<__func__<<": "<<i<<": " << signals[i].name << endl;
 			v.push_back(signals[i].name);
-//			v.push_back(signals[i].name + ",	" + signals[i].taco_type);
+		}
 		veclock.readerOut();
 		hdb_dev->put_signal_property(v);
-		action = NOTHING;
+		if(action >= UPDATE_PROP)
+			action--;
 	}
+	DEBUG_STREAM << "SharedData::"<<__func__<<": put_signal_property exiting action=" << action << endl;
 }
 //=============================================================================
 /**
@@ -2199,13 +2208,11 @@ void *SubscribeThread::run_undetached(void *ptr)
 			}
 			else
 			{
-				DEBUG_STREAM << __func__<<": going to wait period="<<period<<endl;
+				DEBUG_STREAM << __func__<<": going to wait period="<<period<<"  nb_to_subscribe="<<nb_to_subscribe<<endl;
 				//unsigned long s,n;
 				//omni_thread::get_time(&s,&n,period,0);
 				//shared->condition.timedwait(s,n);
 				shared->wait(period*1000);
-				shared->action=UPDATE_PROP;	//could have been overwritten to NOTHING in the meanwhile,
-											//but if subscribe failed then it's going to save the same list
 			}
 			//shared->unlock();
 		}
