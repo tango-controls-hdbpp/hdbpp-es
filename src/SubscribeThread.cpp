@@ -2199,14 +2199,14 @@ void *SubscribeThread::run_undetached(void *ptr)
 		{
 			omni_mutex_lock sync(*shared);
 			//shared->lock();
-			if (nb_to_subscribe==0)
+			if (nb_to_subscribe==0 && shared->action == NOTHING)
 			{
 				DEBUG_STREAM << __func__<<": going to wait nb_to_subscribe=0"<<endl;
 				//shared->condition.wait();
 				shared->wait();
 				//shared->wait(3*period*1000);
 			}
-			else
+			else if(shared->action == NOTHING)
 			{
 				DEBUG_STREAM << __func__<<": going to wait period="<<period<<"  nb_to_subscribe="<<nb_to_subscribe<<endl;
 				//unsigned long s,n;
