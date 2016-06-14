@@ -90,6 +90,7 @@ typedef struct
 	bool running;
 	bool paused;
 	bool stopped;
+	vector<uint8_t> contexts;
 	ReadersWritersLock *siglock;
 }
 HdbSignal;
@@ -130,12 +131,16 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame);
-	void add(string &signame, int to_do, bool start);
+	void add(string &signame, vector<string> contexts);
+	void add(string &signame, vector<string> contexts, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
 	void remove(string &signame, bool stop);
+	/**
+	 * Update contexts for a signal.
+	 */
+	void update(string &signame, vector<string> contexts);
 	/**
 	 * Start saving on DB a signal.
 	 */
@@ -172,6 +177,10 @@ public:
 	 * Is a signal not subscribed?
 	 */
 	bool is_stopped(string &signame);
+	/**
+	 * Is a signal to be archived with current context?
+	 */
+	bool is_current_context(string &signame, uint8_t context);
 	/**
 	 * Is a signal first event arrived?
 	 */
@@ -263,7 +272,7 @@ public:
 	/**
 	 *	Return the complete, started and stopped lists of signals
 	 */
-	void  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list);
+	void  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list);
 	/**
 	 *	Increment the ok counter of event rx
 	 */
@@ -308,6 +317,10 @@ public:
 	 *	Return the state of specified signal
 	 */
 	Tango::DevState  get_sig_state(string &signame);
+	/**
+	 *	Return the contexts of specified signal
+	 */
+	string  get_sig_context(string &signame);
 	/**
 	 *	Set Archive periodic event period
 	 */

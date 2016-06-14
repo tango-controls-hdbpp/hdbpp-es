@@ -74,20 +74,22 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  The following table gives the correspondence
 //  between command and method names.
 //
-//  Command name     |  Method name
+//  Command name       |  Method name
 //================================================================
-//  State            |  Inherited (no method)
-//  Status           |  Inherited (no method)
-//  AttributeAdd     |  attribute_add
-//  AttributeRemove  |  attribute_remove
-//  AttributeStatus  |  attribute_status
-//  Start            |  start
-//  Stop             |  stop
-//  AttributeStart   |  attribute_start
-//  AttributeStop    |  attribute_stop
-//  ResetStatistics  |  reset_statistics
-//  Pause            |  pause
-//  AttributePause   |  attribute_pause
+//  State              |  Inherited (no method)
+//  Status             |  Inherited (no method)
+//  AttributeAdd       |  attribute_add
+//  AttributeRemove    |  attribute_remove
+//  AttributeStatus    |  attribute_status
+//  Start              |  start
+//  Stop               |  stop
+//  AttributeStart     |  attribute_start
+//  AttributeStop      |  attribute_stop
+//  ResetStatistics    |  reset_statistics
+//  Pause              |  pause
+//  AttributePause     |  attribute_pause
+//  AttributeUpdate    |  attribute_update
+//  AttributeContext  |  attribute_context
 //================================================================
 
 //================================================================
@@ -108,6 +110,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeMaxPendingNumber   |  Tango::DevLong	Scalar
 //  StatisticsResetTime         |  Tango::DevDouble	Scalar
 //  AttributePausedNumber       |  Tango::DevLong	Scalar
+//  Context                    |  Tango::DevUChar	Scalar
 //  AttributeList               |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeOkList             |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeNokList            |  Tango::DevString	Spectrum  ( max = 10000)
@@ -119,6 +122,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeEventNumberList    |  Tango::DevLong	Spectrum  ( max = 10000)
 //  AttributeErrorList          |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributePausedList         |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeContextList       |  Tango::DevString	Spectrum  ( max = 10000)
 //================================================================
 
 namespace HdbEventSubscriber_ns
@@ -186,6 +190,7 @@ void HdbEventSubscriber::delete_device()
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
 	delete[] attr_StatisticsResetTime_read;
+	delete[] attr_Context_read;
 }
 
 //--------------------------------------------------------
@@ -209,6 +214,7 @@ void HdbEventSubscriber::init_device()
 	get_device_property();
 	
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
+	attr_Context_read = new Tango::DevUChar[1];
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
 
 	//	Initialize device
@@ -220,7 +226,18 @@ void HdbEventSubscriber::init_device()
 	INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
 	string	status("");
 	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, this);
-	hdb_dev->startArchivingAtStartup = startArchivingAtStartup;
+	for(vector<string>::iterator it = hdbppContext.begin(); it != hdbppContext.end(); it++)
+	{
+		vector<string> res;
+		hdb_dev->string_explode(*it, ":", &res);
+		if(res.size()==2)
+		{
+			DEBUG_STREAM << "CONFIGURING CONTEXTS: adding " << res[1] << " <-> " << atoi(res[0].c_str());
+			hdb_dev->context_map.insert(make_pair(res[1], atoi(res[0].c_str())));
+			hdb_dev->rev_context_map.insert(make_pair(atoi(res[0].c_str()), res[1]));
+		}
+	}
+	hdb_dev->defaultContext = defaultContext;
 
 	attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
 	attr_AttributeFailureFreq_read = &hdb_dev->AttributeFailureFreq;
@@ -280,11 +297,12 @@ void HdbEventSubscriber::get_device_property()
 	Tango::DbData	dev_prop;
 	dev_prop.push_back(Tango::DbDatum("SubscribeRetryPeriod"));
 	dev_prop.push_back(Tango::DbDatum("AttributeList"));
-	dev_prop.push_back(Tango::DbDatum("StartArchivingAtStartup"));
 	dev_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
 	dev_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	dev_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
 	dev_prop.push_back(Tango::DbDatum("LibConfiguration"));
+	dev_prop.push_back(Tango::DbDatum("HdbppContext"));
+	dev_prop.push_back(Tango::DbDatum("DefaultContext"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -320,17 +338,6 @@ void HdbEventSubscriber::get_device_property()
 		}
 		//	And try to extract AttributeList value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeList;
-
-		//	Try to initialize StartArchivingAtStartup from class property
-		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  startArchivingAtStartup;
-		else {
-			//	Try to initialize StartArchivingAtStartup from default device value
-			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  startArchivingAtStartup;
-		}
-		//	And try to extract StartArchivingAtStartup value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  startArchivingAtStartup;
 
 		//	Try to initialize StatisticsTimeWindow from class property
 		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
@@ -376,6 +383,28 @@ void HdbEventSubscriber::get_device_property()
 		//	And try to extract LibConfiguration value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  libConfiguration;
 
+		//	Try to initialize HdbppContext from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  hdbppContext;
+		else {
+			//	Try to initialize HdbppContext from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  hdbppContext;
+		}
+		//	And try to extract HdbppContext value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  hdbppContext;
+
+		//	Try to initialize DefaultContext from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  defaultContext;
+		else {
+			//	Try to initialize DefaultContext from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  defaultContext;
+		}
+		//	And try to extract DefaultContext value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  defaultContext;
+
 	}
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_after) ENABLED START -----*/
@@ -395,7 +424,7 @@ void HdbEventSubscriber::get_device_property()
 //--------------------------------------------------------
 void HdbEventSubscriber::always_executed_hook()
 {
-	//INFO_STREAM << "HdbEventSubscriber::always_executed_hook()  " << device_name << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::always_executed_hook()  " << device_name << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::always_executed_hook) ENABLED START -----*/
 
 	//	code always executed before all requests
@@ -422,12 +451,27 @@ void HdbEventSubscriber::always_executed_hook()
 //--------------------------------------------------------
 void HdbEventSubscriber::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_attr_hardware) ENABLED START -----*/
 
 	//	Add your own code
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_attr_hardware
+}
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "HdbEventSubscriber::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::write_attr_hardware) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_attr_hardware
 }
 
 //--------------------------------------------------------
@@ -441,7 +485,7 @@ void HdbEventSubscriber::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -460,7 +504,7 @@ void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -479,7 +523,7 @@ void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -498,7 +542,7 @@ void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNumber) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -517,7 +561,7 @@ void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxStoreTime) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeMaxStoreTime_read);
@@ -535,7 +579,7 @@ void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinStoreTime) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeMinStoreTime_read);
@@ -553,7 +597,7 @@ void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxProcessingTime) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeMaxProcessingTime_read);
@@ -571,7 +615,7 @@ void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinProcessingTime) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeMinProcessingTime_read);
@@ -589,7 +633,7 @@ void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreq) ENABLED START -----*/
 	//	Set the attribute value
 	if(*attr_AttributeRecordFreq_read == -1)
@@ -610,7 +654,7 @@ void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreq) ENABLED START -----*/
 	//	Set the attribute value
 	if(*attr_AttributeFailureFreq_read == -1)
@@ -630,7 +674,7 @@ void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedNumber) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeStartedNumber_read);
@@ -648,7 +692,7 @@ void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedNumber) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributeStoppedNumber_read);
@@ -665,7 +709,7 @@ void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxPendingNumber) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->AttributeMaxPendingNumber);
@@ -682,7 +726,7 @@ void HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_StatisticsResetTime) ENABLED START -----*/
 	timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -704,11 +748,75 @@ void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedNumber) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(&hdb_dev->attr_AttributePausedNumber_read);
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedNumber
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute Context related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevUChar
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_Context(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_Context(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_Context) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_Context_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_Context
+}
+//--------------------------------------------------------
+/**
+ *	Write attribute Context related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevUChar
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::write_Context(Tango::WAttribute &attr) entering... " << endl;
+	//	Retrieve write value
+	Tango::DevUChar	w_val;
+	attr.get_write_value(w_val);
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::write_Context) ENABLED START -----*/
+	*attr_Context_read = w_val;
+	
+	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
+	{
+		bool is_current_context;
+		try
+		{
+			hdb_dev->shared->veclock.readerIn();
+			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], w_val);
+			DEBUG_STREAM << "HdbEventSubscriber::write_Context="<<(int)w_val<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
+			hdb_dev->shared->veclock.readerOut();
+		}
+		catch(Tango::DevFailed &e)
+		{
+			hdb_dev->shared->veclock.readerOut();
+			INFO_STREAM << __func__ << ": Failed to check is_current_context for " << att_list_tmp[i];
+			Tango::Except::re_throw_exception(e,
+						(const char *)"BadSignalName",
+						"Signal " + att_list_tmp[i] + " NOT subscribed",
+						(const char *)__func__);
+		}
+		if(is_current_context)
+			attribute_start((Tango::DevString)att_list_tmp[i].c_str());
+		else
+			attribute_stop((Tango::DevString)att_list_tmp[i].c_str());
+	}
+
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_Context
 }
 //--------------------------------------------------------
 /**
@@ -721,7 +829,7 @@ void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -740,7 +848,7 @@ void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -759,7 +867,7 @@ void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -778,7 +886,7 @@ void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingList) ENABLED START -----*/
 
 	//	Set the attribute value
@@ -797,7 +905,7 @@ void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqList) ENABLED START -----*/
 	if(*attr_AttributeRecordFreq_read == -1)
 		attr.set_quality(Tango::ATTR_INVALID);
@@ -817,7 +925,7 @@ void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqList) ENABLED START -----*/
 	if(*attr_AttributeFailureFreq_read == -1)
 		attr.set_quality(Tango::ATTR_INVALID);
@@ -836,7 +944,7 @@ void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedList) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(hdb_dev->attr_AttributeStartedList_read, hdb_dev->attribute_started_list_str_size);
@@ -854,7 +962,7 @@ void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedList) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(hdb_dev->attr_AttributeStoppedList_read, hdb_dev->attribute_stopped_list_str_size);
@@ -871,7 +979,7 @@ void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeEventNumberList) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(attr_AttributeEventNumberList_read, hdb_dev->attr_AttributeNumber_read);
@@ -889,7 +997,7 @@ void HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeErrorList) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(hdb_dev->attr_AttributeErrorList_read, hdb_dev->attribute_error_list_str_size);
@@ -906,11 +1014,28 @@ void HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr)
 //--------------------------------------------------------
 void HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr)
 {
-	//DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr) entering... " << endl;
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedList) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(hdb_dev->attr_AttributePausedList_read, hdb_dev->attribute_paused_list_str_size);
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedList
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeContextList related method
+ *	Description: Returns the list of attribute contexts
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeContextList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeContextList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeContextList) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(hdb_dev->attr_AttributeContextList_read, hdb_dev->attribute_context_list_str_size);
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeContextList
 }
 
 //--------------------------------------------------------
@@ -934,18 +1059,67 @@ void HdbEventSubscriber::add_dynamic_attributes()
  *	Command AttributeAdd related method
  *	Description: Add a new attribute to archive in HDB.
  *
- *	@param argin Attribute name
+ *	@param argin Attribute name, contexts
  */
 //--------------------------------------------------------
-void HdbEventSubscriber::attribute_add(Tango::DevString argin)
+void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::AttributeAdd()  - " << device_name << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_add) ENABLED START -----*/
 
 	//	Add your own code
-	string	signame(argin);
-	hdb_dev->add(signame);
+	string	signame;
+	vector<string> contexts;
+	if(argin->length() > 0)
+	{
+		signame = string((*argin)[0]);
+	}
+	for(size_t i = 0; i < argin->length() -1; i++)
+	{
+		string context((*argin)[i+1]);
+		if(context.length() > 0)
+		{
+			vector<string> res;
+			hdb_dev->string_explode(context, "|", &res);
 
+			for(vector<string>::iterator its=res.begin(); its!=res.end(); its++)
+			{
+				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(*its);
+				if(it == hdb_dev->context_map.end())
+				{
+					Tango::Except::throw_exception(
+							(const char *)"BadContextName",
+								"Context '" + *its + "' NOT defined",
+								(const char *)__func__);
+				}
+				contexts.push_back(*its);
+			}
+		}
+	}
+	if(contexts.size()==0)
+		contexts.push_back(defaultContext);
+	hdb_dev->add(signame, contexts);
+
+	bool is_current_context;
+	try
+	{
+		hdb_dev->shared->veclock.readerIn();
+		is_current_context = hdb_dev->shared->is_current_context(signame, *attr_Context_read);
+		hdb_dev->shared->veclock.readerOut();
+	}
+	catch(Tango::DevFailed &e)
+	{
+		hdb_dev->shared->veclock.readerOut();
+		INFO_STREAM << __func__ << ": Failed to check is_current_context for " << signame;
+		Tango::Except::re_throw_exception(e,
+					(const char *)"BadSignalName",
+					"Signal " + signame + " NOT subscribed",
+					(const char *)__func__);
+	}
+	if(is_current_context)
+		attribute_start((Tango::DevString)signame.c_str());
+	else
+		attribute_stop((Tango::DevString)signame.c_str());
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_add
 }
@@ -1359,6 +1533,117 @@ void HdbEventSubscriber::attribute_pause(Tango::DevString argin)
 					(const char *)"attribute_pause");
 	}
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_pause
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributeUpdate related method
+ *	Description: Update contexts associated to an already archived attribute.
+ *
+ *	@param argin Attribute name, contexts
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_update(const Tango::DevVarStringArray *argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeUpdate()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_update) ENABLED START -----*/
+
+	//	Add your own code
+	string	signame;
+	vector<string> contexts;
+	if(argin->length() > 0)
+	{
+		signame = string((*argin)[0]);
+	}
+	for(size_t i = 0; i < argin->length() -1; i++)
+	{
+		string context((*argin)[i+1]);
+		if(context.length() > 0)
+		{
+			vector<string> res;
+			hdb_dev->string_explode(context, "|", &res);
+
+			for(vector<string>::iterator its=res.begin(); its!=res.end(); its++)
+			{
+				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(*its);
+				if(it == hdb_dev->context_map.end())
+				{
+					Tango::Except::throw_exception(
+							(const char *)"BadContextName",
+								"Context '" + *its + "' NOT defined",
+								(const char *)__func__);
+				}
+				contexts.push_back(*its);
+			}
+		}
+	}
+	if(contexts.size()==0)
+		contexts.push_back(defaultContext);
+	hdb_dev->update(signame, contexts);
+
+	bool is_current_context;
+	try
+	{
+		hdb_dev->shared->veclock.readerIn();
+		is_current_context = hdb_dev->shared->is_current_context(signame, *attr_Context_read);
+		hdb_dev->shared->veclock.readerOut();
+	}
+	catch(Tango::DevFailed &e)
+	{
+		hdb_dev->shared->veclock.readerOut();
+		INFO_STREAM << __func__ << ": Failed to check is_current_context for " << signame;
+		Tango::Except::re_throw_exception(e,
+					(const char *)"BadSignalName",
+					"Signal " + signame + " NOT subscribed",
+					(const char *)__func__);
+	}
+	if(is_current_context)
+		attribute_start((Tango::DevString)signame.c_str());
+	else
+		attribute_stop((Tango::DevString)signame.c_str());
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_update
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributeContext related method
+ *	Description: Read a attribute contexts.
+ *
+ *	@param argin The attribute name
+ *	@returns The attribute contexts.
+ */
+//--------------------------------------------------------
+Tango::DevString HdbEventSubscriber::attribute_context(Tango::DevString argin)
+{
+	Tango::DevString argout;
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeContext()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_context) ENABLED START -----*/
+
+	//	Add your own code
+	string	signame(argin);
+	hdb_dev->fix_tango_host(signame);
+
+	stringstream attr_context;
+	attr_context << hdb_dev->shared->get_sig_context(signame);
+
+	argout  = new char[attr_context.str().length()+1];
+	strcpy(argout, attr_context.str().c_str());
+
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_context
+	return argout;
+}
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::add_dynamic_commands) ENABLED START -----*/
+	
+	//	Add your own code to create and add dynamic commands if any
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::add_dynamic_commands
 }
 
 /*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_ending) ENABLED START -----*/

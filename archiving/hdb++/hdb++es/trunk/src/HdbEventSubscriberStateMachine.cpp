@@ -300,6 +300,26 @@ bool HdbEventSubscriber::is_AttributePausedNumber_allowed(TANGO_UNUSED(Tango::At
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_Context_allowed()
+ *	Description : Execution allowed for Context attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_Context_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+	//	Not any excluded states for Context attribute in Write access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::ContextStateAllowed_WRITE) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::ContextStateAllowed_WRITE
+
+	//	Not any excluded states for Context attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::ContextStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::ContextStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeList_allowed()
  *	Description : Execution allowed for AttributeList attribute
  */
@@ -474,6 +494,23 @@ bool HdbEventSubscriber::is_AttributePausedList_allowed(TANGO_UNUSED(Tango::AttR
 	return true;
 }
 
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeContextList_allowed()
+ *	Description : Execution allowed for AttributeContextList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeContextList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeContextList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeContextListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeContextListStateAllowed_READ
+	return true;
+}
+
+
 //=================================================
 //		Commands Allowed Methods
 //=================================================
@@ -627,5 +664,42 @@ bool HdbEventSubscriber::is_AttributePause_allowed(TANGO_UNUSED(const CORBA::Any
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributePauseStateAllowed
 	return true;
 }
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeUpdate_allowed()
+ *	Description : Execution allowed for AttributeUpdate attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeUpdate_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for AttributeUpdate command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeUpdateStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeUpdateStateAllowed
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeContext_allowed()
+ *	Description : Execution allowed for AttributeContext attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeContext_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for AttributeContext command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeContextStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeContextStateAllowed
+	return true;
+}
+
+
+/*----- PROTECTED REGION ID(HdbEventSubscriber::HdbEventSubscriberStateAllowed.AdditionalMethods) ENABLED START -----*/
+
+//	Additional Methods
+
+/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::HdbEventSubscriberStateAllowed.AdditionalMethods
 
 }	//	End of namespace

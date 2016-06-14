@@ -81,7 +81,6 @@ public:
 	bool		initialized;
 
 
-
 private:
 
 	double last_statistics_reset_time;
@@ -101,8 +100,6 @@ public:
 	Tango::DevLong	subscribeRetryPeriod;
 	//	AttributeList:	List of configured attributes.
 	vector<string>	attributeList;
-	//	StartArchivingAtStartup:	Start archiving at startup
-	Tango::DevBoolean	startArchivingAtStartup;
 	//	StatisticsTimeWindow:	Statistics time window in seconds
 	Tango::DevLong	statisticsTimeWindow;
 	//	CheckPeriodicTimeoutDelay:	Delay in seconds before timeout when checking periodic events
@@ -111,6 +108,10 @@ public:
 	Tango::DevLong	pollingThreadPeriod;
 	//	LibConfiguration:	Configuration for the library
 	vector<string>	libConfiguration;
+	//	HdbppContext:	Possible contexts enum in the form number:label
+	vector<string>	hdbppContext;
+	//	DefaultContext:	Default context to be used when not specified in the single attribute configuration
+	string	defaultContext;
 
 //	Attribute data members
 public:
@@ -129,6 +130,7 @@ public:
 	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
 	Tango::DevDouble	*attr_StatisticsResetTime_read;
 	Tango::DevLong	*attr_AttributePausedNumber_read;
+	Tango::DevUChar	*attr_Context_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
 	Tango::DevString	*attr_AttributeNokList_read;
@@ -140,6 +142,7 @@ public:
 	Tango::DevLong	*attr_AttributeEventNumberList_read;
 	Tango::DevString	*attr_AttributeErrorList_read;
 	Tango::DevString	*attr_AttributePausedList_read;
+	Tango::DevString	*attr_AttributeContextList_read;
 
 //	Constructors and destructors
 public:
@@ -167,7 +170,7 @@ public:
 	HdbEventSubscriber(Tango::DeviceClass *cl,const char *s,const char *d);
 	/**
 	 * The device object destructor.
-	 */	
+	 */
 	~HdbEventSubscriber() {delete_device();};
 
 
@@ -200,6 +203,13 @@ public:
 	 */
 	//--------------------------------------------------------
 	virtual void read_attr_hardware(vector<long> &attr_list);
+	//--------------------------------------------------------
+	/*
+	 *	Method      : HdbEventSubscriber::write_attr_hardware()
+	 *	Description : Hardware writing for attributes.
+	 */
+	//--------------------------------------------------------
+	virtual void write_attr_hardware(vector<long> &attr_list);
 
 /**
  *	Attribute AttributeOkNumber related methods
@@ -337,6 +347,16 @@ public:
 	virtual void read_AttributePausedNumber(Tango::Attribute &attr);
 	virtual bool is_AttributePausedNumber_allowed(Tango::AttReqType type);
 /**
+ *	Attribute Context related methods
+ *	Description: 
+ *
+ *	Data type:	Tango::DevUChar
+ *	Attr type:	Scalar
+ */
+	virtual void read_Context(Tango::Attribute &attr);
+	virtual void write_Context(Tango::WAttribute &attr);
+	virtual bool is_Context_allowed(Tango::AttReqType type);
+/**
  *	Attribute AttributeList related methods
  *	Description: Returns the configured attribute list
  *
@@ -435,6 +455,15 @@ public:
  */
 	virtual void read_AttributePausedList(Tango::Attribute &attr);
 	virtual bool is_AttributePausedList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeContextList related methods
+ *	Description: Returns the list of attribute contexts
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeContextList(Tango::Attribute &attr);
+	virtual bool is_AttributeContextList_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------
@@ -447,15 +476,16 @@ public:
 
 
 
+
 //	Command related methods
 public:
 	/**
 	 *	Command AttributeAdd related method
 	 *	Description: Add a new attribute to archive in HDB.
 	 *
-	 *	@param argin Attribute name
+	 *	@param argin Attribute name, contexts
 	 */
-	virtual void attribute_add(Tango::DevString argin);
+	virtual void attribute_add(const Tango::DevVarStringArray *argin);
 	virtual bool is_AttributeAdd_allowed(const CORBA::Any &any);
 	/**
 	 *	Command AttributeRemove related method
@@ -526,6 +556,23 @@ public:
 	 */
 	virtual void attribute_pause(Tango::DevString argin);
 	virtual bool is_AttributePause_allowed(const CORBA::Any &any);
+	/**
+	 *	Command AttributeUpdate related method
+	 *	Description: Update contexts associated to an already archived attribute.
+	 *
+	 *	@param argin Attribute name, contexts
+	 */
+	virtual void attribute_update(const Tango::DevVarStringArray *argin);
+	virtual bool is_AttributeUpdate_allowed(const CORBA::Any &any);
+	/**
+	 *	Command AttributeContext related method
+	 *	Description: Read a attribute contexts.
+	 *
+	 *	@param argin The attribute name
+	 *	@returns The attribute contexts.
+	 */
+	virtual Tango::DevString attribute_context(Tango::DevString argin);
+	virtual bool is_AttributeContext_allowed(const CORBA::Any &any);
 
 
 	//--------------------------------------------------------
