@@ -255,6 +255,21 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePausedNumber_allowed(ty);}
 };
 
+//	Attribute Context class definition
+class ContextAttrib: public Tango::Attr
+{
+public:
+	ContextAttrib():Attr("Context",
+			Tango::DEV_UCHAR, Tango::READ_WRITE) {};
+	~ContextAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_Context(att);}
+	virtual void write(Tango::DeviceImpl *dev,Tango::WAttribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->write_Context(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_Context_allowed(ty);}
+};
+
 //	Attribute AttributeList class definition
 class AttributeListAttrib: public Tango::SpectrumAttr
 {
@@ -396,6 +411,19 @@ public:
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributePausedList(att);}
 	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePausedList_allowed(ty);}
+};
+
+//	Attribute AttributeContextList class definition
+class AttributeContextListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributeContextListAttrib():SpectrumAttr("AttributeContextList",
+			Tango::DEV_STRING, Tango::READ, 10000) {};
+	~AttributeContextListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeContextList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeContextList_allowed(ty);}
 };
 
 
@@ -632,6 +660,52 @@ public:
 	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePause_allowed(any);}
 };
 
+//	Command AttributeUpdate class definition
+class AttributeUpdateClass : public Tango::Command
+{
+public:
+	AttributeUpdateClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	AttributeUpdateClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~AttributeUpdateClass() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeUpdate_allowed(any);}
+};
+
+//	Command AttributeContext class definition
+class AttributeContextClass : public Tango::Command
+{
+public:
+	AttributeContextClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	AttributeContextClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~AttributeContextClass() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeContext_allowed(any);}
+};
+
 
 /**
  *	The HdbEventSubscriberClass singleton definition
@@ -653,8 +727,6 @@ public:
 	public:
 		//	SubscribeRetryPeriod:	Subscribe event retrying period in seconds.
 		Tango::DevLong	subscribeRetryPeriod;
-		//	StartArchivingAtStartup:	Start archiving at startup
-		Tango::DevBoolean	startArchivingAtStartup;
 		//	StatisticsTimeWindow:	Statistics time window in seconds
 		Tango::DevLong	statisticsTimeWindow;
 		//	CheckPeriodicTimeoutDelay:	Delay in seconds before timeout when checking periodic events
@@ -663,6 +735,10 @@ public:
 		Tango::DevLong	pollingThreadPeriod;
 		//	LibConfiguration:	Configuration for the library
 		vector<string>	libConfiguration;
+		//	HdbppContext:	Possible contexts enum in the form number:label
+		vector<string>	hdbppContext;
+		//	DefaultContext:	Default context to be used when not specified in the single attribute configuration
+		string	defaultContext;
 	public:
 		//	write class properties data members
 		Tango::DbData	cl_prop;
@@ -682,6 +758,7 @@ public:
 		static HdbEventSubscriberClass *_instance;
 		void command_factory();
 		void attribute_factory(vector<Tango::Attr *> &);
+		void pipe_factory();
 		void write_class_property();
 		void set_default_property();
 		void get_class_property();

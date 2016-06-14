@@ -244,6 +244,7 @@ void SharedData::remove(string &signame, bool stop)
 void SharedData::start(string &signame)
 {
 	ReaderLock lock(veclock);
+	vector<string> contexts;
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
@@ -256,7 +257,7 @@ void SharedData::start(string &signame)
 					hdb_dev->attr_AttributeStoppedNumber_read--;
 					try
 					{
-						add(signame, NOTHING, true);
+						add(signame, contexts, NOTHING, true);
 					}
 					catch (Tango::DevFailed &e)
 					{
@@ -294,7 +295,7 @@ void SharedData::start(string &signame)
 					hdb_dev->attr_AttributeStoppedNumber_read--;
 					try
 					{
-						add(signame, NOTHING, true);
+						add(signame, contexts, NOTHING, true);
 					}
 					catch (Tango::DevFailed &e)
 					{
@@ -676,6 +677,67 @@ bool SharedData::is_stopped(string &signame)
 }
 //=============================================================================
 /**
+ * Is a signal to be archived with current context?
+ */
+//=============================================================================
+bool SharedData::is_current_context(string &signame, uint8_t context)
+{
+	bool retval=false;
+	//to be locked if called outside lock
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].siglock->readerIn();
+			vector<uint8_t>::iterator it = find(signals[i].contexts.begin(), signals[i].contexts.end(), context);
+			if(it != signals[i].contexts.end())
+			{
+				retval = true;
+			}
+			it = find(signals[i].contexts.begin(), signals[i].contexts.end(), 0/*TODO: ALWAYS*/);
+			if(it != signals[i].contexts.end())
+			{
+				retval = true;
+			}
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	for (unsigned int i=0 ; i<signals.size(); i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].siglock->readerIn();
+			vector<uint8_t>::iterator it = find(signals[i].contexts.begin(), signals[i].contexts.end(), context);
+			if(it != signals[i].contexts.end())
+			{
+				retval = true;
+			}
+			it = find(signals[i].contexts.begin(), signals[i].contexts.end(), 0/*TODO: ALWAYS*/);
+			if(it != signals[i].contexts.end())
+			{
+				retval = true;
+			}
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal " + signame + " NOT subscribed",
+				(const char *)"SharedData::is_current_context()");
+
+	return true;
+}
+//=============================================================================
+/**
  * Is a signal first event arrived?
  */
 //=============================================================================
@@ -910,16 +972,16 @@ void SharedData::unsubscribe_events()
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame)
+void SharedData::add(string &signame, vector<string> contexts)
 {
-	add(signame, NOTHING, false);
+	add(signame, contexts, NOTHING, false);
 }
 //=============================================================================
 /**
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame, int to_do, bool start)
+void SharedData::add(string &signame, vector<string> contexts, int to_do, bool start)
 {
 	DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
 	{
@@ -971,6 +1033,26 @@ void SharedData::add(string &signame, int to_do, bool start)
 			signal->running = false;
 			signal->stopped = true;
 			signal->paused = false;
+			for(vector<string>::iterator it=contexts.begin(); it!=contexts.end(); it++)
+			{
+				try
+				{
+					vector<uint8_t>::iterator its=find(signal->contexts.begin(), signal->contexts.end(), hdb_dev->context_map.at(*it));
+					if(its == signal->contexts.end())
+					{
+						signal->contexts.push_back(hdb_dev->context_map.at(*it));
+						DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" added context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) <<  endl;
+					}
+					else
+					{
+						DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) << " already present, NOT added" << endl;
+					}
+				}
+				catch(std::out_of_range &e)
+				{
+					DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" UNDEFINED context '" << *it << "'" << endl;
+				}
+			}
 			//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
 		}
 		else if(found && start)
@@ -1044,6 +1126,72 @@ void SharedData::add(string &signame, int to_do, bool start)
 }
 //=============================================================================
 /**
+ * Update contexts for a signal.
+ */
+//=============================================================================
+void SharedData::update(string &signame, vector<string> contexts)
+{
+	DEBUG_STREAM << "SharedData::"<<__func__<<": updating " << signame << " contexts.size=" << contexts.size()<< endl;
+
+	veclock.readerIn();
+	HdbSignal	*signal;
+	//	Check if already subscribed
+	bool	found = false;
+	for (unsigned int i=0 ; i<signals.size() && !found ; i++)
+	{
+		signal = &signals[i];
+		found = (signal->name==signame);
+	}
+	for (unsigned int i=0 ; i<signals.size() && !found ; i++)
+	{
+		signal = &signals[i];
+#ifndef _MULTI_TANGO_HOST
+		found = hdb_dev->compare_without_domain(signal->name,signame);
+#else
+		found = !hdb_dev->compare_tango_names(signal->name,signame);
+#endif
+	}
+	veclock.readerOut();
+	//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << endl;
+	if (!found)
+		Tango::Except::throw_exception(
+					(const char *)"BadSignalName",
+					"Signal " + signame + " NOT found",
+					(const char *)"SharedData::update()");
+
+	if(found)
+	{
+		signal->siglock->writerIn();
+		signal->contexts.clear();
+		for(vector<string>::iterator it=contexts.begin(); it!=contexts.end(); it++)
+		{
+			try
+			{
+				vector<uint8_t>::iterator its=find(signal->contexts.begin(), signal->contexts.end(), hdb_dev->context_map.at(*it));
+				if(its == signal->contexts.end())
+				{
+					signal->contexts.push_back(hdb_dev->context_map.at(*it));
+					DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" added context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) <<  endl;
+				}
+				else
+				{
+					DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) << " already present, NOT added" << endl;
+				}
+			}
+			catch(std::out_of_range &e)
+			{
+				DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" UNDEFINED context '" << *it << "'" << endl;
+			}
+		}
+		signal->siglock->writerOut();
+	}
+	if(action <= UPDATE_PROP)
+		action += UPDATE_PROP;
+	DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
+	this->signal();
+}
+//=============================================================================
+/**
  * Subscribe archive event for each signal
  */
 //=============================================================================
@@ -1068,7 +1216,8 @@ void SharedData::subscribe_events()
 			{
 				try
 				{
-					add(sig->name, NOTHING, true);
+					vector<string> contexts;	//TODO!!!
+					add(sig->name, contexts, NOTHING, true);
 				}
 				catch (Tango::DevFailed &e)
 				{
@@ -1209,8 +1358,24 @@ void SharedData::put_signal_property()
 		veclock.readerIn();
 		for (unsigned int i=0 ; i<signals.size() ; i++)
 		{
-			DEBUG_STREAM << "SharedData::"<<__func__<<": "<<i<<": " << signals[i].name << endl;
-			v.push_back(signals[i].name);
+			string context;
+			for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			{
+				try
+				{
+					context += hdb_dev->rev_context_map.at(*it);
+					if(it != signals[i].contexts.end() -1)
+						context += "|";
+				}
+				catch(std::out_of_range &e)
+				{
+
+				}
+			}
+			stringstream conf_string;
+			conf_string << signals[i].name << ";" << CONTEXT_KEY << "=" << context;
+			DEBUG_STREAM << "SharedData::"<<__func__<<": "<<i<<": " << conf_string.str() << endl;
+			v.push_back(conf_string.str());
 		}
 		veclock.readerOut();
 		hdb_dev->put_signal_property(v);
@@ -1506,7 +1671,7 @@ int  SharedData::get_sig_not_started_num()
  *	Return the complete, started and stopped lists of signals
  */
 //=============================================================================
-void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list)
+void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list)
 {
 	ReaderLock lock(veclock);
 	for (unsigned int i=0 ; i<signals.size() ; i++)
@@ -1526,6 +1691,21 @@ void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list
 		{
 			s_stop_list.push_back(signame);
 		}
+		string context;
+		for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+		{
+			try
+			{
+				context += hdb_dev->rev_context_map.at(*it);
+				if(it != signals[i].contexts.end() -1)
+					context += "|";
+			}
+			catch(std::out_of_range &e)
+			{
+
+			}
+		}
+		s_context_list.push_back(context);
 		signals[i].siglock->readerOut();
 	}
 	return;
@@ -2010,6 +2190,72 @@ Tango::DevState  SharedData::get_sig_state(string &signame)
 				"Signal " + signame + " NOT subscribed",
 				(const char *)"SharedData::get_sig_state()");
 	return Tango::ALARM;
+}
+//=============================================================================
+/**
+ *	Return the context of specified signal
+ */
+//=============================================================================
+string  SharedData::get_sig_context(string &signame)
+{
+	string retval;
+	ReaderLock lock(veclock);
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+		if (signals[i].name==signame)
+		{
+			signals[i].siglock->readerIn();
+			for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			{
+				try
+				{
+					retval += hdb_dev->rev_context_map.at(*it);
+					if(it != signals[i].contexts.end() -1)
+						retval += "|";
+				}
+				catch(std::out_of_range &e)
+				{
+
+				}
+			}
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	for (unsigned int i=0 ; i<signals.size() ; i++)
+	{
+#ifndef _MULTI_TANGO_HOST
+		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+#else
+		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+#endif
+		{
+			signals[i].siglock->readerIn();
+			for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			{
+				try
+				{
+					retval += hdb_dev->rev_context_map.at(*it);
+					if(it != signals[i].contexts.end() -1)
+						retval += "|";
+				}
+				catch(std::out_of_range &e)
+				{
+
+				}
+			}
+			signals[i].siglock->readerOut();
+			return retval;
+		}
+	}
+
+	//	if not found
+	Tango::Except::throw_exception(
+				(const char *)"BadSignalName",
+				"Signal " + signame + " NOT subscribed",
+				(const char *)"SharedData::get_sig_context()");
+	return "";
 }
 //=============================================================================
 /**

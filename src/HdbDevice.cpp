@@ -147,7 +147,7 @@ void HdbDevice::initialize()
 	check_periodic_thread = new CheckPeriodicThread(this);
 	check_periodic_thread->delay_tolerance_ms = check_periodic_delay*1000;
 
-	build_signal_vector(list);
+	build_signal_vector(list, defaultContext);
 
 	stats_thread->start();
 	push_thread->start();
@@ -165,7 +165,7 @@ void HdbDevice::initialize()
 //=============================================================================
 //=============================================================================
 //#define TEST
-void HdbDevice::build_signal_vector(vector<string> list)
+void HdbDevice::build_signal_vector(vector<string> list, string defaultContext)
 {
 	for (unsigned int i=0 ; i<list.size() ; i++)
 	{
@@ -173,12 +173,29 @@ void HdbDevice::build_signal_vector(vector<string> list)
 		{
 			if (list[i].length()>0)
 			{
-				shared->add(list[i]);
-				if(startArchivingAtStartup)
+				vector<string> list_exploded;
+				string_explode(list[i], string(";"), &list_exploded);
+				vector<string> contexts;
+				bool found_contexts = false;
+				string context_key = string(CONTEXT_KEY)+string("=");
+				if(list_exploded.size() >= 2)
 				{
-					push_shared->start_attr(list[i]);
-					shared->start(list[i]);
+					size_t pos = list_exploded[1].find(context_key);
+					if(pos != string::npos)
+					{
+						string_explode(list_exploded[1].substr(pos+context_key.length()), string("|"), &contexts);
+						found_contexts = true;
+					}
 				}
+				if(!found_contexts)
+				{
+					size_t pos = defaultContext.find(context_key);
+					if(pos != string::npos)
+					{
+						string_explode(defaultContext.substr(pos+context_key.length()), string("|"), &contexts);
+					}
+				}
+				shared->add(list_exploded[0], contexts);
 			}
 		}
 		catch (Tango::DevFailed &e)
@@ -190,10 +207,10 @@ void HdbDevice::build_signal_vector(vector<string> list)
 }
 //=============================================================================
 //=============================================================================
-void HdbDevice::add(string &signame)
+void HdbDevice::add(string &signame, vector<string> contexts)
 {
 	fix_tango_host(signame);
-	shared->add(signame, UPDATE_PROP, false);
+	shared->add(signame, contexts, UPDATE_PROP, false);
 }
 //=============================================================================
 //=============================================================================
@@ -203,6 +220,13 @@ void HdbDevice::remove(string &signame)
 	shared->remove(signame, false);
 	push_shared->remove(signame);
 	push_shared->remove_attr(signame);
+}
+//=============================================================================
+//=============================================================================
+void HdbDevice::update(string &signame, vector<string> contexts)
+{
+	fix_tango_host(signame);
+	shared->update(signame, contexts);
 }
 //=============================================================================
 //=============================================================================
@@ -239,9 +263,24 @@ vector<string> HdbDevice::get_hdb_signal_list()
 	{
 		if(tmplist[i].length() > 0 && tmplist[i][0] != '#')
 		{
-			fix_tango_host(tmplist[i]);
-			list.push_back(tmplist[i]);
-			DEBUG_STREAM << "HdbDevice::" << __func__ << ": " << i << ": " << tmplist[i] << endl;
+			string::size_type found;
+			string tmplist_name;
+			string tmplist_conf;
+			found = tmplist[i].find_first_of(";");
+			if(found != string::npos && found > 0)
+			{
+				tmplist_name = tmplist[i].substr(0,found);
+				tmplist_conf = tmplist[i].substr(found+1);
+			}
+			else
+			{
+				tmplist_name = tmplist[i];
+				tmplist_conf = string(CONTEXT_KEY) + "=" + defaultContext;
+			}
+
+			fix_tango_host(tmplist_name);
+			list.push_back(tmplist_name + ";" + tmplist_conf);
+			INFO_STREAM << "HdbDevice::" << __func__ << ": " << i << ": " << tmplist_name << ";" << tmplist_conf << endl;
 		}
 	}
 	return list;
@@ -508,9 +547,9 @@ void  HdbDevice::reset_freq_statistics()
 }
 //=============================================================================
 //=============================================================================
-void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list)
+void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list)
 {
-	shared->get_lists(_list, _start_list, _pause_list, _stop_list);
+	shared->get_lists(_list, _start_list, _pause_list, _stop_list, _context_list);
 }
 //=============================================================================
 //=============================================================================
@@ -1165,6 +1204,7 @@ int HdbDevice::compare_tango_names(string str1, string str2)
 //	DEBUG_STREAM << __func__<< ": DIFFERENTS -> '" << str1_nd<< (result ? "'<'" : "'>'") << str2_nd<<"'" << endl;
 	return result;
 }
+#endif
 //=============================================================================
 //=============================================================================
 void HdbDevice::string_explode(string str, string separator, vector<string>* results)
@@ -1184,7 +1224,7 @@ void HdbDevice::string_explode(string str, string separator, vector<string>* res
 	}
 
 }
-#endif
+
 //=============================================================================
 //=============================================================================
 void HdbDevice::error_attribute(Tango::EventData *data)

@@ -40,6 +40,7 @@
 #define _HDBDEVICE_H
 
 #define MAX_ATTRIBUTES		10000
+#define CONTEXT_KEY	"context"
 
 #include <tango.h>
 #include <SubscribeThread.h>
@@ -107,7 +108,6 @@ public:
 	SharedData			*shared;
 	PushThreadShared	*push_shared;
 	Tango::DeviceImpl 	*_device;
-	bool startArchivingAtStartup;
 	map<string, string> domain_map;
 
 	Tango::DevDouble	AttributeRecordFreq;
@@ -138,6 +138,7 @@ public:
 	Tango::DevString	attr_AttributePausedList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeStoppedList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeErrorList_read[MAX_ATTRIBUTES];
+	Tango::DevString	attr_AttributeContextList_read[MAX_ATTRIBUTES];
 
 	vector<string> attribute_list_str;
 	vector<string> old_attribute_list_str;
@@ -163,6 +164,13 @@ public:
 	vector<string> attribute_error_list_str;
 	vector<string> old_attribute_error_list_str;
 	size_t attribute_error_list_str_size;
+	vector<string> attribute_context_list_str;
+	vector<string> old_attribute_context_list_str;
+	size_t attribute_context_list_str_size;
+
+	map<string,uint8_t> context_map;
+	map<uint8_t, string> rev_context_map;
+	string defaultContext;
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -189,11 +197,15 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame);
+	void add(string &signame, vector<string> contexts);
 	/**
 	 * AddRemove a signal in the list.
 	 */
 	void remove(string &signame);
+	/**
+	 * Update contexts for a signal.
+	 */
+	void update(string &signame, vector<string> contexts);
 
 	/**
 	 *	Update SignalList property
@@ -283,7 +295,7 @@ public:
 	/**
 	 *	Return the complete, started  and stopped lists of signals
 	 */
-	void  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list);
+	void  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list);
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */
@@ -315,11 +327,11 @@ public:
 	 *	returns 0 if equal
 	 */
 	int compare_tango_names(string str1, string str2);
+#endif
 	/**
 	 *	explode a string in multiple strings using separator
 	 */
 	void string_explode(string str, string separator, vector<string>* results);
-#endif
 
 protected :	
 	/**
@@ -332,7 +344,7 @@ protected :
 	 *
 	 *	@param list 	signal names vector
 	 */
-	void build_signal_vector(vector<string>);
+	void build_signal_vector(vector<string>, string);
 	/**
 	 *	Store double (vector) in HDB
 	 */

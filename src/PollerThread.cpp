@@ -201,7 +201,8 @@ void *PollerThread::run_undetached(void *ptr)
 		hdb_dev->attribute_started_list_str.clear();
 		hdb_dev->attribute_paused_list_str.clear();
 		hdb_dev->attribute_stopped_list_str.clear();
-		hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str);
+		hdb_dev->attribute_context_list_str.clear();
+		hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str);
 
 		bool changed = is_list_changed(hdb_dev->attribute_list_str, hdb_dev->old_attribute_list_str);
 		if(changed)
@@ -256,6 +257,20 @@ void *PollerThread::run_undetached(void *ptr)
 		{
 			(hdb_dev->_device)->push_change_event("AttributeStoppedList",&hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
 			(hdb_dev->_device)->push_archive_event("AttributeStoppedList",&hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
+		changed = is_list_changed(hdb_dev->attribute_context_list_str, hdb_dev->old_attribute_context_list_str);
+		if(changed)
+		{
+			for (unsigned int i=0 ; i<hdb_dev->attribute_context_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeContextList_read[i] = (char *)hdb_dev->attribute_context_list_str[i].c_str();
+			hdb_dev->attribute_context_list_str_size = hdb_dev->attribute_context_list_str.size();
+		}
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeContextList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeContextList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);

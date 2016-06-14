@@ -139,8 +139,8 @@ HdbEventSubscriberClass *HdbEventSubscriberClass::init(const char *name)
 		catch (bad_alloc &)
 		{
 			throw;
-		}		
-	}		
+		}
+	}
 	return _instance;
 }
 
@@ -180,7 +180,7 @@ HdbEventSubscriberClass *HdbEventSubscriberClass::instance()
 CORBA::Any *AttributeAddClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
 {
 	cout2 << "AttributeAddClass::execute(): arrived" << endl;
-	Tango::DevString argin;
+	const Tango::DevVarStringArray *argin;
 	extract(in_any, argin);
 	((static_cast<HdbEventSubscriber *>(device))->attribute_add(argin));
 	return new CORBA::Any();
@@ -357,6 +357,45 @@ CORBA::Any *AttributePauseClass::execute(Tango::DeviceImpl *device, const CORBA:
 	return new CORBA::Any();
 }
 
+//--------------------------------------------------------
+/**
+ * method : 		AttributeUpdateClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *AttributeUpdateClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+{
+	cout2 << "AttributeUpdateClass::execute(): arrived" << endl;
+	const Tango::DevVarStringArray *argin;
+	extract(in_any, argin);
+	((static_cast<HdbEventSubscriber *>(device))->attribute_update(argin));
+	return new CORBA::Any();
+}
+
+//--------------------------------------------------------
+/**
+ * method : 		AttributeContextClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *AttributeContextClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+{
+	cout2 << "AttributeContextClass::execute(): arrived" << endl;
+	Tango::DevString argin;
+	extract(in_any, argin);
+	return insert((static_cast<HdbEventSubscriber *>(device))->attribute_context(argin));
+}
+
 
 //===================================================================
 //	Properties management
@@ -421,11 +460,12 @@ void HdbEventSubscriberClass::get_class_property()
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriberClass::get_class_property_before
 	//	Read class properties from database.
 	cl_prop.push_back(Tango::DbDatum("SubscribeRetryPeriod"));
-	cl_prop.push_back(Tango::DbDatum("StartArchivingAtStartup"));
 	cl_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
 	cl_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	cl_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
 	cl_prop.push_back(Tango::DbDatum("LibConfiguration"));
+	cl_prop.push_back(Tango::DbDatum("HdbppContext"));
+	cl_prop.push_back(Tango::DbDatum("DefaultContext"));
 	
 	//	Call database and extract values
 	if (Tango::Util::instance()->_UseDb==true)
@@ -443,18 +483,6 @@ void HdbEventSubscriberClass::get_class_property()
 		{
 			def_prop    >>  subscribeRetryPeriod;
 			cl_prop[i]  <<  subscribeRetryPeriod;
-		}
-	}
-	//	Try to extract StartArchivingAtStartup value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  startArchivingAtStartup;
-	else
-	{
-		//	Check default value for StartArchivingAtStartup
-		def_prop = get_default_class_property(cl_prop[i].name);
-		if (def_prop.is_empty()==false)
-		{
-			def_prop    >>  startArchivingAtStartup;
-			cl_prop[i]  <<  startArchivingAtStartup;
 		}
 	}
 	//	Try to extract StatisticsTimeWindow value
@@ -505,6 +533,30 @@ void HdbEventSubscriberClass::get_class_property()
 			cl_prop[i]  <<  libConfiguration;
 		}
 	}
+	//	Try to extract HdbppContext value
+	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  hdbppContext;
+	else
+	{
+		//	Check default value for HdbppContext
+		def_prop = get_default_class_property(cl_prop[i].name);
+		if (def_prop.is_empty()==false)
+		{
+			def_prop    >>  hdbppContext;
+			cl_prop[i]  <<  hdbppContext;
+		}
+	}
+	//	Try to extract DefaultContext value
+	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  defaultContext;
+	else
+	{
+		//	Check default value for DefaultContext
+		def_prop = get_default_class_property(cl_prop[i].name);
+		if (def_prop.is_empty()==false)
+		{
+			def_prop    >>  defaultContext;
+			cl_prop[i]  <<  defaultContext;
+		}
+	}
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::get_class_property_after) ENABLED START -----*/
 
 	//	Check class property data members init
@@ -535,19 +587,6 @@ void HdbEventSubscriberClass::set_default_property()
 	prop_def  = "60";
 	vect_data.clear();
 	vect_data.push_back("60");
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		cl_def_prop.push_back(data);
-		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "StartArchivingAtStartup";
-	prop_desc = "Start archiving at startup";
-	prop_def  = "";
-	vect_data.clear();
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -611,6 +650,37 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_class_prop(prop_name, prop_desc);
+	prop_name = "HdbppContext";
+	prop_desc = "Possible contexts enum in the form number:label";
+	prop_def  = "0:ALWAYS\n1:RUN\n2:SHUTDOWN\n3:SERVICE";
+	vect_data.clear();
+	vect_data.push_back("0:ALWAYS");
+	vect_data.push_back("1:RUN");
+	vect_data.push_back("2:SHUTDOWN");
+	vect_data.push_back("3:SERVICE");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		cl_def_prop.push_back(data);
+		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_class_prop(prop_name, prop_desc);
+	prop_name = "DefaultContext";
+	prop_desc = "Default context to be used when not specified in the single attribute configuration";
+	prop_def  = "ALWAYS";
+	vect_data.clear();
+	vect_data.push_back("ALWAYS");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		cl_def_prop.push_back(data);
+		add_wiz_class_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_class_prop(prop_name, prop_desc);
 
 	//	Set Default device Properties
 	prop_name = "SubscribeRetryPeriod";
@@ -629,19 +699,6 @@ void HdbEventSubscriberClass::set_default_property()
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "AttributeList";
 	prop_desc = "List of configured attributes.";
-	prop_def  = "";
-	vect_data.clear();
-	if (prop_def.length()>0)
-	{
-		Tango::DbDatum	data(prop_name);
-		data << vect_data ;
-		dev_def_prop.push_back(data);
-		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
-	}
-	else
-		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "StartArchivingAtStartup";
-	prop_desc = "Start archiving at startup";
 	prop_def  = "";
 	vect_data.clear();
 	if (prop_def.length()>0)
@@ -698,6 +755,37 @@ void HdbEventSubscriberClass::set_default_property()
 	prop_desc = "Configuration for the library";
 	prop_def  = "";
 	vect_data.clear();
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "HdbppContext";
+	prop_desc = "Possible contexts enum in the form number:label";
+	prop_def  = "0:ALWAYS\n1:RUN\n2:SHUTDOWN\n3:SERVICE";
+	vect_data.clear();
+	vect_data.push_back("0:ALWAYS");
+	vect_data.push_back("1:RUN");
+	vect_data.push_back("2:SHUTDOWN");
+	vect_data.push_back("3:SERVICE");
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "DefaultContext";
+	prop_desc = "Default context to be used when not specified in the single attribute configuration";
+	prop_def  = "ALWAYS";
+	vect_data.clear();
+	vect_data.push_back("ALWAYS");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -1046,11 +1134,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMaxStoreTime
 	//	delta_t	not set for AttributeMaxStoreTime
 	//	delta_val	not set for AttributeMaxStoreTime
+	attributemaxstoretime_prop.set_event_abs_change("0.001");
+	attributemaxstoretime_prop.set_archive_event_period("3600000");
+	attributemaxstoretime_prop.set_archive_event_abs_change("0.001");
 	
 	attributemaxstoretime->set_default_properties(attributemaxstoretime_prop);
 	//	Not Polled
 	attributemaxstoretime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributemaxstoretime->set_change_event(true, true);
+	attributemaxstoretime->set_archive_event(true, true);
 	att_list.push_back(attributemaxstoretime);
 
 	//	Attribute : AttributeMinStoreTime
@@ -1070,11 +1163,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMinStoreTime
 	//	delta_t	not set for AttributeMinStoreTime
 	//	delta_val	not set for AttributeMinStoreTime
+	attributeminstoretime_prop.set_event_abs_change("0.00001");
+	attributeminstoretime_prop.set_archive_event_period("3600000");
+	attributeminstoretime_prop.set_archive_event_abs_change("0.00001");
 	
 	attributeminstoretime->set_default_properties(attributeminstoretime_prop);
 	//	Not Polled
 	attributeminstoretime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributeminstoretime->set_change_event(true, true);
+	attributeminstoretime->set_archive_event(true, true);
 	att_list.push_back(attributeminstoretime);
 
 	//	Attribute : AttributeMaxProcessingTime
@@ -1094,11 +1192,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMaxProcessingTime
 	//	delta_t	not set for AttributeMaxProcessingTime
 	//	delta_val	not set for AttributeMaxProcessingTime
+	attributemaxprocessingtime_prop.set_event_abs_change("0.001");
+	attributemaxprocessingtime_prop.set_archive_event_period("3600000");
+	attributemaxprocessingtime_prop.set_archive_event_abs_change("0.001");
 	
 	attributemaxprocessingtime->set_default_properties(attributemaxprocessingtime_prop);
 	//	Not Polled
 	attributemaxprocessingtime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributemaxprocessingtime->set_change_event(true, true);
+	attributemaxprocessingtime->set_archive_event(true, true);
 	att_list.push_back(attributemaxprocessingtime);
 
 	//	Attribute : AttributeMinProcessingTime
@@ -1118,11 +1221,16 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeMinProcessingTime
 	//	delta_t	not set for AttributeMinProcessingTime
 	//	delta_val	not set for AttributeMinProcessingTime
+	attributeminprocessingtime_prop.set_event_abs_change("0.00001");
+	attributeminprocessingtime_prop.set_archive_event_period("3600000");
+	attributeminprocessingtime_prop.set_archive_event_abs_change("0.00001");
 	
 	attributeminprocessingtime->set_default_properties(attributeminprocessingtime_prop);
 	//	Not Polled
 	attributeminprocessingtime->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
+	attributeminprocessingtime->set_change_event(true, true);
+	attributeminprocessingtime->set_archive_event(true, true);
 	att_list.push_back(attributeminprocessingtime);
 
 	//	Attribute : AttributeRecordFreq
@@ -1322,6 +1430,31 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributepausednumber->set_change_event(true, true);
 	attributepausednumber->set_archive_event(true, true);
 	att_list.push_back(attributepausednumber);
+
+	//	Attribute : Context
+	ContextAttrib	*context = new ContextAttrib();
+	Tango::UserDefaultAttrProp	context_prop;
+	//	description	not set for Context
+	//	label	not set for Context
+	//	unit	not set for Context
+	//	standard_unit	not set for Context
+	//	display_unit	not set for Context
+	//	format	not set for Context
+	//	max_value	not set for Context
+	//	min_value	not set for Context
+	//	max_alarm	not set for Context
+	//	min_alarm	not set for Context
+	//	max_warning	not set for Context
+	//	min_warning	not set for Context
+	//	delta_t	not set for Context
+	//	delta_val	not set for Context
+	
+	context->set_default_properties(context_prop);
+	//	Not Polled
+	context->set_disp_level(Tango::OPERATOR);
+	context->set_memorized();
+	context->set_memorized_init(true);
+	att_list.push_back(context);
 
 	//	Attribute : AttributeList
 	AttributeListAttrib	*attributelist = new AttributeListAttrib();
@@ -1626,6 +1759,34 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributepausedlist->set_archive_event(true, true);
 	att_list.push_back(attributepausedlist);
 
+	//	Attribute : AttributeContextList
+	AttributeContextListAttrib	*attributecontextlist = new AttributeContextListAttrib();
+	Tango::UserDefaultAttrProp	attributecontextlist_prop;
+	attributecontextlist_prop.set_description("Returns the list of attribute contexts");
+	//	label	not set for AttributeContextList
+	//	unit	not set for AttributeContextList
+	//	standard_unit	not set for AttributeContextList
+	//	display_unit	not set for AttributeContextList
+	//	format	not set for AttributeContextList
+	//	max_value	not set for AttributeContextList
+	//	min_value	not set for AttributeContextList
+	//	max_alarm	not set for AttributeContextList
+	//	min_alarm	not set for AttributeContextList
+	//	max_warning	not set for AttributeContextList
+	//	min_warning	not set for AttributeContextList
+	//	delta_t	not set for AttributeContextList
+	//	delta_val	not set for AttributeContextList
+	attributecontextlist_prop.set_archive_event_period("3600000");
+	
+	attributecontextlist->set_default_properties(attributecontextlist_prop);
+	//	Not Polled
+	attributecontextlist->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	attributecontextlist->set_change_event(true, true);
+	attributecontextlist->set_archive_event(true, true);
+	att_list.push_back(attributecontextlist);
+
+
 	//	Create a list of static attributes
 	create_static_attribute_list(get_class_attr()->get_attr_list());
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::attribute_factory_after) ENABLED START -----*/
@@ -1633,6 +1794,26 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Add your own code
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriberClass::attribute_factory_after
+}
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriberClass::pipe_factory()
+ *	Description : Create the pipe object(s)
+ *                and store them in the pipe list
+ */
+//--------------------------------------------------------
+void HdbEventSubscriberClass::pipe_factory()
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::pipe_factory_before) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriberClass::pipe_factory_before
+	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::pipe_factory_after) ENABLED START -----*/
+	
+	//	Add your own code
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriberClass::pipe_factory_after
 }
 //--------------------------------------------------------
 /**
@@ -1651,8 +1832,8 @@ void HdbEventSubscriberClass::command_factory()
 	//	Command AttributeAdd
 	AttributeAddClass	*pAttributeAddCmd =
 		new AttributeAddClass("AttributeAdd",
-			Tango::DEV_STRING, Tango::DEV_VOID,
-			"Attribute name",
+			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
+			"Attribute name, contexts",
 			"",
 			Tango::OPERATOR);
 	command_list.push_back(pAttributeAddCmd);
@@ -1738,6 +1919,24 @@ void HdbEventSubscriberClass::command_factory()
 			Tango::OPERATOR);
 	command_list.push_back(pAttributePauseCmd);
 
+	//	Command AttributeUpdate
+	AttributeUpdateClass	*pAttributeUpdateCmd =
+		new AttributeUpdateClass("AttributeUpdate",
+			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
+			"Attribute name, contexts",
+			"",
+			Tango::OPERATOR);
+	command_list.push_back(pAttributeUpdateCmd);
+
+	//	Command AttributeContext
+	AttributeContextClass	*pAttributeContextCmd =
+		new AttributeContextClass("AttributeContext",
+			Tango::DEV_STRING, Tango::DEV_STRING,
+			"The attribute name",
+			"The attribute contexts.",
+			Tango::OPERATOR);
+	command_list.push_back(pAttributeContextCmd);
+
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::command_factory_after) ENABLED START -----*/
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriberClass::command_factory_after
@@ -1752,7 +1951,7 @@ void HdbEventSubscriberClass::command_factory()
  * method : 		HdbEventSubscriberClass::create_static_attribute_list
  * description : 	Create the a list of static attributes
  *
- * @param	att_list	the ceated attribute list 
+ * @param	att_list	the ceated attribute list
  */
 //--------------------------------------------------------
 void HdbEventSubscriberClass::create_static_attribute_list(vector<Tango::Attr *> &att_list)
@@ -1786,10 +1985,10 @@ void HdbEventSubscriberClass::erase_dynamic_attributes(const Tango::DevVarString
 	Tango::Util *tg = Tango::Util::instance();
 
 	for (unsigned long i=0 ; i<devlist_ptr->length() ; i++)
-	{	
+	{
 		Tango::DeviceImpl *dev_impl = tg->get_device_by_name(((string)(*devlist_ptr)[i]).c_str());
 		HdbEventSubscriber *dev = static_cast<HdbEventSubscriber *> (dev_impl);
-		
+
 		vector<Tango::Attribute *> &dev_att_list = dev->get_device_attr()->get_attribute_list();
 		vector<Tango::Attribute *>::iterator ite_att;
 		for (ite_att=dev_att_list.begin() ; ite_att != dev_att_list.end() ; ++ite_att)
@@ -1821,7 +2020,7 @@ void HdbEventSubscriberClass::erase_dynamic_attributes(const Tango::DevVarString
 Tango::Attr *HdbEventSubscriberClass::get_attr_object_by_name(vector<Tango::Attr *> &att_list, string attname)
 {
 	vector<Tango::Attr *>::iterator it;
-	for (it=att_list.begin() ; it<att_list.end() ; it++)
+	for (it=att_list.begin() ; it<att_list.end() ; ++it)
 		if ((*it)->get_name()==attname)
 			return (*it);
 	//	Attr does not exist
