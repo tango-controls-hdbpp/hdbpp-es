@@ -102,10 +102,12 @@ void SharedData::remove(string &signame, bool stop)
 			{
 				if(event_id != ERR && attr)
 				{
-
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
+					//unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
+					sig->siglock->writerOut();
 					attr->unsubscribe_event(event_id);
 					attr->unsubscribe_event(event_conf_id);
+					sig->siglock->writerIn();
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed... "<< signame << endl;
 				}
 			}
@@ -113,6 +115,7 @@ void SharedData::remove(string &signame, bool stop)
 			{
 				//	Do nothing
 				//	Unregister failed means Register has also failed
+				sig->siglock->writerIn();
 				INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 			}
 		}
@@ -131,7 +134,7 @@ void SharedData::remove(string &signame, bool stop)
 				if(stop)
 				{
 					DEBUG_STREAM <<"SharedData::"<<__func__<< ": removing " << signame << endl;
-					sig->siglock->writerIn();
+					//sig->siglock->writerIn(); //: removed, already locked in SharedData::stop
 					try
 					{
 						if(sig->event_id != ERR)
@@ -145,9 +148,9 @@ void SharedData::remove(string &signame, bool stop)
 					{
 						//	Do nothing
 						//	Unregister failed means Register has also failed
-						INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+						INFO_STREAM <<"SharedData::"<< __func__<<": Exception deleting " << signame << " err=" << e.errors[0].desc << endl;
 					}
-					sig->siglock->writerOut();
+					//sig->siglock->writerOut();
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": stopped " << signame << endl;
 				}
 				if(!stop)
