@@ -216,7 +216,6 @@ void HdbEventSubscriber::init_device()
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
 	attr_Context_read = new Tango::DevUChar[1];
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
-
 	//	Initialize device
 	initialized = false;
 	set_state(Tango::MOVING);
@@ -238,6 +237,11 @@ void HdbEventSubscriber::init_device()
 		}
 	}
 	hdb_dev->defaultContext = defaultContext;
+	map<string, uint8_t>::iterator it = hdb_dev->context_map.find(defaultContext);
+	if(it != hdb_dev->context_map.end())
+	{
+		*attr_Context_read = it->second;
+	}
 
 	attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
 	attr_AttributeFailureFreq_read = &hdb_dev->AttributeFailureFreq;
