@@ -141,8 +141,10 @@ void SharedData::remove(string &signame, bool stop)
 						{
 							delete sig->archive_cb;
 						}
+						sig->event_id = ERR;
 						if(sig->attr)
 							delete sig->attr;
+						sig->attr = NULL;
 					}
 					catch (Tango::DevFailed &e)
 					{
@@ -192,8 +194,10 @@ void SharedData::remove(string &signame, bool stop)
 							{
 								delete sig->archive_cb;
 							}
+							sig->event_id = ERR;
 							if(sig->attr)
 								delete sig->attr;
+							sig->attr = NULL;
 						}
 						catch (Tango::DevFailed &e)
 						{
@@ -921,7 +925,7 @@ void SharedData::unsubscribe_events()
 	for (unsigned int i=0 ; i<local_signals.size() ; i++)
 	{
 		HdbSignal	*sig = &local_signals[i];
-		if (signals[i].event_id != ERR && sig->attr)
+		if (local_signals[i].event_id != ERR && sig->attr)
 		{
 			DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << " id="<<omni_thread::self()->id()<< endl;
 			try
