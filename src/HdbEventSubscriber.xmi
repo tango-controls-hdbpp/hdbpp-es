@@ -2,7 +2,7 @@
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
   <classes name="HdbEventSubscriber" pogoRevision="9.1">
     <description description="This class is able to subscribe on archive events and store value in Historical DB" title="Tango Device Server" sourcePath="/home/graziano/workspace/fermi/servers/hdb++/hdb++es/trunk/src" language="Cpp" filestogenerate="XMI   file,Code files,Protected Regions" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
-      <inheritances classname="Device_4Impl" sourcePath="../../../../../../../../../segfs/tango/templates/AbstractClasses"/>
+      <inheritances classname="Device_4Impl" sourcePath="../../../../sim900/src/../../../../../../../../../segfs/tango/templates/AbstractClasses"/>
       <identification contact="at elettra.eu - graziano.scalamera" author="graziano.scalamera" emailDomain="elettra.eu" classFamily="Miscellaneous" siteSpecific="" platform="Unix Like" bus="Not Applicable" manufacturer="none" reference=""/>
     </description>
     <classProperties name="SubscribeRetryPeriod" description="Subscribe event retrying period in seconds.">
@@ -13,6 +13,7 @@
     <classProperties name="StatisticsTimeWindow" description="Statistics time window in seconds">
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>60</DefaultPropValue>
     </classProperties>
     <classProperties name="CheckPeriodicTimeoutDelay" description="Delay in seconds before timeout when checking periodic events">
       <type xsi:type="pogoDsl:IntType"/>
@@ -28,15 +29,15 @@
       <type xsi:type="pogoDsl:StringVectorType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </classProperties>
-    <classProperties name="HdbppContext" description="Possible contexts enum in the form number:label">
+    <classProperties name="ContextsList" description="Possible contexts in the form label:description">
       <type xsi:type="pogoDsl:StringVectorType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-      <DefaultPropValue>0:ALWAYS</DefaultPropValue>
-      <DefaultPropValue>1:RUN</DefaultPropValue>
-      <DefaultPropValue>2:SHUTDOWN</DefaultPropValue>
-      <DefaultPropValue>3:SERVICE</DefaultPropValue>
+      <DefaultPropValue>ALWAYS:always stored</DefaultPropValue>
+      <DefaultPropValue>RUN:stored during run</DefaultPropValue>
+      <DefaultPropValue>SHUTDOWN:stored during shutdown</DefaultPropValue>
+      <DefaultPropValue>SERVICE:stored during maintenance activities</DefaultPropValue>
     </classProperties>
-    <classProperties name="DefaultContext" description="Default context to be used when not specified in the single attribute configuration">
+    <classProperties name="DefaultStrategy" description="Default strategy to be used when not specified in the single attribute configuration">
       <type xsi:type="pogoDsl:StringType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>ALWAYS</DefaultPropValue>
@@ -53,6 +54,7 @@
     <deviceProperties name="StatisticsTimeWindow" description="Statistics time window in seconds">
       <type xsi:type="pogoDsl:IntType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>60</DefaultPropValue>
     </deviceProperties>
     <deviceProperties name="CheckPeriodicTimeoutDelay" description="Delay in seconds before timeout when checking periodic events">
       <type xsi:type="pogoDsl:IntType"/>
@@ -68,15 +70,15 @@
       <type xsi:type="pogoDsl:StringVectorType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </deviceProperties>
-    <deviceProperties name="HdbppContext" description="Possible contexts enum in the form number:label">
+    <deviceProperties name="ContextsList" description="Possible contexts in the form label:description">
       <type xsi:type="pogoDsl:StringVectorType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-      <DefaultPropValue>0:ALWAYS</DefaultPropValue>
-      <DefaultPropValue>1:RUN</DefaultPropValue>
-      <DefaultPropValue>2:SHUTDOWN</DefaultPropValue>
-      <DefaultPropValue>3:SERVICE</DefaultPropValue>
+      <DefaultPropValue>ALWAYS:always stored</DefaultPropValue>
+      <DefaultPropValue>RUN:stored during run</DefaultPropValue>
+      <DefaultPropValue>SHUTDOWN:stored during shutdown</DefaultPropValue>
+      <DefaultPropValue>SERVICE:stored during maintenance activities</DefaultPropValue>
     </deviceProperties>
-    <deviceProperties name="DefaultContext" description="Default context to be used when not specified in the single attribute configuration">
+    <deviceProperties name="DefaultStrategy" description="Default strategy to be used when not specified in the single attribute configuration">
       <type xsi:type="pogoDsl:StringType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>ALWAYS</DefaultPropValue>
@@ -100,7 +102,7 @@
       <status abstract="true" inherited="true" concrete="true" concreteHere="false"/>
     </commands>
     <commands name="AttributeAdd" description="Add a new attribute to archive in HDB." execMethod="attribute_add" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
-      <argin description="Attribute name, contexts">
+      <argin description="Attribute name, strategy">
         <type xsi:type="pogoDsl:StringArrayType"/>
       </argin>
       <argout description="">
@@ -189,8 +191,8 @@
       </argout>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
-    <commands name="AttributeUpdate" description="Update contexts associated to an already archived attribute." execMethod="attribute_update" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
-      <argin description="Attribute name, contexts">
+    <commands name="SetAttributeStrategy" description="Update strategy associated to an already archived attribute." execMethod="set_attribute_strategy" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="Attribute name, strategy">
         <type xsi:type="pogoDsl:StringArrayType"/>
       </argin>
       <argout description="">
@@ -198,7 +200,7 @@
       </argout>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
-    <commands name="AttributeContext" description="Read a attribute contexts." execMethod="attribute_context" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+    <commands name="GetAttributeStrategy" description="Read a attribute contexts." execMethod="get_attribute_strategy" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
       <argin description="The attribute name">
         <type xsi:type="pogoDsl:StringType"/>
       </argin>
@@ -356,7 +358,7 @@
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
     <attributes name="Context" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" memorized="true" memorizedAtInit="true" allocReadMember="true" isDynamic="false">
-      <dataType xsi:type="pogoDsl:UCharType"/>
+      <dataType xsi:type="pogoDsl:StringType"/>
       <changeEvent fire="false" libCheckCriteria="false"/>
       <archiveEvent fire="false" libCheckCriteria="false"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -465,14 +467,22 @@
       <properties description="Returns the attributes stopped list" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <evArchiveCriteria relChange="" absChange="" period="3600000"/>
     </attributes>
-    <attributes name="AttributeContextList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeStrategyList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
-      <properties description="Returns the list of attribute contexts" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <properties description="Returns the list of attribute strategy" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
       <evArchiveCriteria relChange="" absChange="" period="3600000"/>
+    </attributes>
+    <attributes name="ContextsList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="1000" maxY="" allocReadMember="true" isDynamic="false">
+      <dataType xsi:type="pogoDsl:StringType"/>
+      <changeEvent fire="false" libCheckCriteria="false"/>
+      <archiveEvent fire="false" libCheckCriteria="false"/>
+      <dataReadyEvent fire="false" libCheckCriteria="true"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <states name="ON" description="Archiving running and everything is OK.">
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>

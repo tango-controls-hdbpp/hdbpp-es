@@ -40,7 +40,7 @@
 #define _HDBDEVICE_H
 
 #define MAX_ATTRIBUTES		10000
-#define CONTEXT_KEY	"context"
+#define CONTEXT_KEY	"strategy"
 
 #include <tango.h>
 #include <SubscribeThread.h>
@@ -170,7 +170,7 @@ public:
 
 	map<string,uint8_t> context_map;
 	map<uint8_t, string> rev_context_map;
-	string defaultContext;
+	string defaultStrategy;
 
 #ifdef _USE_FERMI_DB_RW
 private:

@@ -359,7 +359,7 @@ CORBA::Any *AttributePauseClass::execute(Tango::DeviceImpl *device, const CORBA:
 
 //--------------------------------------------------------
 /**
- * method : 		AttributeUpdateClass::execute()
+ * method : 		SetAttributeStrategyClass::execute()
  * description : 	method to trigger the execution of the command.
  *
  * @param	device	The device on which the command must be executed
@@ -368,18 +368,18 @@ CORBA::Any *AttributePauseClass::execute(Tango::DeviceImpl *device, const CORBA:
  *	returns The command output data (packed in the Any object)
  */
 //--------------------------------------------------------
-CORBA::Any *AttributeUpdateClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+CORBA::Any *SetAttributeStrategyClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
 {
-	cout2 << "AttributeUpdateClass::execute(): arrived" << endl;
+	cout2 << "SetAttributeStrategyClass::execute(): arrived" << endl;
 	const Tango::DevVarStringArray *argin;
 	extract(in_any, argin);
-	((static_cast<HdbEventSubscriber *>(device))->attribute_update(argin));
+	((static_cast<HdbEventSubscriber *>(device))->set_attribute_strategy(argin));
 	return new CORBA::Any();
 }
 
 //--------------------------------------------------------
 /**
- * method : 		AttributeContextClass::execute()
+ * method : 		GetAttributeStrategyClass::execute()
  * description : 	method to trigger the execution of the command.
  *
  * @param	device	The device on which the command must be executed
@@ -388,12 +388,12 @@ CORBA::Any *AttributeUpdateClass::execute(Tango::DeviceImpl *device, const CORBA
  *	returns The command output data (packed in the Any object)
  */
 //--------------------------------------------------------
-CORBA::Any *AttributeContextClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+CORBA::Any *GetAttributeStrategyClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
 {
-	cout2 << "AttributeContextClass::execute(): arrived" << endl;
+	cout2 << "GetAttributeStrategyClass::execute(): arrived" << endl;
 	Tango::DevString argin;
 	extract(in_any, argin);
-	return insert((static_cast<HdbEventSubscriber *>(device))->attribute_context(argin));
+	return insert((static_cast<HdbEventSubscriber *>(device))->get_attribute_strategy(argin));
 }
 
 
@@ -464,8 +464,8 @@ void HdbEventSubscriberClass::get_class_property()
 	cl_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	cl_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
 	cl_prop.push_back(Tango::DbDatum("LibConfiguration"));
-	cl_prop.push_back(Tango::DbDatum("HdbppContext"));
-	cl_prop.push_back(Tango::DbDatum("DefaultContext"));
+	cl_prop.push_back(Tango::DbDatum("ContextsList"));
+	cl_prop.push_back(Tango::DbDatum("DefaultStrategy"));
 	
 	//	Call database and extract values
 	if (Tango::Util::instance()->_UseDb==true)
@@ -533,28 +533,28 @@ void HdbEventSubscriberClass::get_class_property()
 			cl_prop[i]  <<  libConfiguration;
 		}
 	}
-	//	Try to extract HdbppContext value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  hdbppContext;
+	//	Try to extract ContextsList value
+	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  contextsList;
 	else
 	{
-		//	Check default value for HdbppContext
+		//	Check default value for ContextsList
 		def_prop = get_default_class_property(cl_prop[i].name);
 		if (def_prop.is_empty()==false)
 		{
-			def_prop    >>  hdbppContext;
-			cl_prop[i]  <<  hdbppContext;
+			def_prop    >>  contextsList;
+			cl_prop[i]  <<  contextsList;
 		}
 	}
-	//	Try to extract DefaultContext value
-	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  defaultContext;
+	//	Try to extract DefaultStrategy value
+	if (cl_prop[++i].is_empty()==false)	cl_prop[i]  >>  defaultStrategy;
 	else
 	{
-		//	Check default value for DefaultContext
+		//	Check default value for DefaultStrategy
 		def_prop = get_default_class_property(cl_prop[i].name);
 		if (def_prop.is_empty()==false)
 		{
-			def_prop    >>  defaultContext;
-			cl_prop[i]  <<  defaultContext;
+			def_prop    >>  defaultStrategy;
+			cl_prop[i]  <<  defaultStrategy;
 		}
 	}
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::get_class_property_after) ENABLED START -----*/
@@ -598,8 +598,9 @@ void HdbEventSubscriberClass::set_default_property()
 		add_wiz_class_prop(prop_name, prop_desc);
 	prop_name = "StatisticsTimeWindow";
 	prop_desc = "Statistics time window in seconds";
-	prop_def  = "";
+	prop_def  = "60";
 	vect_data.clear();
+	vect_data.push_back("60");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -650,14 +651,14 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "HdbppContext";
-	prop_desc = "Possible contexts enum in the form number:label";
-	prop_def  = "0:ALWAYS\n1:RUN\n2:SHUTDOWN\n3:SERVICE";
+	prop_name = "ContextsList";
+	prop_desc = "Possible contexts in the form label:description";
+	prop_def  = "ALWAYS:always stored\nRUN:stored during run\nSHUTDOWN:stored during shutdown\nSERVICE:stored during maintenance activities";
 	vect_data.clear();
-	vect_data.push_back("0:ALWAYS");
-	vect_data.push_back("1:RUN");
-	vect_data.push_back("2:SHUTDOWN");
-	vect_data.push_back("3:SERVICE");
+	vect_data.push_back("ALWAYS:always stored");
+	vect_data.push_back("RUN:stored during run");
+	vect_data.push_back("SHUTDOWN:stored during shutdown");
+	vect_data.push_back("SERVICE:stored during maintenance activities");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -667,8 +668,8 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_class_prop(prop_name, prop_desc);
-	prop_name = "DefaultContext";
-	prop_desc = "Default context to be used when not specified in the single attribute configuration";
+	prop_name = "DefaultStrategy";
+	prop_desc = "Default strategy to be used when not specified in the single attribute configuration";
 	prop_def  = "ALWAYS";
 	vect_data.clear();
 	vect_data.push_back("ALWAYS");
@@ -712,8 +713,9 @@ void HdbEventSubscriberClass::set_default_property()
 		add_wiz_dev_prop(prop_name, prop_desc);
 	prop_name = "StatisticsTimeWindow";
 	prop_desc = "Statistics time window in seconds";
-	prop_def  = "";
+	prop_def  = "60";
 	vect_data.clear();
+	vect_data.push_back("60");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -764,14 +766,14 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "HdbppContext";
-	prop_desc = "Possible contexts enum in the form number:label";
-	prop_def  = "0:ALWAYS\n1:RUN\n2:SHUTDOWN\n3:SERVICE";
+	prop_name = "ContextsList";
+	prop_desc = "Possible contexts in the form label:description";
+	prop_def  = "ALWAYS:always stored\nRUN:stored during run\nSHUTDOWN:stored during shutdown\nSERVICE:stored during maintenance activities";
 	vect_data.clear();
-	vect_data.push_back("0:ALWAYS");
-	vect_data.push_back("1:RUN");
-	vect_data.push_back("2:SHUTDOWN");
-	vect_data.push_back("3:SERVICE");
+	vect_data.push_back("ALWAYS:always stored");
+	vect_data.push_back("RUN:stored during run");
+	vect_data.push_back("SHUTDOWN:stored during shutdown");
+	vect_data.push_back("SERVICE:stored during maintenance activities");
 	if (prop_def.length()>0)
 	{
 		Tango::DbDatum	data(prop_name);
@@ -781,8 +783,8 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
-	prop_name = "DefaultContext";
-	prop_desc = "Default context to be used when not specified in the single attribute configuration";
+	prop_name = "DefaultStrategy";
+	prop_desc = "Default strategy to be used when not specified in the single attribute configuration";
 	prop_def  = "ALWAYS";
 	vect_data.clear();
 	vect_data.push_back("ALWAYS");
@@ -1759,32 +1761,56 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributepausedlist->set_archive_event(true, true);
 	att_list.push_back(attributepausedlist);
 
-	//	Attribute : AttributeContextList
-	AttributeContextListAttrib	*attributecontextlist = new AttributeContextListAttrib();
-	Tango::UserDefaultAttrProp	attributecontextlist_prop;
-	attributecontextlist_prop.set_description("Returns the list of attribute contexts");
-	//	label	not set for AttributeContextList
-	//	unit	not set for AttributeContextList
-	//	standard_unit	not set for AttributeContextList
-	//	display_unit	not set for AttributeContextList
-	//	format	not set for AttributeContextList
-	//	max_value	not set for AttributeContextList
-	//	min_value	not set for AttributeContextList
-	//	max_alarm	not set for AttributeContextList
-	//	min_alarm	not set for AttributeContextList
-	//	max_warning	not set for AttributeContextList
-	//	min_warning	not set for AttributeContextList
-	//	delta_t	not set for AttributeContextList
-	//	delta_val	not set for AttributeContextList
-	attributecontextlist_prop.set_archive_event_period("3600000");
+	//	Attribute : AttributeStrategyList
+	AttributeStrategyListAttrib	*attributestrategylist = new AttributeStrategyListAttrib();
+	Tango::UserDefaultAttrProp	attributestrategylist_prop;
+	attributestrategylist_prop.set_description("Returns the list of attribute strategy");
+	//	label	not set for AttributeStrategyList
+	//	unit	not set for AttributeStrategyList
+	//	standard_unit	not set for AttributeStrategyList
+	//	display_unit	not set for AttributeStrategyList
+	//	format	not set for AttributeStrategyList
+	//	max_value	not set for AttributeStrategyList
+	//	min_value	not set for AttributeStrategyList
+	//	max_alarm	not set for AttributeStrategyList
+	//	min_alarm	not set for AttributeStrategyList
+	//	max_warning	not set for AttributeStrategyList
+	//	min_warning	not set for AttributeStrategyList
+	//	delta_t	not set for AttributeStrategyList
+	//	delta_val	not set for AttributeStrategyList
+	attributestrategylist_prop.set_archive_event_period("3600000");
 	
-	attributecontextlist->set_default_properties(attributecontextlist_prop);
+	attributestrategylist->set_default_properties(attributestrategylist_prop);
 	//	Not Polled
-	attributecontextlist->set_disp_level(Tango::OPERATOR);
+	attributestrategylist->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
-	attributecontextlist->set_change_event(true, true);
-	attributecontextlist->set_archive_event(true, true);
-	att_list.push_back(attributecontextlist);
+	attributestrategylist->set_change_event(true, true);
+	attributestrategylist->set_archive_event(true, true);
+	att_list.push_back(attributestrategylist);
+
+	//	Attribute : ContextsList
+	ContextsListAttrib	*contextslist = new ContextsListAttrib();
+	Tango::UserDefaultAttrProp	contextslist_prop;
+	//	description	not set for ContextsList
+	//	label	not set for ContextsList
+	//	unit	not set for ContextsList
+	//	standard_unit	not set for ContextsList
+	//	display_unit	not set for ContextsList
+	//	format	not set for ContextsList
+	//	max_value	not set for ContextsList
+	//	min_value	not set for ContextsList
+	//	max_alarm	not set for ContextsList
+	//	min_alarm	not set for ContextsList
+	//	max_warning	not set for ContextsList
+	//	min_warning	not set for ContextsList
+	//	delta_t	not set for ContextsList
+	//	delta_val	not set for ContextsList
+	
+	contextslist->set_default_properties(contextslist_prop);
+	//	Not Polled
+	contextslist->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	att_list.push_back(contextslist);
 
 
 	//	Create a list of static attributes
@@ -1833,7 +1859,7 @@ void HdbEventSubscriberClass::command_factory()
 	AttributeAddClass	*pAttributeAddCmd =
 		new AttributeAddClass("AttributeAdd",
 			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
-			"Attribute name, contexts",
+			"Attribute name, strategy",
 			"",
 			Tango::OPERATOR);
 	command_list.push_back(pAttributeAddCmd);
@@ -1919,23 +1945,23 @@ void HdbEventSubscriberClass::command_factory()
 			Tango::OPERATOR);
 	command_list.push_back(pAttributePauseCmd);
 
-	//	Command AttributeUpdate
-	AttributeUpdateClass	*pAttributeUpdateCmd =
-		new AttributeUpdateClass("AttributeUpdate",
+	//	Command SetAttributeStrategy
+	SetAttributeStrategyClass	*pSetAttributeStrategyCmd =
+		new SetAttributeStrategyClass("SetAttributeStrategy",
 			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
-			"Attribute name, contexts",
+			"Attribute name, strategy",
 			"",
 			Tango::OPERATOR);
-	command_list.push_back(pAttributeUpdateCmd);
+	command_list.push_back(pSetAttributeStrategyCmd);
 
-	//	Command AttributeContext
-	AttributeContextClass	*pAttributeContextCmd =
-		new AttributeContextClass("AttributeContext",
+	//	Command GetAttributeStrategy
+	GetAttributeStrategyClass	*pGetAttributeStrategyCmd =
+		new GetAttributeStrategyClass("GetAttributeStrategy",
 			Tango::DEV_STRING, Tango::DEV_STRING,
 			"The attribute name",
 			"The attribute contexts.",
 			Tango::OPERATOR);
-	command_list.push_back(pAttributeContextCmd);
+	command_list.push_back(pGetAttributeStrategyCmd);
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::command_factory_after) ENABLED START -----*/
 

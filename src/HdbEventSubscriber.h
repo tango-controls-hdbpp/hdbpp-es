@@ -79,6 +79,9 @@ class HdbEventSubscriber : public TANGO_BASE_CLASS
 public:
 	HdbDevice	*hdb_dev;
 	bool		initialized;
+	//vector<string>	contextsList_upper;
+	string	defaultStrategy_upper;
+	uint8_t context_val;
 
 
 private:
@@ -108,10 +111,10 @@ public:
 	Tango::DevLong	pollingThreadPeriod;
 	//	LibConfiguration:	Configuration for the library
 	vector<string>	libConfiguration;
-	//	HdbppContext:	Possible contexts enum in the form number:label
-	vector<string>	hdbppContext;
-	//	DefaultContext:	Default context to be used when not specified in the single attribute configuration
-	string	defaultContext;
+	//	ContextsList:	Possible contexts in the form label:description
+	vector<string>	contextsList;
+	//	DefaultStrategy:	Default strategy to be used when not specified in the single attribute configuration
+	string	defaultStrategy;
 
 //	Attribute data members
 public:
@@ -130,7 +133,7 @@ public:
 	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
 	Tango::DevDouble	*attr_StatisticsResetTime_read;
 	Tango::DevLong	*attr_AttributePausedNumber_read;
-	Tango::DevUChar	*attr_Context_read;
+	Tango::DevString	*attr_Context_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
 	Tango::DevString	*attr_AttributeNokList_read;
@@ -142,7 +145,8 @@ public:
 	Tango::DevLong	*attr_AttributeEventNumberList_read;
 	Tango::DevString	*attr_AttributeErrorList_read;
 	Tango::DevString	*attr_AttributePausedList_read;
-	Tango::DevString	*attr_AttributeContextList_read;
+	Tango::DevString	*attr_AttributeStrategyList_read;
+	Tango::DevString	*attr_ContextsList_read;
 
 //	Constructors and destructors
 public:
@@ -350,7 +354,7 @@ public:
  *	Attribute Context related methods
  *	Description: 
  *
- *	Data type:	Tango::DevUChar
+ *	Data type:	Tango::DevString
  *	Attr type:	Scalar
  */
 	virtual void read_Context(Tango::Attribute &attr);
@@ -456,14 +460,23 @@ public:
 	virtual void read_AttributePausedList(Tango::Attribute &attr);
 	virtual bool is_AttributePausedList_allowed(Tango::AttReqType type);
 /**
- *	Attribute AttributeContextList related methods
- *	Description: Returns the list of attribute contexts
+ *	Attribute AttributeStrategyList related methods
+ *	Description: Returns the list of attribute strategy
  *
  *	Data type:	Tango::DevString
  *	Attr type:	Spectrum max = 10000
  */
-	virtual void read_AttributeContextList(Tango::Attribute &attr);
-	virtual bool is_AttributeContextList_allowed(Tango::AttReqType type);
+	virtual void read_AttributeStrategyList(Tango::Attribute &attr);
+	virtual bool is_AttributeStrategyList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute ContextsList related methods
+ *	Description: 
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 1000
+ */
+	virtual void read_ContextsList(Tango::Attribute &attr);
+	virtual bool is_ContextsList_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------
@@ -483,7 +496,7 @@ public:
 	 *	Command AttributeAdd related method
 	 *	Description: Add a new attribute to archive in HDB.
 	 *
-	 *	@param argin Attribute name, contexts
+	 *	@param argin Attribute name, strategy
 	 */
 	virtual void attribute_add(const Tango::DevVarStringArray *argin);
 	virtual bool is_AttributeAdd_allowed(const CORBA::Any &any);
@@ -557,22 +570,22 @@ public:
 	virtual void attribute_pause(Tango::DevString argin);
 	virtual bool is_AttributePause_allowed(const CORBA::Any &any);
 	/**
-	 *	Command AttributeUpdate related method
-	 *	Description: Update contexts associated to an already archived attribute.
+	 *	Command SetAttributeStrategy related method
+	 *	Description: Update strategy associated to an already archived attribute.
 	 *
-	 *	@param argin Attribute name, contexts
+	 *	@param argin Attribute name, strategy
 	 */
-	virtual void attribute_update(const Tango::DevVarStringArray *argin);
-	virtual bool is_AttributeUpdate_allowed(const CORBA::Any &any);
+	virtual void set_attribute_strategy(const Tango::DevVarStringArray *argin);
+	virtual bool is_SetAttributeStrategy_allowed(const CORBA::Any &any);
 	/**
-	 *	Command AttributeContext related method
+	 *	Command GetAttributeStrategy related method
 	 *	Description: Read a attribute contexts.
 	 *
 	 *	@param argin The attribute name
 	 *	@returns The attribute contexts.
 	 */
-	virtual Tango::DevString attribute_context(Tango::DevString argin);
-	virtual bool is_AttributeContext_allowed(const CORBA::Any &any);
+	virtual Tango::DevString get_attribute_strategy(Tango::DevString argin);
+	virtual bool is_GetAttributeStrategy_allowed(const CORBA::Any &any);
 
 
 	//--------------------------------------------------------

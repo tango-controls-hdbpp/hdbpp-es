@@ -74,22 +74,22 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  The following table gives the correspondence
 //  between command and method names.
 //
-//  Command name       |  Method name
+//  Command name          |  Method name
 //================================================================
-//  State              |  Inherited (no method)
-//  Status             |  Inherited (no method)
-//  AttributeAdd       |  attribute_add
-//  AttributeRemove    |  attribute_remove
-//  AttributeStatus    |  attribute_status
-//  Start              |  start
-//  Stop               |  stop
-//  AttributeStart     |  attribute_start
-//  AttributeStop      |  attribute_stop
-//  ResetStatistics    |  reset_statistics
-//  Pause              |  pause
-//  AttributePause     |  attribute_pause
-//  AttributeUpdate    |  attribute_update
-//  AttributeContext  |  attribute_context
+//  State                 |  Inherited (no method)
+//  Status                |  Inherited (no method)
+//  AttributeAdd          |  attribute_add
+//  AttributeRemove       |  attribute_remove
+//  AttributeStatus       |  attribute_status
+//  Start                 |  start
+//  Stop                  |  stop
+//  AttributeStart        |  attribute_start
+//  AttributeStop         |  attribute_stop
+//  ResetStatistics       |  reset_statistics
+//  Pause                 |  pause
+//  AttributePause        |  attribute_pause
+//  SetAttributeStrategy  |  set_attribute_strategy
+//  GetAttributeStrategy  |  get_attribute_strategy
 //================================================================
 
 //================================================================
@@ -110,7 +110,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeMaxPendingNumber   |  Tango::DevLong	Scalar
 //  StatisticsResetTime         |  Tango::DevDouble	Scalar
 //  AttributePausedNumber       |  Tango::DevLong	Scalar
-//  Context                    |  Tango::DevUChar	Scalar
+//  Context                     |  Tango::DevString	Scalar
 //  AttributeList               |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeOkList             |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeNokList            |  Tango::DevString	Spectrum  ( max = 10000)
@@ -122,7 +122,8 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeEventNumberList    |  Tango::DevLong	Spectrum  ( max = 10000)
 //  AttributeErrorList          |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributePausedList         |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeContextList       |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeStrategyList       |  Tango::DevString	Spectrum  ( max = 10000)
+//  ContextsList                |  Tango::DevString	Spectrum  ( max = 1000)
 //================================================================
 
 namespace HdbEventSubscriber_ns
@@ -191,6 +192,7 @@ void HdbEventSubscriber::delete_device()
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
 	delete[] attr_StatisticsResetTime_read;
 	delete[] attr_Context_read;
+	delete[] attr_ContextsList_read;
 }
 
 //--------------------------------------------------------
@@ -214,7 +216,8 @@ void HdbEventSubscriber::init_device()
 	get_device_property();
 	
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
-	attr_Context_read = new Tango::DevUChar[1];
+	attr_Context_read = new Tango::DevString[1];
+	attr_ContextsList_read = new Tango::DevString[1000];
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
 	//	Initialize device
 	initialized = false;
@@ -225,22 +228,31 @@ void HdbEventSubscriber::init_device()
 	INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
 	string	status("");
 	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, this);
-	for(vector<string>::iterator it = hdbppContext.begin(); it != hdbppContext.end(); it++)
+	uint8_t index=0;
+	for(vector<string>::iterator it = contextsList.begin(); it != contextsList.end(); it++)
 	{
 		vector<string> res;
 		hdb_dev->string_explode(*it, ":", &res);
 		if(res.size()==2)
 		{
-			DEBUG_STREAM << "CONFIGURING CONTEXTS: adding " << res[1] << " <-> " << atoi(res[0].c_str());
-			hdb_dev->context_map.insert(make_pair(res[1], atoi(res[0].c_str())));
-			hdb_dev->rev_context_map.insert(make_pair(atoi(res[0].c_str()), res[1]));
+			string context_upper(res[0]);
+			std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
+			DEBUG_STREAM << "CONFIGURING CONTEXTS: adding " << context_upper << " <-> " << (int)index;
+			hdb_dev->context_map.insert(make_pair(context_upper, index));
+			hdb_dev->rev_context_map.insert(make_pair(index, context_upper));
+			string context_list_element = context_upper + ":" + res[1];
+			attr_ContextsList_read[index] = CORBA::string_dup(context_list_element.c_str());
+			index++;
 		}
 	}
-	hdb_dev->defaultContext = defaultContext;
-	map<string, uint8_t>::iterator it = hdb_dev->context_map.find(defaultContext);
+	defaultStrategy_upper = defaultStrategy;
+	std::transform(defaultStrategy_upper.begin(), defaultStrategy_upper.end(), defaultStrategy_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
+	hdb_dev->defaultStrategy = defaultStrategy_upper;
+	map<string, uint8_t>::iterator it = hdb_dev->context_map.find(defaultStrategy_upper);
 	if(it != hdb_dev->context_map.end())
 	{
-		*attr_Context_read = it->second;
+		*attr_Context_read = CORBA::string_dup(it->first.c_str());
+		context_val = it->second;
 	}
 
 	attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
@@ -305,8 +317,8 @@ void HdbEventSubscriber::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
 	dev_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
 	dev_prop.push_back(Tango::DbDatum("LibConfiguration"));
-	dev_prop.push_back(Tango::DbDatum("HdbppContext"));
-	dev_prop.push_back(Tango::DbDatum("DefaultContext"));
+	dev_prop.push_back(Tango::DbDatum("ContextsList"));
+	dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -387,27 +399,27 @@ void HdbEventSubscriber::get_device_property()
 		//	And try to extract LibConfiguration value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  libConfiguration;
 
-		//	Try to initialize HdbppContext from class property
+		//	Try to initialize ContextsList from class property
 		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  hdbppContext;
+		if (cl_prop.is_empty()==false)	cl_prop  >>  contextsList;
 		else {
-			//	Try to initialize HdbppContext from default device value
+			//	Try to initialize ContextsList from default device value
 			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  hdbppContext;
+			if (def_prop.is_empty()==false)	def_prop  >>  contextsList;
 		}
-		//	And try to extract HdbppContext value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  hdbppContext;
+		//	And try to extract ContextsList value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  contextsList;
 
-		//	Try to initialize DefaultContext from class property
+		//	Try to initialize DefaultStrategy from class property
 		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-		if (cl_prop.is_empty()==false)	cl_prop  >>  defaultContext;
+		if (cl_prop.is_empty()==false)	cl_prop  >>  defaultStrategy;
 		else {
-			//	Try to initialize DefaultContext from default device value
+			//	Try to initialize DefaultStrategy from default device value
 			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-			if (def_prop.is_empty()==false)	def_prop  >>  defaultContext;
+			if (def_prop.is_empty()==false)	def_prop  >>  defaultStrategy;
 		}
-		//	And try to extract DefaultContext value from database
-		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  defaultContext;
+		//	And try to extract DefaultStrategy value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  defaultStrategy;
 
 	}
 
@@ -763,7 +775,7 @@ void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
  *	Read attribute Context related method
  *	Description: 
  *
- *	Data type:	Tango::DevUChar
+ *	Data type:	Tango::DevString
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -781,7 +793,7 @@ void HdbEventSubscriber::read_Context(Tango::Attribute &attr)
  *	Write attribute Context related method
  *	Description: 
  *
- *	Data type:	Tango::DevUChar
+ *	Data type:	Tango::DevString
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -789,10 +801,21 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::write_Context(Tango::WAttribute &attr) entering... " << endl;
 	//	Retrieve write value
-	Tango::DevUChar	w_val;
+	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::write_Context) ENABLED START -----*/
-	*attr_Context_read = w_val;
+	string argin_upper(w_val);
+	std::transform(argin_upper.begin(), argin_upper.end(), argin_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
+	map<string, uint8_t>::iterator itmap = hdb_dev->context_map.find(argin_upper);
+	if(itmap == hdb_dev->context_map.end())
+	{
+		Tango::Except::throw_exception(
+					(const char *)"BadContext",
+					"Context " + argin_upper + " NOT DEFINED",
+					(const char *)__func__);
+	}
+	context_val = itmap->second;
+	*attr_Context_read = CORBA::string_dup(argin_upper.c_str());
 	
 	vector<string> att_list_tmp = hdb_dev->get_sig_list();
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
@@ -801,8 +824,8 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
 		try
 		{
 			hdb_dev->shared->veclock.readerIn();
-			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], w_val);
-			DEBUG_STREAM << "HdbEventSubscriber::write_Context="<<(int)w_val<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
+			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], context_val);
+			DEBUG_STREAM << "HdbEventSubscriber::write_Context="<<(int)context_val<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
 			hdb_dev->shared->veclock.readerOut();
 		}
 		catch(Tango::DevFailed &e)
@@ -1026,20 +1049,38 @@ void HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr)
 }
 //--------------------------------------------------------
 /**
- *	Read attribute AttributeContextList related method
- *	Description: Returns the list of attribute contexts
+ *	Read attribute AttributeStrategyList related method
+ *	Description: Returns the list of attribute strategy
  *
  *	Data type:	Tango::DevString
  *	Attr type:	Spectrum max = 10000
  */
 //--------------------------------------------------------
-void HdbEventSubscriber::read_AttributeContextList(Tango::Attribute &attr)
+void HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeContextList(Tango::Attribute &attr) entering... " << endl;
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeContextList) ENABLED START -----*/
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStrategyList) ENABLED START -----*/
 	//	Set the attribute value
 	attr.set_value(hdb_dev->attr_AttributeContextList_read, hdb_dev->attribute_context_list_str_size);
-	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeContextList
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStrategyList
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute ContextsList related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 1000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_ContextsList) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_ContextsList_read, contextsList.size());
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_ContextsList
 }
 
 //--------------------------------------------------------
@@ -1063,7 +1104,7 @@ void HdbEventSubscriber::add_dynamic_attributes()
  *	Command AttributeAdd related method
  *	Description: Add a new attribute to archive in HDB.
  *
- *	@param argin Attribute name, contexts
+ *	@param argin Attribute name, strategy
  */
 //--------------------------------------------------------
 void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
@@ -1088,27 +1129,29 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 
 			for(vector<string>::iterator its=res.begin(); its!=res.end(); its++)
 			{
-				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(*its);
+				string context_upper(*its);
+				std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
+				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(context_upper);
 				if(it == hdb_dev->context_map.end())
 				{
 					Tango::Except::throw_exception(
 							(const char *)"BadContextName",
-								"Context '" + *its + "' NOT defined",
+								"Context '" + context_upper + "' NOT defined",
 								(const char *)__func__);
 				}
-				contexts.push_back(*its);
+				contexts.push_back(context_upper);
 			}
 		}
 	}
 	if(contexts.size()==0)
-		contexts.push_back(defaultContext);
+		contexts.push_back(defaultStrategy_upper);
 	hdb_dev->add(signame, contexts);
 
 	bool is_current_context;
 	try
 	{
 		hdb_dev->shared->veclock.readerIn();
-		is_current_context = hdb_dev->shared->is_current_context(signame, *attr_Context_read);
+		is_current_context = hdb_dev->shared->is_current_context(signame, context_val);
 		hdb_dev->shared->veclock.readerOut();
 	}
 	catch(Tango::DevFailed &e)
@@ -1540,16 +1583,16 @@ void HdbEventSubscriber::attribute_pause(Tango::DevString argin)
 }
 //--------------------------------------------------------
 /**
- *	Command AttributeUpdate related method
- *	Description: Update contexts associated to an already archived attribute.
+ *	Command SetAttributeStrategy related method
+ *	Description: Update strategy associated to an already archived attribute.
  *
- *	@param argin Attribute name, contexts
+ *	@param argin Attribute name, strategy
  */
 //--------------------------------------------------------
-void HdbEventSubscriber::attribute_update(const Tango::DevVarStringArray *argin)
+void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *argin)
 {
-	DEBUG_STREAM << "HdbEventSubscriber::AttributeUpdate()  - " << device_name << endl;
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_update) ENABLED START -----*/
+	DEBUG_STREAM << "HdbEventSubscriber::SetAttributeStrategy()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::set_attribute_strategy) ENABLED START -----*/
 
 	//	Add your own code
 	string	signame;
@@ -1568,27 +1611,29 @@ void HdbEventSubscriber::attribute_update(const Tango::DevVarStringArray *argin)
 
 			for(vector<string>::iterator its=res.begin(); its!=res.end(); its++)
 			{
-				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(*its);
+				string context_upper(*its);
+				std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
+				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(context_upper);
 				if(it == hdb_dev->context_map.end())
 				{
 					Tango::Except::throw_exception(
 							(const char *)"BadContextName",
-								"Context '" + *its + "' NOT defined",
+								"Context '" + context_upper + "' NOT defined",
 								(const char *)__func__);
 				}
-				contexts.push_back(*its);
+				contexts.push_back(context_upper);
 			}
 		}
 	}
 	if(contexts.size()==0)
-		contexts.push_back(defaultContext);
+		contexts.push_back(defaultStrategy_upper);
 	hdb_dev->update(signame, contexts);
 
 	bool is_current_context;
 	try
 	{
 		hdb_dev->shared->veclock.readerIn();
-		is_current_context = hdb_dev->shared->is_current_context(signame, *attr_Context_read);
+		is_current_context = hdb_dev->shared->is_current_context(signame, context_val);
 		hdb_dev->shared->veclock.readerOut();
 	}
 	catch(Tango::DevFailed &e)
@@ -1604,22 +1649,22 @@ void HdbEventSubscriber::attribute_update(const Tango::DevVarStringArray *argin)
 		attribute_start((Tango::DevString)signame.c_str());
 	else
 		attribute_stop((Tango::DevString)signame.c_str());
-	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_update
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::set_attribute_strategy
 }
 //--------------------------------------------------------
 /**
- *	Command AttributeContext related method
+ *	Command GetAttributeStrategy related method
  *	Description: Read a attribute contexts.
  *
  *	@param argin The attribute name
  *	@returns The attribute contexts.
  */
 //--------------------------------------------------------
-Tango::DevString HdbEventSubscriber::attribute_context(Tango::DevString argin)
+Tango::DevString HdbEventSubscriber::get_attribute_strategy(Tango::DevString argin)
 {
 	Tango::DevString argout;
-	DEBUG_STREAM << "HdbEventSubscriber::AttributeContext()  - " << device_name << endl;
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_context) ENABLED START -----*/
+	DEBUG_STREAM << "HdbEventSubscriber::GetAttributeStrategy()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_attribute_strategy) ENABLED START -----*/
 
 	//	Add your own code
 	string	signame(argin);
@@ -1631,7 +1676,7 @@ Tango::DevString HdbEventSubscriber::attribute_context(Tango::DevString argin)
 	argout  = new char[attr_context.str().length()+1];
 	strcpy(argout, attr_context.str().c_str());
 
-	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_context
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_attribute_strategy
 	return argout;
 }
 //--------------------------------------------------------
