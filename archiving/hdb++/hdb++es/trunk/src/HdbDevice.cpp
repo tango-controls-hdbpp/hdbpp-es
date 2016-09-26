@@ -147,7 +147,7 @@ void HdbDevice::initialize()
 	check_periodic_thread = new CheckPeriodicThread(this);
 	check_periodic_thread->delay_tolerance_ms = check_periodic_delay*1000;
 
-	build_signal_vector(list, defaultContext);
+	build_signal_vector(list, defaultStrategy);
 
 	stats_thread->start();
 	push_thread->start();
@@ -275,7 +275,7 @@ vector<string> HdbDevice::get_hdb_signal_list()
 			else
 			{
 				tmplist_name = tmplist[i];
-				tmplist_conf = string(CONTEXT_KEY) + "=" + defaultContext;
+				tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;
 			}
 
 			fix_tango_host(tmplist_name);

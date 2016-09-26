@@ -496,17 +496,33 @@ bool HdbEventSubscriber::is_AttributePausedList_allowed(TANGO_UNUSED(Tango::AttR
 
 //--------------------------------------------------------
 /**
- *	Method      : HdbEventSubscriber::is_AttributeContextList_allowed()
- *	Description : Execution allowed for AttributeContextList attribute
+ *	Method      : HdbEventSubscriber::is_AttributeStrategyList_allowed()
+ *	Description : Execution allowed for AttributeStrategyList attribute
  */
 //--------------------------------------------------------
-bool HdbEventSubscriber::is_AttributeContextList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+bool HdbEventSubscriber::is_AttributeStrategyList_allowed(TANGO_UNUSED(Tango::AttReqType type))
 {
 
-	//	Not any excluded states for AttributeContextList attribute in read access.
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeContextListStateAllowed_READ) ENABLED START -----*/
+	//	Not any excluded states for AttributeStrategyList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeStrategyListStateAllowed_READ) ENABLED START -----*/
 	
-	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeContextListStateAllowed_READ
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeStrategyListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_ContextsList_allowed()
+ *	Description : Execution allowed for ContextsList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_ContextsList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for ContextsList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::ContextsListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::ContextsListStateAllowed_READ
 	return true;
 }
 
@@ -667,31 +683,31 @@ bool HdbEventSubscriber::is_AttributePause_allowed(TANGO_UNUSED(const CORBA::Any
 
 //--------------------------------------------------------
 /**
- *	Method      : HdbEventSubscriber::is_AttributeUpdate_allowed()
- *	Description : Execution allowed for AttributeUpdate attribute
+ *	Method      : HdbEventSubscriber::is_SetAttributeStrategy_allowed()
+ *	Description : Execution allowed for SetAttributeStrategy attribute
  */
 //--------------------------------------------------------
-bool HdbEventSubscriber::is_AttributeUpdate_allowed(TANGO_UNUSED(const CORBA::Any &any))
+bool HdbEventSubscriber::is_SetAttributeStrategy_allowed(TANGO_UNUSED(const CORBA::Any &any))
 {
-	//	Not any excluded states for AttributeUpdate command.
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeUpdateStateAllowed) ENABLED START -----*/
+	//	Not any excluded states for SetAttributeStrategy command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::SetAttributeStrategyStateAllowed) ENABLED START -----*/
 	
-	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeUpdateStateAllowed
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::SetAttributeStrategyStateAllowed
 	return true;
 }
 
 //--------------------------------------------------------
 /**
- *	Method      : HdbEventSubscriber::is_AttributeContext_allowed()
- *	Description : Execution allowed for AttributeContext attribute
+ *	Method      : HdbEventSubscriber::is_GetAttributeStrategy_allowed()
+ *	Description : Execution allowed for GetAttributeStrategy attribute
  */
 //--------------------------------------------------------
-bool HdbEventSubscriber::is_AttributeContext_allowed(TANGO_UNUSED(const CORBA::Any &any))
+bool HdbEventSubscriber::is_GetAttributeStrategy_allowed(TANGO_UNUSED(const CORBA::Any &any))
 {
-	//	Not any excluded states for AttributeContext command.
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeContextStateAllowed) ENABLED START -----*/
+	//	Not any excluded states for GetAttributeStrategy command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::GetAttributeStrategyStateAllowed) ENABLED START -----*/
 	
-	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeContextStateAllowed
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::GetAttributeStrategyStateAllowed
 	return true;
 }
 

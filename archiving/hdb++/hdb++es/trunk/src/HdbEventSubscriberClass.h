@@ -260,7 +260,7 @@ class ContextAttrib: public Tango::Attr
 {
 public:
 	ContextAttrib():Attr("Context",
-			Tango::DEV_UCHAR, Tango::READ_WRITE) {};
+			Tango::DEV_STRING, Tango::READ_WRITE) {};
 	~ContextAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_Context(att);}
@@ -413,17 +413,30 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePausedList_allowed(ty);}
 };
 
-//	Attribute AttributeContextList class definition
-class AttributeContextListAttrib: public Tango::SpectrumAttr
+//	Attribute AttributeStrategyList class definition
+class AttributeStrategyListAttrib: public Tango::SpectrumAttr
 {
 public:
-	AttributeContextListAttrib():SpectrumAttr("AttributeContextList",
+	AttributeStrategyListAttrib():SpectrumAttr("AttributeStrategyList",
 			Tango::DEV_STRING, Tango::READ, 10000) {};
-	~AttributeContextListAttrib() {};
+	~AttributeStrategyListAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
-		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeContextList(att);}
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeStrategyList(att);}
 	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
-		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeContextList_allowed(ty);}
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeStrategyList_allowed(ty);}
+};
+
+//	Attribute ContextsList class definition
+class ContextsListAttrib: public Tango::SpectrumAttr
+{
+public:
+	ContextsListAttrib():SpectrumAttr("ContextsList",
+			Tango::DEV_STRING, Tango::READ, 1000) {};
+	~ContextsListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_ContextsList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_ContextsList_allowed(ty);}
 };
 
 
@@ -660,11 +673,11 @@ public:
 	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributePause_allowed(any);}
 };
 
-//	Command AttributeUpdate class definition
-class AttributeUpdateClass : public Tango::Command
+//	Command SetAttributeStrategy class definition
+class SetAttributeStrategyClass : public Tango::Command
 {
 public:
-	AttributeUpdateClass(const char   *name,
+	SetAttributeStrategyClass(const char   *name,
 	               Tango::CmdArgType in,
 				   Tango::CmdArgType out,
 				   const char        *in_desc,
@@ -672,22 +685,22 @@ public:
 				   Tango::DispLevel  level)
 	:Command(name,in,out,in_desc,out_desc, level)	{};
 
-	AttributeUpdateClass(const char   *name,
+	SetAttributeStrategyClass(const char   *name,
 	               Tango::CmdArgType in,
 				   Tango::CmdArgType out)
 	:Command(name,in,out)	{};
-	~AttributeUpdateClass() {};
+	~SetAttributeStrategyClass() {};
 	
 	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
 	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
-	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeUpdate_allowed(any);}
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_SetAttributeStrategy_allowed(any);}
 };
 
-//	Command AttributeContext class definition
-class AttributeContextClass : public Tango::Command
+//	Command GetAttributeStrategy class definition
+class GetAttributeStrategyClass : public Tango::Command
 {
 public:
-	AttributeContextClass(const char   *name,
+	GetAttributeStrategyClass(const char   *name,
 	               Tango::CmdArgType in,
 				   Tango::CmdArgType out,
 				   const char        *in_desc,
@@ -695,15 +708,15 @@ public:
 				   Tango::DispLevel  level)
 	:Command(name,in,out,in_desc,out_desc, level)	{};
 
-	AttributeContextClass(const char   *name,
+	GetAttributeStrategyClass(const char   *name,
 	               Tango::CmdArgType in,
 				   Tango::CmdArgType out)
 	:Command(name,in,out)	{};
-	~AttributeContextClass() {};
+	~GetAttributeStrategyClass() {};
 	
 	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
 	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
-	{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeContext_allowed(any);}
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_GetAttributeStrategy_allowed(any);}
 };
 
 
@@ -735,10 +748,10 @@ public:
 		Tango::DevLong	pollingThreadPeriod;
 		//	LibConfiguration:	Configuration for the library
 		vector<string>	libConfiguration;
-		//	HdbppContext:	Possible contexts enum in the form number:label
-		vector<string>	hdbppContext;
-		//	DefaultContext:	Default context to be used when not specified in the single attribute configuration
-		string	defaultContext;
+		//	ContextsList:	Possible contexts in the form label:description
+		vector<string>	contextsList;
+		//	DefaultStrategy:	Default strategy to be used when not specified in the single attribute configuration
+		string	defaultStrategy;
 	public:
 		//	write class properties data members
 		Tango::DbData	cl_prop;
