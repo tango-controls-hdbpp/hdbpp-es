@@ -165,7 +165,7 @@ void HdbDevice::initialize()
 //=============================================================================
 //=============================================================================
 //#define TEST
-void HdbDevice::build_signal_vector(vector<string> list, string defaultContext)
+void HdbDevice::build_signal_vector(vector<string> list, string defaultStrategy)
 {
 	for (unsigned int i=0 ; i<list.size() ; i++)
 	{
@@ -189,13 +189,28 @@ void HdbDevice::build_signal_vector(vector<string> list, string defaultContext)
 				}
 				if(!found_contexts)
 				{
-					size_t pos = defaultContext.find(context_key);
+					size_t pos = defaultStrategy.find(context_key);
 					if(pos != string::npos)
 					{
-						string_explode(defaultContext.substr(pos+context_key.length()), string("|"), &contexts);
+						string_explode(defaultStrategy.substr(pos+context_key.length()), string("|"), &contexts);
 					}
 				}
-				shared->add(list_exploded[0], contexts);
+				vector<string> adjusted_contexts;
+				for(vector<string>::iterator it = contexts.begin(); it != contexts.end(); it++)
+				{
+					string context_upper(*it);
+					std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), ::toupper);
+					map<string,string>::iterator itmap = contexts_map_upper.find(context_upper);
+					if(itmap != contexts_map_upper.end())
+					{
+						adjusted_contexts.push_back(itmap->second);
+					}
+					else
+					{
+						INFO_STREAM << "HdbDevice::" << __func__<< " attr="<<list_exploded[0]<<" IGNORING context '"<<*it<<"'";
+					}
+				}
+				shared->add(list_exploded[0], adjusted_contexts);
 			}
 		}
 		catch (Tango::DevFailed &e)

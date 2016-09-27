@@ -41,6 +41,8 @@
 
 #define MAX_ATTRIBUTES		10000
 #define CONTEXT_KEY	"strategy"
+#define ALWAYS_CONTEXT	"ALWAYS"
+#define ALWAYS_CONTEXT_DESC	"Always stored"
 
 #include <tango.h>
 #include <SubscribeThread.h>
@@ -168,8 +170,8 @@ public:
 	vector<string> old_attribute_context_list_str;
 	size_t attribute_context_list_str_size;
 
-	map<string,uint8_t> context_map;
-	map<uint8_t, string> rev_context_map;
+	map<string,string> contexts_map;
+	map<string,string> contexts_map_upper;
 	string defaultStrategy;
 
 #ifdef _USE_FERMI_DB_RW

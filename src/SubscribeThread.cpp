@@ -687,22 +687,28 @@ bool SharedData::is_stopped(string &signame)
  * Is a signal to be archived with current context?
  */
 //=============================================================================
-bool SharedData::is_current_context(string &signame, uint8_t context)
+bool SharedData::is_current_context(string &signame, string context)
 {
 	bool retval=false;
+	std::transform(context.begin(), context.end(), context.begin(), ::toupper);
+	if(context == string(ALWAYS_CONTEXT))
+	{
+		retval = true;
+		return retval;
+	}
 	//to be locked if called outside lock
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		if (signals[i].name==signame)
 		{
 			signals[i].siglock->readerIn();
-			vector<uint8_t>::iterator it = find(signals[i].contexts.begin(), signals[i].contexts.end(), context);
-			if(it != signals[i].contexts.end())
+			vector<string>::iterator it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), context);
+			if(it != signals[i].contexts_upper.end())
 			{
 				retval = true;
 			}
-			it = find(signals[i].contexts.begin(), signals[i].contexts.end(), 0/*TODO: ALWAYS*/);
-			if(it != signals[i].contexts.end())
+			it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), ALWAYS_CONTEXT);
+			if(it != signals[i].contexts_upper.end())
 			{
 				retval = true;
 			}
@@ -720,13 +726,13 @@ bool SharedData::is_current_context(string &signame, uint8_t context)
 #endif
 		{
 			signals[i].siglock->readerIn();
-			vector<uint8_t>::iterator it = find(signals[i].contexts.begin(), signals[i].contexts.end(), context);
-			if(it != signals[i].contexts.end())
+			vector<string>::iterator it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), context);
+			if(it != signals[i].contexts_upper.end())
 			{
 				retval = true;
 			}
-			it = find(signals[i].contexts.begin(), signals[i].contexts.end(), 0/*TODO: ALWAYS*/);
-			if(it != signals[i].contexts.end())
+			it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), ALWAYS_CONTEXT);
+			if(it != signals[i].contexts_upper.end())
 			{
 				retval = true;
 			}
@@ -1040,26 +1046,10 @@ void SharedData::add(string &signame, vector<string> contexts, int to_do, bool s
 			signal->running = false;
 			signal->stopped = true;
 			signal->paused = false;
-			for(vector<string>::iterator it=contexts.begin(); it!=contexts.end(); it++)
-			{
-				try
-				{
-					vector<uint8_t>::iterator its=find(signal->contexts.begin(), signal->contexts.end(), hdb_dev->context_map.at(*it));
-					if(its == signal->contexts.end())
-					{
-						signal->contexts.push_back(hdb_dev->context_map.at(*it));
-						DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" added context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) <<  endl;
-					}
-					else
-					{
-						DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) << " already present, NOT added" << endl;
-					}
-				}
-				catch(std::out_of_range &e)
-				{
-					DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" UNDEFINED context '" << *it << "'" << endl;
-				}
-			}
+			signal->contexts = contexts;
+			signal->contexts_upper = contexts;
+			for(vector<string>::iterator it = signal->contexts_upper.begin(); it != signal->contexts_upper.end(); it++)
+			    std::transform(it->begin(), it->end(), it->begin(), ::toupper);
 			//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
 		}
 		else if(found && start)
@@ -1170,26 +1160,10 @@ void SharedData::update(string &signame, vector<string> contexts)
 	{
 		signal->siglock->writerIn();
 		signal->contexts.clear();
-		for(vector<string>::iterator it=contexts.begin(); it!=contexts.end(); it++)
-		{
-			try
-			{
-				vector<uint8_t>::iterator its=find(signal->contexts.begin(), signal->contexts.end(), hdb_dev->context_map.at(*it));
-				if(its == signal->contexts.end())
-				{
-					signal->contexts.push_back(hdb_dev->context_map.at(*it));
-					DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" added context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) <<  endl;
-				}
-				else
-				{
-					DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" context '"<< *it << "'=" << (int)hdb_dev->context_map.at(*it) << " already present, NOT added" << endl;
-				}
-			}
-			catch(std::out_of_range &e)
-			{
-				DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" UNDEFINED context '" << *it << "'" << endl;
-			}
-		}
+		signal->contexts = contexts;
+		signal->contexts_upper = contexts;
+		for(vector<string>::iterator it = signal->contexts_upper.begin(); it != signal->contexts_upper.end(); it++)
+		    std::transform(it->begin(), it->end(), it->begin(), ::toupper);
 		signal->siglock->writerOut();
 	}
 	if(action <= UPDATE_PROP)
@@ -1366,11 +1340,11 @@ void SharedData::put_signal_property()
 		for (unsigned int i=0 ; i<signals.size() ; i++)
 		{
 			string context;
-			for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
 			{
 				try
 				{
-					context += hdb_dev->rev_context_map.at(*it);
+					context += *it;
 					if(it != signals[i].contexts.end() -1)
 						context += "|";
 				}
@@ -1699,11 +1673,11 @@ void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list
 			s_stop_list.push_back(signame);
 		}
 		string context;
-		for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+		for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
 		{
 			try
 			{
-				context += hdb_dev->rev_context_map.at(*it);
+				context += *it;
 				if(it != signals[i].contexts.end() -1)
 					context += "|";
 			}
@@ -2212,11 +2186,11 @@ string  SharedData::get_sig_context(string &signame)
 		if (signals[i].name==signame)
 		{
 			signals[i].siglock->readerIn();
-			for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
 			{
 				try
 				{
-					retval += hdb_dev->rev_context_map.at(*it);
+					retval += *it;
 					if(it != signals[i].contexts.end() -1)
 						retval += "|";
 				}
@@ -2239,11 +2213,11 @@ string  SharedData::get_sig_context(string &signame)
 #endif
 		{
 			signals[i].siglock->readerIn();
-			for(vector<uint8_t>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
 			{
 				try
 				{
-					retval += hdb_dev->rev_context_map.at(*it);
+					retval += *it;
 					if(it != signals[i].contexts.end() -1)
 						retval += "|";
 				}
