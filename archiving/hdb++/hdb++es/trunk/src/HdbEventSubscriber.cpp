@@ -90,6 +90,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributePause        |  attribute_pause
 //  SetAttributeStrategy  |  set_attribute_strategy
 //  GetAttributeStrategy  |  get_attribute_strategy
+//  StopFaulty            |  stop_faulty
 //================================================================
 
 //================================================================
@@ -1693,6 +1694,26 @@ Tango::DevString HdbEventSubscriber::get_attribute_strategy(Tango::DevString arg
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_attribute_strategy
 	return argout;
+}
+//--------------------------------------------------------
+/**
+ *	Command StopFaulty related method
+ *	Description: Stop archiving faulty attributes
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::stop_faulty()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::StopFaulty()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::stop_faulty) ENABLED START -----*/
+
+	//	Add your own code
+	vector<string> att_list_tmp = hdb_dev->get_sig_on_error_list();
+	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
+	{
+		attribute_stop((Tango::DevString)att_list_tmp[i].c_str());
+	}
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::stop_faulty
 }
 //--------------------------------------------------------
 /**

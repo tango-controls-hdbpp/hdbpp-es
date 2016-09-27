@@ -711,6 +711,21 @@ bool HdbEventSubscriber::is_GetAttributeStrategy_allowed(TANGO_UNUSED(const CORB
 	return true;
 }
 
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_StopFaulty_allowed()
+ *	Description : Execution allowed for StopFaulty attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_StopFaulty_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for StopFaulty command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::StopFaultyStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::StopFaultyStateAllowed
+	return true;
+}
+
 
 /*----- PROTECTED REGION ID(HdbEventSubscriber::HdbEventSubscriberStateAllowed.AdditionalMethods) ENABLED START -----*/
 
