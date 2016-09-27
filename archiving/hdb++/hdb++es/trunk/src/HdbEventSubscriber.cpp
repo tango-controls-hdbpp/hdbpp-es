@@ -238,22 +238,32 @@ void HdbEventSubscriber::init_device()
 		{
 			string context_upper(res[0]);
 			std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
-			DEBUG_STREAM << "CONFIGURING CONTEXTS: adding " << context_upper << " <-> " << (int)index;
-			hdb_dev->context_map.insert(make_pair(context_upper, index));
-			hdb_dev->rev_context_map.insert(make_pair(index, context_upper));
-			string context_list_element = context_upper + ":" + res[1];
+			DEBUG_STREAM << "CONFIGURING CONTEXTS: adding " << res[0] << " <-> " << (int)index;
+			hdb_dev->contexts_map.insert(make_pair(res[0], res[1]));
+			hdb_dev->contexts_map_upper.insert(make_pair(context_upper, res[0]));
+			string context_list_element = *it;
 			attr_ContextsList_read[index] = CORBA::string_dup(context_list_element.c_str());
 			index++;
 		}
 	}
+	if(hdb_dev->contexts_map_upper.find(ALWAYS_CONTEXT) == hdb_dev->contexts_map_upper.end())
+	{
+		DEBUG_STREAM << "CONFIGURING CONTEXTS: adding " << ALWAYS_CONTEXT << " <-> " << (int)index;
+		hdb_dev->contexts_map.insert(make_pair(ALWAYS_CONTEXT, ALWAYS_CONTEXT_DESC));
+		hdb_dev->contexts_map_upper.insert(make_pair(ALWAYS_CONTEXT, ALWAYS_CONTEXT));
+		string context_list_element = string(ALWAYS_CONTEXT) + ": " + string(ALWAYS_CONTEXT_DESC);
+		attr_ContextsList_read[index] = CORBA::string_dup(context_list_element.c_str());
+		index++;
+		contextsList.push_back(context_list_element);
+	}
 	defaultStrategy_upper = defaultStrategy;
 	std::transform(defaultStrategy_upper.begin(), defaultStrategy_upper.end(), defaultStrategy_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
 	hdb_dev->defaultStrategy = defaultStrategy_upper;
-	map<string, uint8_t>::iterator it = hdb_dev->context_map.find(defaultStrategy_upper);
-	if(it != hdb_dev->context_map.end())
+	map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(defaultStrategy_upper);
+	if(it != hdb_dev->contexts_map_upper.end())
 	{
-		*attr_Context_read = CORBA::string_dup(it->first.c_str());
-		context_val = it->second;
+		*attr_Context_read = CORBA::string_dup(it->second.c_str());
+		context_set = it->first;
 	}
 
 	attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
@@ -805,18 +815,19 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
 	Tango::DevString	w_val;
 	attr.get_write_value(w_val);
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::write_Context) ENABLED START -----*/
+	string argin(w_val);
 	string argin_upper(w_val);
 	std::transform(argin_upper.begin(), argin_upper.end(), argin_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
-	map<string, uint8_t>::iterator itmap = hdb_dev->context_map.find(argin_upper);
-	if(itmap == hdb_dev->context_map.end())
+	map<string, string>::iterator itmap = hdb_dev->contexts_map_upper.find(argin_upper);
+	if(itmap == hdb_dev->contexts_map_upper.end())
 	{
 		Tango::Except::throw_exception(
 					(const char *)"BadContext",
-					"Context " + argin_upper + " NOT DEFINED",
+					"Context " + argin + " NOT DEFINED",
 					(const char *)__func__);
 	}
-	context_val = itmap->second;
-	*attr_Context_read = CORBA::string_dup(argin_upper.c_str());
+	context_set = itmap->first;
+	*attr_Context_read = CORBA::string_dup(itmap->second.c_str());
 	
 	vector<string> att_list_tmp = hdb_dev->get_sig_list();
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
@@ -825,8 +836,8 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
 		try
 		{
 			hdb_dev->shared->veclock.readerIn();
-			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], context_val);
-			DEBUG_STREAM << "HdbEventSubscriber::write_Context="<<(int)context_val<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
+			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], context_set);
+			DEBUG_STREAM << "HdbEventSubscriber::write_Context="<<context_set<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
 			hdb_dev->shared->veclock.readerOut();
 		}
 		catch(Tango::DevFailed &e)
@@ -1132,27 +1143,27 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 			{
 				string context_upper(*its);
 				std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
-				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(context_upper);
-				if(it == hdb_dev->context_map.end())
+				map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(context_upper);
+				if(it == hdb_dev->contexts_map_upper.end())
 				{
 					Tango::Except::throw_exception(
 							(const char *)"BadContextName",
-								"Context '" + context_upper + "' NOT defined",
+								"Context '" + *its + "' NOT defined",
 								(const char *)__func__);
 				}
-				contexts.push_back(context_upper);
+				contexts.push_back(it->second);
 			}
 		}
 	}
 	if(contexts.size()==0)
-		contexts.push_back(defaultStrategy_upper);
+		contexts.push_back(defaultStrategy);
 	hdb_dev->add(signame, contexts);
 
 	bool is_current_context;
 	try
 	{
 		hdb_dev->shared->veclock.readerIn();
-		is_current_context = hdb_dev->shared->is_current_context(signame, context_val);
+		is_current_context = hdb_dev->shared->is_current_context(signame, context_set);
 		hdb_dev->shared->veclock.readerOut();
 	}
 	catch(Tango::DevFailed &e)
@@ -1359,8 +1370,8 @@ void HdbEventSubscriber::start()
 		try
 		{
 			hdb_dev->shared->veclock.readerIn();
-			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], context_val);
-			DEBUG_STREAM << "HdbEventSubscriber::start="<<(int)context_val<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
+			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], context_set);
+			DEBUG_STREAM << "HdbEventSubscriber::start="<<context_set<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
 			hdb_dev->shared->veclock.readerOut();
 		}
 		catch(Tango::DevFailed &e)
@@ -1629,27 +1640,27 @@ void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *
 			{
 				string context_upper(*its);
 				std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
-				map<string, uint8_t>::iterator it = hdb_dev->context_map.find(context_upper);
-				if(it == hdb_dev->context_map.end())
+				map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(context_upper);
+				if(it == hdb_dev->contexts_map_upper.end())
 				{
 					Tango::Except::throw_exception(
 							(const char *)"BadContextName",
-								"Context '" + context_upper + "' NOT defined",
+								"Context '" + *its + "' NOT defined",
 								(const char *)__func__);
 				}
-				contexts.push_back(context_upper);
+				contexts.push_back(it->second);
 			}
 		}
 	}
 	if(contexts.size()==0)
-		contexts.push_back(defaultStrategy_upper);
+		contexts.push_back(defaultStrategy);
 	hdb_dev->update(signame, contexts);
 
 	bool is_current_context;
 	try
 	{
 		hdb_dev->shared->veclock.readerIn();
-		is_current_context = hdb_dev->shared->is_current_context(signame, context_val);
+		is_current_context = hdb_dev->shared->is_current_context(signame, context_set);
 		hdb_dev->shared->veclock.readerOut();
 	}
 	catch(Tango::DevFailed &e)

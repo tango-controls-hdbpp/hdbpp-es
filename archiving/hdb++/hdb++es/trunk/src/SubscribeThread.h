@@ -90,7 +90,8 @@ typedef struct
 	bool running;
 	bool paused;
 	bool stopped;
-	vector<uint8_t> contexts;
+	vector<string> contexts;
+	vector<string> contexts_upper;
 	ReadersWritersLock *siglock;
 }
 HdbSignal;
@@ -180,7 +181,7 @@ public:
 	/**
 	 * Is a signal to be archived with current context?
 	 */
-	bool is_current_context(string &signame, uint8_t context);
+	bool is_current_context(string &signame, string context);
 	/**
 	 * Is a signal first event arrived?
 	 */

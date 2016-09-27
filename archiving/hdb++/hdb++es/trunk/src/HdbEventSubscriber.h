@@ -81,7 +81,7 @@ public:
 	bool		initialized;
 	//vector<string>	contextsList_upper;
 	string	defaultStrategy_upper;
-	uint8_t context_val;
+	string context_set;
 
 
 private:
