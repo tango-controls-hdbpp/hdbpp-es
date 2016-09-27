@@ -1316,7 +1316,7 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	attr_status << "DB ERRORS counter  : "<<nok_db<<" - "<<buf;
 	attr_status << endl;
 
-	attr_status << "Store time AVG     : "<<fixed<<hdb_dev->push_shared->get_avg_store_time(signame)<<"s";
+	attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->push_shared->get_avg_store_time(signame)<<"s";
 	attr_status << endl;
 	attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_shared->get_avg_process_time(signame)<<"s";
 	argout  = new char[attr_status.str().length()+1];
@@ -1351,14 +1351,29 @@ void HdbEventSubscriber::start()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
 
 	//	Add your own code
-#if 0
-	hdb_dev->push_shared->start_all();
-	hdb_dev->shared->start_all();
-#else
 	vector<string> att_list_tmp = hdb_dev->get_sig_list();
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
-		attribute_start((Tango::DevString)att_list_tmp[i].c_str());
-#endif
+	{
+		bool is_current_context = false;
+		try
+		{
+			hdb_dev->shared->veclock.readerIn();
+			is_current_context = hdb_dev->shared->is_current_context(att_list_tmp[i], context_val);
+			DEBUG_STREAM << "HdbEventSubscriber::start="<<(int)context_val<<" : " << att_list_tmp[i] << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
+			hdb_dev->shared->veclock.readerOut();
+		}
+		catch(Tango::DevFailed &e)
+		{
+			hdb_dev->shared->veclock.readerOut();
+			INFO_STREAM << __func__ << ": Failed to check is_current_context for " << att_list_tmp[i];
+			Tango::Except::re_throw_exception(e,
+						(const char *)"BadSignalName",
+						"Signal " + att_list_tmp[i] + " NOT subscribed",
+						(const char *)__func__);
+		}
+		if(is_current_context)
+			attribute_start((Tango::DevString)att_list_tmp[i].c_str());
+	}
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::start
 }
 //--------------------------------------------------------
