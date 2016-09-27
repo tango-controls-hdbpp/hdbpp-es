@@ -271,8 +271,10 @@ vector<string> HdbDevice::get_hdb_signal_list()
 			{
 				tmplist_name = tmplist[i].substr(0,found);
 				tmplist_conf = tmplist[i].substr(found+1);
+				if(tmplist_conf.find(string(CONTEXT_KEY)+"=") == string::npos)
+					tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;//TODO: loosing all the other configurations if any
 			}
-			else
+			else	//if present only the attribute name
 			{
 				tmplist_name = tmplist[i];
 				tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;
