@@ -396,6 +396,24 @@ CORBA::Any *GetAttributeStrategyClass::execute(Tango::DeviceImpl *device, const 
 	return insert((static_cast<HdbEventSubscriber *>(device))->get_attribute_strategy(argin));
 }
 
+//--------------------------------------------------------
+/**
+ * method : 		StopFaultyClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *StopFaultyClass::execute(Tango::DeviceImpl *device, TANGO_UNUSED(const CORBA::Any &in_any))
+{
+	cout2 << "StopFaultyClass::execute(): arrived" << endl;
+	((static_cast<HdbEventSubscriber *>(device))->stop_faulty());
+	return new CORBA::Any();
+}
+
 
 //===================================================================
 //	Properties management
@@ -1962,6 +1980,15 @@ void HdbEventSubscriberClass::command_factory()
 			"The attribute contexts.",
 			Tango::OPERATOR);
 	command_list.push_back(pGetAttributeStrategyCmd);
+
+	//	Command StopFaulty
+	StopFaultyClass	*pStopFaultyCmd =
+		new StopFaultyClass("StopFaulty",
+			Tango::DEV_VOID, Tango::DEV_VOID,
+			"",
+			"",
+			Tango::OPERATOR);
+	command_list.push_back(pStopFaultyCmd);
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::command_factory_after) ENABLED START -----*/
 

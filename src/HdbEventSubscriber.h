@@ -586,6 +586,13 @@ public:
 	 */
 	virtual Tango::DevString get_attribute_strategy(Tango::DevString argin);
 	virtual bool is_GetAttributeStrategy_allowed(const CORBA::Any &any);
+	/**
+	 *	Command StopFaulty related method
+	 *	Description: Stop archiving faulty attributes
+	 *
+	 */
+	virtual void stop_faulty();
+	virtual bool is_StopFaulty_allowed(const CORBA::Any &any);
 
 
 	//--------------------------------------------------------
