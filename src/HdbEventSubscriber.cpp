@@ -1127,6 +1127,9 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 	//	Add your own code
 	string	signame;
 	vector<string> contexts;
+	bool context_error = false;
+	string requested_strategy("");
+	string applied_strategy("");
 	if(argin->length() > 0)
 	{
 		signame = string((*argin)[0]);
@@ -1136,6 +1139,9 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 		string context((*argin)[i+1]);
 		if(context.length() > 0)
 		{
+			requested_strategy += context;
+			if(i != argin->length() -2)
+				requested_strategy += string("|");
 			vector<string> res;
 			hdb_dev->string_explode(context, "|", &res);
 
@@ -1146,12 +1152,12 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 				map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(context_upper);
 				if(it == hdb_dev->contexts_map_upper.end())
 				{
-					Tango::Except::throw_exception(
-							(const char *)"BadContextName",
-								"Context '" + *its + "' NOT defined",
-								(const char *)__func__);
+					context_error = true;
 				}
-				contexts.push_back(it->second);
+				else
+				{
+					contexts.push_back(it->second);
+				}
 			}
 		}
 	}
@@ -1179,6 +1185,20 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 		attribute_start((Tango::DevString)signame.c_str());
 	else
 		attribute_stop((Tango::DevString)signame.c_str());
+
+	if(context_error)
+	{
+		for(vector<string>::iterator its=contexts.begin(); its!=contexts.end(); its++)
+		{
+			applied_strategy += *its;
+			if(its != contexts.end()-1)
+				applied_strategy += string("|");
+		}
+		Tango::Except::throw_exception(
+			(const char *)"BadStrategy",
+				"Requested strategy: " + requested_strategy + "\nApplied strategy: " + applied_strategy,
+				(const char *)__func__);
+	}
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_add
 }
@@ -1624,6 +1644,9 @@ void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *
 	//	Add your own code
 	string	signame;
 	vector<string> contexts;
+	bool context_error = false;
+	string requested_strategy("");
+	string applied_strategy("");
 	if(argin->length() > 0)
 	{
 		signame = string((*argin)[0]);
@@ -1633,6 +1656,9 @@ void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *
 		string context((*argin)[i+1]);
 		if(context.length() > 0)
 		{
+			requested_strategy += context;
+			if(i != argin->length() -2)
+				requested_strategy += string("|");
 			vector<string> res;
 			hdb_dev->string_explode(context, "|", &res);
 
@@ -1643,12 +1669,12 @@ void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *
 				map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(context_upper);
 				if(it == hdb_dev->contexts_map_upper.end())
 				{
-					Tango::Except::throw_exception(
-							(const char *)"BadContextName",
-								"Context '" + *its + "' NOT defined",
-								(const char *)__func__);
+					context_error = true;
 				}
-				contexts.push_back(it->second);
+				else
+				{
+					contexts.push_back(it->second);
+				}
 			}
 		}
 	}
@@ -1676,6 +1702,20 @@ void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *
 		attribute_start((Tango::DevString)signame.c_str());
 	else
 		attribute_stop((Tango::DevString)signame.c_str());
+
+	if(context_error)
+	{
+		for(vector<string>::iterator its=contexts.begin(); its!=contexts.end(); its++)
+		{
+			applied_strategy += *its;
+			if(its != contexts.end()-1)
+				applied_strategy += string("|");
+		}
+		Tango::Except::throw_exception(
+			(const char *)"BadStrategy",
+				"Requested strategy: " + requested_strategy + "\nApplied strategy: " + applied_strategy,
+				(const char *)__func__);
+	}
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::set_attribute_strategy
 }
 //--------------------------------------------------------
