@@ -265,6 +265,11 @@ void HdbEventSubscriber::init_device()
 		*attr_Context_read = CORBA::string_dup(it->second.c_str());
 		context_set = it->first;
 	}
+	else
+	{
+		ERROR_STREAM << "HdbEventSubscriber::init_device(): FAILED due to bad DefaultStrategy configuration: " << defaultStrategy << " is not present in ContextsList";
+		exit(-1);
+	}
 
 	attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
 	attr_AttributeFailureFreq_read = &hdb_dev->AttributeFailureFreq;
