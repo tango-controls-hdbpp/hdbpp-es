@@ -82,6 +82,8 @@ public:
 	//vector<string>	contextsList_upper;
 	string	defaultStrategy_upper;
 	string context_set;
+	string context_read;
+	string ContextsList_str[1000];
 
 
 private:
