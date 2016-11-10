@@ -985,7 +985,7 @@ void SharedData::unsubscribe_events()
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame, vector<string> contexts)
+void SharedData::add(string &signame, const vector<string> & contexts)
 {
 	add(signame, contexts, NOTHING, false);
 }
@@ -994,7 +994,7 @@ void SharedData::add(string &signame, vector<string> contexts)
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame, vector<string> contexts, int to_do, bool start)
+void SharedData::add(string &signame, const vector<string> & contexts, int to_do, bool start)
 {
 	DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
 	{
@@ -1126,7 +1126,7 @@ void SharedData::add(string &signame, vector<string> contexts, int to_do, bool s
  * Update contexts for a signal.
  */
 //=============================================================================
-void SharedData::update(string &signame, vector<string> contexts)
+void SharedData::update(string &signame, const vector<string> & contexts)
 {
 	DEBUG_STREAM << "SharedData::"<<__func__<<": updating " << signame << " contexts.size=" << contexts.size()<< endl;
 

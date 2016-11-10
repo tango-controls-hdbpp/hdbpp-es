@@ -50,7 +50,7 @@ private:
 	 *	HdbDevice object
 	 */
 	HdbDevice	*hdb_dev;
-	bool is_list_changed(vector<string> const & newlist, vector<string> &oldlist);
+	bool is_list_changed(const vector<string> & newlist, vector<string> &oldlist);
 
 
 public:

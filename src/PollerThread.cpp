@@ -313,7 +313,7 @@ void *PollerThread::run_undetached(void *ptr)
 	return NULL;
 }
 //=============================================================================
-bool PollerThread::is_list_changed(vector<string> const & newlist, vector<string> &oldlist)
+bool PollerThread::is_list_changed(const vector<string> & newlist, vector<string> &oldlist)
 {
 	bool ret=false;
 	if(newlist.size() != oldlist.size())
