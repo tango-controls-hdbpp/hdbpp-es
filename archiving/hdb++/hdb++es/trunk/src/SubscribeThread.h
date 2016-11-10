@@ -132,8 +132,8 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, vector<string> contexts);
-	void add(string &signame, vector<string> contexts, int to_do, bool start);
+	void add(string &signame, const vector<string> & contexts);
+	void add(string &signame, const vector<string> & contexts, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
@@ -141,7 +141,7 @@ public:
 	/**
 	 * Update contexts for a signal.
 	 */
-	void update(string &signame, vector<string> contexts);
+	void update(string &signame, const vector<string> & contexts);
 	/**
 	 * Start saving on DB a signal.
 	 */
