@@ -117,12 +117,31 @@ HdbDevice::HdbDevice(int p, int pp, int s, int c, Tango::DeviceImpl *device)
 	}
 	delete db;
 #endif
+	attribute_list_str_size = 0;
+	attribute_ok_list_str_size = 0;
+	attribute_nok_list_str_size = 0;
+	attribute_pending_list_str_size = 0;
+	attribute_started_list_str_size = 0;
+	attribute_paused_list_str_size = 0;
+	attribute_stopped_list_str_size = 0;
+	attribute_error_list_str_size = 0;
+	attribute_context_list_str_size = 0;
+	attribute_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_ok_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_nok_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_pending_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_started_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_paused_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_stopped_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_error_list_str.reserve(MAX_ATTRIBUTES);
+	attribute_context_list_str.reserve(MAX_ATTRIBUTES);
 }
 //=============================================================================
 //=============================================================================
 void HdbDevice::initialize()
 {
-	vector<string>	list = get_hdb_signal_list();
+	vector<string>	list;
+	get_hdb_signal_list(list);
 	attr_AttributeNumber_read = 0;
 	attr_AttributeStartedNumber_read = 0;
 	attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
@@ -245,9 +264,9 @@ void HdbDevice::update(string &signame, vector<string> contexts)
 }
 //=============================================================================
 //=============================================================================
-vector<string> HdbDevice::get_hdb_signal_list()
+void HdbDevice::get_hdb_signal_list(vector<string> & list)
 {
-	vector<string>	list;
+	list.clear();
 	vector<string>	tmplist;
 	//	Read device properties from database.
 	//-------------------------------------------------------------
@@ -300,7 +319,7 @@ vector<string> HdbDevice::get_hdb_signal_list()
 			INFO_STREAM << "HdbDevice::" << __func__ << ": " << i << ": " << tmplist_name << ";" << tmplist_conf << endl;
 		}
 	}
-	return list;
+	return;
 }
 //=============================================================================
 //=============================================================================
@@ -357,9 +376,10 @@ DEBUG_STREAM << ELAPSED(t0, t1) << " ms" << endl;
 }
 //=============================================================================
 //=============================================================================
-vector<string>  HdbDevice::get_sig_list()
+void HdbDevice::get_sig_list(vector<string> &list)
 {
-	return shared->get_sig_list();
+	shared->get_sig_list(list);
+	return;
 }
 //=============================================================================
 //=============================================================================
@@ -378,10 +398,11 @@ Tango::DevState  HdbDevice::subcribing_state()
 }
 //=============================================================================
 //=============================================================================
-vector<string>  HdbDevice::get_sig_on_error_list()
+void HdbDevice::get_sig_on_error_list(vector<string> &sig_list)
 {
-	vector<string> sig_list = shared->get_sig_on_error_list();
-	vector<string> other_list = shared->get_sig_not_on_error_list();
+	shared->get_sig_on_error_list(sig_list);
+	vector<string> other_list;
+	shared->get_sig_not_on_error_list(other_list);
 	//check if signal not in event error is in db error
 	for(vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
 	{
@@ -390,14 +411,15 @@ vector<string>  HdbDevice::get_sig_on_error_list()
 			sig_list.push_back(*it);
 		}
 	}
-	return sig_list;
+	return;
 }
 //=============================================================================
 //=============================================================================
-vector<string>  HdbDevice::get_sig_not_on_error_list()
+void HdbDevice::get_sig_not_on_error_list(vector<string> & ret_sig_list)
 {
-	vector<string> sig_list = shared->get_sig_not_on_error_list();
-	vector<string> ret_sig_list;
+	vector<string> sig_list;
+	shared->get_sig_not_on_error_list(sig_list);
+	ret_sig_list.clear();
 	//check if signal not in event error is in db error
 	for(vector<string>::iterator it=sig_list.begin(); it!=sig_list.end(); it++)
 	{
@@ -407,27 +429,31 @@ vector<string>  HdbDevice::get_sig_not_on_error_list()
 			ret_sig_list.push_back(sig);
 		}
 	}
-	return ret_sig_list;
+	return;
 }
 //=============================================================================
 //=============================================================================
-vector<string>  HdbDevice::get_sig_started_list()
+void  HdbDevice::get_sig_started_list(vector<string> & list)
 {
-	return shared->get_sig_started_list();
+	return shared->get_sig_started_list(list);
 }
 //=============================================================================
 //=============================================================================
-vector<string>  HdbDevice::get_sig_not_started_list()
+void HdbDevice::get_sig_not_started_list(vector<string> & list)
 {
-	return shared->get_sig_not_started_list();
+	shared->get_sig_not_started_list(list);
+	return;
 }
 //=============================================================================
 //=============================================================================
-vector<string>  HdbDevice::get_error_list()
+bool HdbDevice::get_error_list(vector<string> & error_list)
 {
-	vector<string> sig_list = shared->get_sig_list();
-	vector<string> error_list = shared->get_error_list();
-	vector<string> other_list = shared->get_sig_not_on_error_list();
+	bool changed;
+	vector<string> sig_list;
+	shared->get_sig_list(sig_list);
+	changed = shared->get_error_list(error_list);
+	vector<string> other_list;
+	shared->get_sig_not_on_error_list(other_list);
 	//check if signal not in event error is in db error
 	for(vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
 	{
@@ -438,16 +464,24 @@ vector<string>  HdbDevice::get_error_list()
 			vector<string>::iterator itsig_list = find(sig_list.begin(), sig_list.end(), *it);
 			size_t idx = itsig_list - sig_list.begin();
 			if(idx < error_list.size())
-				error_list[idx] = push_shared->get_sig_status(*it);
+			{
+				string dberr = push_shared->get_sig_status(*it);
+				if(dberr != error_list[idx])
+				{
+					error_list[idx] = dberr;
+					changed = true;
+				}
+			}
 		}
 	}
-	return error_list;
+	return changed;
 }
 //=============================================================================
 //=============================================================================
 void  HdbDevice::get_event_number_list()
 {
-	vector<string> attribute_list_tmp = get_sig_list();
+	vector<string> attribute_list_tmp;
+	get_sig_list(attribute_list_tmp);
 	for (size_t i=0 ; i<attribute_list_tmp.size() ; i++)
 	{
 		string signame(attribute_list_tmp[i]);
@@ -476,7 +510,8 @@ int  HdbDevice::get_sig_on_error_num()
 {
 	int on_ev_err = shared->get_sig_on_error_num();
 
-	vector<string> other_list = shared->get_sig_not_on_error_list();
+	vector<string> other_list;
+	shared->get_sig_not_on_error_list(other_list);
 	//check if signal not in event error is in db error
 	for(vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
 	{
@@ -493,7 +528,8 @@ int  HdbDevice::get_sig_not_on_error_num()
 {
 	int not_on_ev_err = shared->get_sig_not_on_error_num();
 
-	vector<string> sig_list = shared->get_sig_not_on_error_list();
+	vector<string> sig_list;
+	shared->get_sig_not_on_error_list(sig_list);
 	//check if signal not in event error is in db error
 	for(vector<string>::iterator it=sig_list.begin(); it!=sig_list.end(); it++)
 	{
@@ -544,9 +580,10 @@ int HdbDevice::nb_cmd_waiting()
 }
 //=============================================================================
 //=============================================================================
-vector<string> HdbDevice::get_sig_list_waiting()
+void HdbDevice::get_sig_list_waiting(vector<string> & list)
 {
-	return push_shared->get_sig_list_waiting();
+	push_shared->get_sig_list_waiting(list);
+	return;
 }
 //=============================================================================
 //=============================================================================
@@ -564,9 +601,9 @@ void  HdbDevice::reset_freq_statistics()
 }
 //=============================================================================
 //=============================================================================
-void  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list)
+bool  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list)
 {
-	shared->get_lists(_list, _start_list, _pause_list, _stop_list, _context_list);
+	return shared->get_lists(_list, _start_list, _pause_list, _stop_list, _context_list);
 }
 //=============================================================================
 //=============================================================================

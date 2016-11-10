@@ -129,10 +129,10 @@ int PushThreadShared::get_max_waiting()
 }
 //=============================================================================
 //=============================================================================
-vector<string> PushThreadShared::get_sig_list_waiting()
+void PushThreadShared::get_sig_list_waiting(vector<string> & list)
 {
 	omni_mutex_lock sync(*this);
-	vector<string>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<events.size() ; i++)
 	{
 		HdbCmdData *ev = events[i];
@@ -145,7 +145,7 @@ vector<string> PushThreadShared::get_sig_list_waiting()
 			signame = string(ev->attr_name);
 		list.push_back(signame);
 	}
-	return list;
+	return;
 }
 //=============================================================================
 //=============================================================================

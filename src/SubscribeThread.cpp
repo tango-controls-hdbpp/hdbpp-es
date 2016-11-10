@@ -1370,16 +1370,16 @@ void SharedData::put_signal_property()
  *	Return the list of signals
  */
 //=============================================================================
-vector<string>  SharedData::get_sig_list()
+void SharedData::get_sig_list(vector<string> &list)
 {
 	ReaderLock lock(veclock);
-	vector<string>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		string	signame(signals[i].name);
 		list.push_back(signame);
 	}
-	return list;
+	return;
 }
 //=============================================================================
 /**
@@ -1446,10 +1446,10 @@ bool  SharedData::get_sig_source(string &signame)
  *	Return the list of signals on error
  */
 //=============================================================================
-vector<string>  SharedData::get_sig_on_error_list()
+void SharedData::get_sig_on_error_list(vector<string> &list)
 {
 	ReaderLock lock(veclock);
-	vector<string>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].siglock->readerIn();
@@ -1460,7 +1460,7 @@ vector<string>  SharedData::get_sig_on_error_list()
 		}
 		signals[i].siglock->readerOut();
 	}
-	return list;
+	return;
 }
 //=============================================================================
 /**
@@ -1487,10 +1487,10 @@ int  SharedData::get_sig_on_error_num()
  *	Return the list of signals not on error
  */
 //=============================================================================
-vector<string>  SharedData::get_sig_not_on_error_list()
+void SharedData::get_sig_not_on_error_list(vector<string> &list)
 {
 	ReaderLock lock(veclock);
-	vector<string>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].siglock->readerIn();
@@ -1501,7 +1501,7 @@ vector<string>  SharedData::get_sig_not_on_error_list()
 		}
 		signals[i].siglock->readerOut();
 	}
-	return list;
+	return;
 }
 //=============================================================================
 /**
@@ -1528,10 +1528,10 @@ int  SharedData::get_sig_not_on_error_num()
  *	Return the list of signals started
  */
 //=============================================================================
-vector<string>  SharedData::get_sig_started_list()
+void SharedData::get_sig_started_list(vector<string> & list)
 {
 	ReaderLock lock(veclock);
-	vector<string>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].siglock->readerIn();
@@ -1542,7 +1542,7 @@ vector<string>  SharedData::get_sig_started_list()
 		}
 		signals[i].siglock->readerOut();
 	}
-	return list;
+	return;
 }
 //=============================================================================
 /**
@@ -1569,10 +1569,10 @@ int  SharedData::get_sig_started_num()
  *	Return the list of signals not started
  */
 //=============================================================================
-vector<string>  SharedData::get_sig_not_started_list()
+void SharedData::get_sig_not_started_list(vector<string> &list)
 {
 	ReaderLock lock(veclock);
-	vector<string>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].siglock->readerIn();
@@ -1583,49 +1583,82 @@ vector<string>  SharedData::get_sig_not_started_list()
 		}
 		signals[i].siglock->readerOut();
 	}
-	return list;
+	return;
 }
 //=============================================================================
 /**
  *	Return the list of errors
  */
 //=============================================================================
-vector<string>  SharedData::get_error_list()
+bool SharedData::get_error_list(vector<string> &list)
 {
+	bool changed=false;
 	ReaderLock lock(veclock);
-	vector<string>	list;
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	size_t old_size = list.size();
+	size_t i;
+	for (i=0 ; i<signals.size() && i < old_size ; i++)
 	{
 		signals[i].siglock->readerIn();
+		string err;
 		//if (signals[i].status != STATUS_SUBSCRIBED)
 		if ((signals[i].evstate != Tango::ON) && (signals[i].running))
 		{
-			list.push_back(signals[i].status);
+			err = signals[i].status;
 		}
 		else
 		{
-			list.push_back(string(""));
+			err = string("");
+		}
+		if(err != list[i])
+		{
+			list[i] = err;
+			changed = true;
 		}
 		signals[i].siglock->readerOut();
 	}
-	return list;
+	if(signals.size() < old_size)
+	{
+		list.erase(list.begin()+i, list.begin()+old_size);
+		changed = true;
+	}
+	else
+	{
+		for (size_t i=old_size ; i<signals.size() ; i++)
+		{
+			signals[i].siglock->readerIn();
+			string err;
+			//if (signals[i].status != STATUS_SUBSCRIBED)
+			if ((signals[i].evstate != Tango::ON) && (signals[i].running))
+			{
+				err = signals[i].status;
+			}
+			else
+			{
+				err = string("");
+			}
+			list.push_back(err);
+			signals[i].siglock->readerOut();
+			changed = true;
+		}
+	}
+	return changed;
 }
 //=============================================================================
 /**
  *	Return the list of errors
  */
 //=============================================================================
-vector<uint32_t>  SharedData::get_ev_counter_list()
+void SharedData::get_ev_counter_list(vector<uint32_t> &list)
 {
 	ReaderLock lock(veclock);
-	vector<uint32_t>	list;
+	list.clear();
 	for (unsigned int i=0 ; i<signals.size() ; i++)
 	{
 		signals[i].siglock->readerIn();
 		list.push_back(signals[i].okev_counter + signals[i].nokev_counter);
 		signals[i].siglock->readerOut();
 	}
-	return list;
+	return;
 }
 //=============================================================================
 /**
@@ -1652,26 +1685,28 @@ int  SharedData::get_sig_not_started_num()
  *	Return the complete, started and stopped lists of signals
  */
 //=============================================================================
-void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list)
+bool  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list)
 {
+	bool changed = false;
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	size_t old_s_list_size = s_list.size();
+	size_t old_s_start_list_size = s_start_list.size();
+	size_t old_s_pause_list_size = s_pause_list.size();
+	size_t old_s_stop_list_size = s_stop_list.size();
+	vector<string> tmp_start_list;
+	vector<string> tmp_pause_list;
+	vector<string> tmp_stop_list;
+	//update list and context
+	size_t i;
+	for (i=0 ; i<signals.size() && i< old_s_list_size; i++)
 	{
 		string	signame(signals[i].name);
-		s_list.push_back(signame);
+		if(signame != s_list[i])
+		{
+			s_list[i] = signame;
+			changed = true;
+		}
 		signals[i].siglock->readerIn();
-		if (signals[i].running)
-		{
-			s_start_list.push_back(signame);
-		}
-		else if(signals[i].paused)
-		{
-			s_pause_list.push_back(signame);
-		}
-		else if(signals[i].stopped)
-		{
-			s_stop_list.push_back(signame);
-		}
 		string context;
 		for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
 		{
@@ -1686,10 +1721,137 @@ void  SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list
 
 			}
 		}
-		s_context_list.push_back(context);
+		signals[i].siglock->readerOut();
+		if(context != s_context_list[i])
+		{
+			s_context_list[i] = context;
+			changed = true;
+		}
+	}
+	if(signals.size() < old_s_list_size)
+	{
+		s_list.erase(s_list.begin()+i, s_list.begin()+old_s_list_size);
+		s_context_list.erase(s_context_list.begin()+i, s_context_list.begin()+old_s_list_size);
+		changed = true;
+	}
+	else
+	{
+		for (i=old_s_list_size ; i<signals.size() ; i++)
+		{
+			changed = true;
+			string	signame(signals[i].name);
+			s_list.push_back(signame);
+			signals[i].siglock->readerIn();
+			string context;
+			for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			{
+				try
+				{
+					context += *it;
+					if(it != signals[i].contexts.end() -1)
+						context += "|";
+				}
+				catch(std::out_of_range &e)
+				{
+
+				}
+			}
+			signals[i].siglock->readerOut();
+			s_context_list.push_back(context);
+		}
+	}
+
+	for (i=0 ; i<signals.size(); i++)
+	{
+		string	signame(signals[i].name);
+		signals[i].siglock->readerIn();
+		if (signals[i].running)
+		{
+			tmp_start_list.push_back(signame);
+		}
+		else if(signals[i].paused)
+		{
+			tmp_pause_list.push_back(signame);
+		}
+		else if(signals[i].stopped)
+		{
+			tmp_stop_list.push_back(signame);
+		}
 		signals[i].siglock->readerOut();
 	}
-	return;
+	//update start list
+	for (i=0 ; i<tmp_start_list.size() && i< old_s_start_list_size; i++)
+	{
+		string	signame(tmp_start_list[i]);
+		if(signame != s_start_list[i])
+		{
+			s_start_list[i] = signame;
+			changed = true;
+		}
+	}
+	if(tmp_start_list.size() < old_s_start_list_size)
+	{
+		s_start_list.erase(s_start_list.begin()+i, s_start_list.begin()+old_s_start_list_size);
+		changed = true;
+	}
+	else
+	{
+		for (size_t i=old_s_start_list_size ; i<tmp_start_list.size() ; i++)
+		{
+			changed = true;
+			string	signame(tmp_start_list[i]);
+			s_start_list.push_back(signame);
+		}
+	}
+	//update pause list
+	for (i=0 ; i<tmp_pause_list.size() && i< old_s_pause_list_size; i++)
+	{
+		string	signame(tmp_pause_list[i]);
+		if(signame != s_pause_list[i])
+		{
+			s_pause_list[i] = signame;
+			changed = true;
+		}
+	}
+	if(tmp_pause_list.size() < old_s_pause_list_size)
+	{
+		s_pause_list.erase(s_pause_list.begin()+i, s_pause_list.begin()+old_s_pause_list_size);
+		changed = true;
+	}
+	else
+	{
+		for (size_t i=old_s_pause_list_size ; i<tmp_pause_list.size() ; i++)
+		{
+			changed = true;
+			string	signame(tmp_pause_list[i]);
+			s_pause_list.push_back(signame);
+		}
+	}
+	//update stop list
+	for (i=0 ; i<tmp_stop_list.size() && i< old_s_stop_list_size; i++)
+	{
+		string	signame(tmp_stop_list[i]);
+		if(signame != s_stop_list[i])
+		{
+			s_stop_list[i] = signame;
+			changed = true;
+		}
+	}
+	if(tmp_stop_list.size() < old_s_stop_list_size)
+	{
+		s_stop_list.erase(s_stop_list.begin()+i, s_stop_list.begin()+old_s_stop_list_size);
+		changed = true;
+	}
+	else
+	{
+		for (size_t i=old_s_stop_list_size ; i<tmp_stop_list.size() ; i++)
+		{
+			changed = true;
+			string	signame(tmp_stop_list[i]);
+			s_stop_list.push_back(signame);
+		}
+	}
+	return changed;
 }
 
 //=============================================================================
