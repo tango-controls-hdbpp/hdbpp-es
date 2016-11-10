@@ -834,7 +834,8 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
 	context_set = itmap->first;
 	*attr_Context_read = CORBA::string_dup(itmap->second.c_str());
 	
-	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	vector<string> att_list_tmp;
+	hdb_dev->get_sig_list(att_list_tmp);
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
 	{
 		bool is_current_context;
@@ -1388,7 +1389,8 @@ void HdbEventSubscriber::start()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
 
 	//	Add your own code
-	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	vector<string> att_list_tmp;
+	hdb_dev->get_sig_list(att_list_tmp);
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
 	{
 		bool is_current_context = false;
@@ -1430,7 +1432,8 @@ void HdbEventSubscriber::stop()
 	hdb_dev->shared->stop_all();
 	hdb_dev->push_shared->stop_all();
 #else
-	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	vector<string> att_list_tmp;
+	hdb_dev->get_sig_list(att_list_tmp);
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
 		attribute_stop((Tango::DevString)att_list_tmp[i].c_str());
 #endif
@@ -1559,7 +1562,8 @@ void HdbEventSubscriber::pause()
 	hdb_dev->shared->pause_all();
 	hdb_dev->push_shared->pause_all();
 #else
-	vector<string> att_list_tmp = hdb_dev->get_sig_list();
+	vector<string> att_list_tmp;
+	hdb_dev->get_sig_list(att_list_tmp);
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
 	{
 		bool is_running;
@@ -1764,7 +1768,8 @@ void HdbEventSubscriber::stop_faulty()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::stop_faulty) ENABLED START -----*/
 
 	//	Add your own code
-	vector<string> att_list_tmp = hdb_dev->get_sig_on_error_list();
+	vector<string> att_list_tmp;
+	hdb_dev->get_sig_on_error_list(att_list_tmp);
 	for (unsigned int i=0 ; i<att_list_tmp.size() ; i++)
 	{
 		attribute_stop((Tango::DevString)att_list_tmp[i].c_str());

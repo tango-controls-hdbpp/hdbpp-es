@@ -58,7 +58,8 @@ void *StatsThread::run_undetached(void *ptr)
 		long nok_ev=0;
 		long nok_db=0;
 
-		vector<string> attribute_list_tmp = hdb_dev->get_sig_list();
+		vector<string> attribute_list_tmp;
+		hdb_dev->get_sig_list(attribute_list_tmp);
 
 		//TODO: allocate AttributeRecordFreqList and AttributeFailureFreqList dynamically, but be careful to race conditions with read attribute
 		/*if(hdb_dev->AttributeRecordFreqList != NULL)

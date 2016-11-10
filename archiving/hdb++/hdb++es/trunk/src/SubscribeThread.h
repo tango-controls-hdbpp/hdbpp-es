@@ -221,7 +221,7 @@ public:
 	/**
 	 *	Return the list of signals
 	 */
-	vector<string> get_sig_list();
+	void get_sig_list(vector<string> &);
 	/**
 	 *	Return the list of sources
 	 */
@@ -233,27 +233,27 @@ public:
 	/**
 	 *	Return the list of signals on error
 	 */
-	vector<string>  get_sig_on_error_list();
+	void get_sig_on_error_list(vector<string> &);
 	/**
 	 *	Return the list of signals not on error
 	 */
-	vector<string>  get_sig_not_on_error_list();
+	void get_sig_not_on_error_list(vector<string> &);
 	/**
 	 *	Return the list of signals started
 	 */
-	vector<string>  get_sig_started_list();
+	void get_sig_started_list(vector<string> &);
 	/**
 	 *	Return the list of signals not started
 	 */
-	vector<string>  get_sig_not_started_list();
+	void get_sig_not_started_list(vector<string> &);
 	/**
 	 *	Return the list of errors
 	 */
-	vector<string>  get_error_list();
+	bool get_error_list(vector<string> &);
 	/**
 	 *	Return the list of event received
 	 */
-	vector<uint32_t>  get_ev_counter_list();
+	void get_ev_counter_list(vector<uint32_t> &);
 	/**
 	 *	Return the number of signals on error
 	 */
@@ -273,7 +273,7 @@ public:
 	/**
 	 *	Return the complete, started and stopped lists of signals
 	 */
-	void  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list);
+	bool  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list);
 	/**
 	 *	Increment the ok counter of event rx
 	 */

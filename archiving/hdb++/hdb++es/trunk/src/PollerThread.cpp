@@ -168,47 +168,11 @@ void *PollerThread::run_undetached(void *ptr)
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
 
-		/*if (hdb_dev->shared->is_initialized())
-		{
-			hdb_dev->get_numbers(
-					&hdb_dev->attr_AttributeNumber_read,
-					&hdb_dev->attr_AttributeStartedNumber_read,
-					&hdb_dev->attr_AttributeStoppedNumber_read
-				);
-		}
-		else
-		{
-			hdb_dev->attr_AttributeNumber_read = 0;
-			hdb_dev->attr_AttributeStartedNumber_read = 0;
-			hdb_dev->attr_AttributeStoppedNumber_read = 0;
-		}*/
-
-
-		/*try
-		{
-			(hdb_dev->_device)->push_change_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
-			(hdb_dev->_device)->push_change_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
-			(hdb_dev->_device)->push_archive_event("AttributeRecordFreq",&hdb_dev->AttributeRecordFreq);
-			(hdb_dev->_device)->push_archive_event("AttributeFailureFreq",&hdb_dev->AttributeFailureFreq);
-		}catch(Tango::DevFailed &e)
-		{
-			INFO_STREAM <<"PollerThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
-		}*/
-		/*hdb_dev->attribute_list_str = hdb_dev->get_sig_list();
-		hdb_dev->attribute_started_list_str = hdb_dev->get_sig_started_list();
-		hdb_dev->attribute_stopped_list_str = hdb_dev->get_sig_not_started_list();*/
-		hdb_dev->attribute_list_str.clear();
-		hdb_dev->attribute_started_list_str.clear();
-		hdb_dev->attribute_paused_list_str.clear();
-		hdb_dev->attribute_stopped_list_str.clear();
-		hdb_dev->attribute_context_list_str.clear();
-		hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str);
-
-		bool changed = is_list_changed(hdb_dev->attribute_list_str, hdb_dev->old_attribute_list_str);
+		bool changed = hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_list_str.size() && i < MAX_ATTRIBUTES; i++)
-				hdb_dev->attr_AttributeList_read[i] = (char *)hdb_dev->attribute_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_list_str.size() && i < MAX_ATTRIBUTES; i++)
+				hdb_dev->attr_AttributeList_read[i] = const_cast<char*>(hdb_dev->attribute_list_str[i].c_str());
 			hdb_dev->attribute_list_str_size = hdb_dev->attribute_list_str.size();
 		}
 		try
@@ -218,11 +182,10 @@ void *PollerThread::run_undetached(void *ptr)
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
-		changed = is_list_changed(hdb_dev->attribute_started_list_str, hdb_dev->old_attribute_started_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_started_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributeStartedList_read[i] = (char *)hdb_dev->attribute_started_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_started_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeStartedList_read[i] = const_cast<char*>(hdb_dev->attribute_started_list_str[i].c_str());
 			hdb_dev->attribute_started_list_str_size = hdb_dev->attribute_started_list_str.size();
 		}
 		try
@@ -232,11 +195,10 @@ void *PollerThread::run_undetached(void *ptr)
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
-		changed = is_list_changed(hdb_dev->attribute_paused_list_str, hdb_dev->old_attribute_paused_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_paused_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributePausedList_read[i] = (char *)hdb_dev->attribute_paused_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_paused_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributePausedList_read[i] = const_cast<char*>(hdb_dev->attribute_paused_list_str[i].c_str());
 			hdb_dev->attribute_paused_list_str_size = hdb_dev->attribute_paused_list_str.size();
 		}
 		try
@@ -246,11 +208,10 @@ void *PollerThread::run_undetached(void *ptr)
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
-		changed = is_list_changed(hdb_dev->attribute_stopped_list_str, hdb_dev->old_attribute_stopped_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_stopped_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributeStoppedList_read[i] = (char *)hdb_dev->attribute_stopped_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_stopped_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeStoppedList_read[i] = const_cast<char*>(hdb_dev->attribute_stopped_list_str[i].c_str());
 			hdb_dev->attribute_stopped_list_str_size = hdb_dev->attribute_stopped_list_str.size();
 		}
 		try
@@ -260,28 +221,26 @@ void *PollerThread::run_undetached(void *ptr)
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
-		changed = is_list_changed(hdb_dev->attribute_context_list_str, hdb_dev->old_attribute_context_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_context_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributeContextList_read[i] = (char *)hdb_dev->attribute_context_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_context_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeContextList_read[i] = const_cast<char*>(hdb_dev->attribute_context_list_str[i].c_str());
 			hdb_dev->attribute_context_list_str_size = hdb_dev->attribute_context_list_str.size();
 		}
 		try
 		{
-			(hdb_dev->_device)->push_change_event("AttributeContextList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
-			(hdb_dev->_device)->push_archive_event("AttributeContextList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
+			(hdb_dev->_device)->push_change_event("AttributeStrategyList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeStrategyList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
 
-		hdb_dev->attribute_ok_list_str.clear();
-		hdb_dev->attribute_ok_list_str = hdb_dev->get_sig_not_on_error_list();
-		changed = is_list_changed(hdb_dev->attribute_ok_list_str, hdb_dev->old_attribute_ok_list_str);
-		if(changed)
+		hdb_dev->get_sig_not_on_error_list(hdb_dev->attribute_ok_list_str);
+		//changed = is_list_changed(hdb_dev->attribute_ok_list_str, hdb_dev->old_attribute_ok_list_str);
+		//if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_ok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributeOkList_read[i] = (char *)hdb_dev->attribute_ok_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_ok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeOkList_read[i] = const_cast<char*>(hdb_dev->attribute_ok_list_str[i].c_str());
 			hdb_dev->attribute_ok_list_str_size = hdb_dev->attribute_ok_list_str.size();
 		}
 		try
@@ -292,13 +251,12 @@ void *PollerThread::run_undetached(void *ptr)
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
 
-		hdb_dev->attribute_nok_list_str.clear();
-		hdb_dev->attribute_nok_list_str = hdb_dev->get_sig_on_error_list();
-		changed = is_list_changed(hdb_dev->attribute_nok_list_str, hdb_dev->old_attribute_nok_list_str);
-		if(changed)
+		hdb_dev->get_sig_on_error_list(hdb_dev->attribute_nok_list_str);
+		//changed = is_list_changed(hdb_dev->attribute_nok_list_str, hdb_dev->old_attribute_nok_list_str);
+		//if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_nok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributeNokList_read[i] = (char *)hdb_dev->attribute_nok_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_nok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeNokList_read[i] = const_cast<char*>(hdb_dev->attribute_nok_list_str[i].c_str());
 			hdb_dev->attribute_nok_list_str_size = hdb_dev->attribute_nok_list_str.size();
 		}
 		try
@@ -309,13 +267,12 @@ void *PollerThread::run_undetached(void *ptr)
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
 
-		hdb_dev->attribute_pending_list_str.clear();
-		hdb_dev->attribute_pending_list_str = hdb_dev->get_sig_list_waiting();
-		changed = is_list_changed(hdb_dev->attribute_pending_list_str, hdb_dev->old_attribute_pending_list_str);
-		if(changed)
+		hdb_dev->get_sig_list_waiting(hdb_dev->attribute_pending_list_str);
+		//changed = is_list_changed(hdb_dev->attribute_pending_list_str, hdb_dev->old_attribute_pending_list_str);
+		//if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_pending_list_str.size() && i < MAX_ATTRIBUTES; i++)
-				hdb_dev->attr_AttributePendingList_read[i] = (char *)hdb_dev->attribute_pending_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_pending_list_str.size() && i < MAX_ATTRIBUTES; i++)
+				hdb_dev->attr_AttributePendingList_read[i] = const_cast<char*>(hdb_dev->attribute_pending_list_str[i].c_str());
 			hdb_dev->attribute_pending_list_str_size = hdb_dev->attribute_pending_list_str.size();
 		}
 		try
@@ -326,13 +283,11 @@ void *PollerThread::run_undetached(void *ptr)
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
 
-		hdb_dev->attribute_error_list_str.clear();
-		hdb_dev->attribute_error_list_str = hdb_dev->get_error_list();
-		changed = is_list_changed(hdb_dev->attribute_error_list_str, hdb_dev->old_attribute_error_list_str);
+		changed = hdb_dev->get_error_list(hdb_dev->attribute_error_list_str);
 		if(changed)
 		{
-			for (unsigned int i=0 ; i<hdb_dev->attribute_error_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-				hdb_dev->attr_AttributeErrorList_read[i] = (char *)hdb_dev->attribute_error_list_str[i].c_str();
+			for (size_t i=0 ; i<hdb_dev->attribute_error_list_str.size() && i < MAX_ATTRIBUTES ; i++)
+				hdb_dev->attr_AttributeErrorList_read[i] = const_cast<char*>(hdb_dev->attribute_error_list_str[i].c_str());
 			hdb_dev->attribute_error_list_str_size = hdb_dev->attribute_error_list_str.size();
 		}
 		try
@@ -358,7 +313,7 @@ void *PollerThread::run_undetached(void *ptr)
 	return NULL;
 }
 //=============================================================================
-bool PollerThread::is_list_changed(vector<string> newlist, vector<string> &oldlist)
+bool PollerThread::is_list_changed(vector<string> const & newlist, vector<string> &oldlist)
 {
 	bool ret=false;
 	if(newlist.size() != oldlist.size())

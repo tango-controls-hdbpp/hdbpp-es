@@ -115,7 +115,7 @@ public:
 	HdbCmdData *get_next_cmd();
 
 	int get_max_waiting();
-	vector<string> get_sig_list_waiting();
+	void get_sig_list_waiting(vector<string> &);
 	void reset_statistics();
 	void reset_freq_statistics();
 	void stop_thread();

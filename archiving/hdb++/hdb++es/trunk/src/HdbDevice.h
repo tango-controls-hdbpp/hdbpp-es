@@ -217,27 +217,27 @@ public:
 	/**
 	 *	Return the list of signals
 	 */
-	vector<string> get_sig_list();
+	void get_sig_list(vector<string> &);
 	/**
 	 *	Return the list of signals on error
 	 */
-	vector<string>  get_sig_on_error_list();
+	void get_sig_on_error_list(vector<string> &);
 	/**
 	 *	Return the list of signals not on error
 	 */
-	vector<string>  get_sig_not_on_error_list();
+	void get_sig_not_on_error_list(vector<string> &);
 	/**
 	 *	Return the list of signals started
 	 */
-	vector<string>  get_sig_started_list();
+	void get_sig_started_list(vector<string> &);
 	/**
 	 *	Return the list of signals not_started
 	 */
-	vector<string>  get_sig_not_started_list();
+	void get_sig_not_started_list(vector<string> &);
 	/**
 	 *	Return the list errors
 	 */
-	vector<string>  get_error_list();
+	bool get_error_list(vector<string> &);
 	/**
 	 *	Populate the list of event received numbers
 	 */
@@ -285,7 +285,7 @@ public:
 	/**
 	 *	Returns the list of signals waiting to be stored
 	 */
-	 vector<string> get_sig_list_waiting();
+	void get_sig_list_waiting(vector<string> &);
 	/**
 	 *	Reset statistic counters
 	 */
@@ -297,7 +297,7 @@ public:
 	/**
 	 *	Return the complete, started  and stopped lists of signals
 	 */
-	void  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list);
+	bool  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list);
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */
@@ -340,7 +340,7 @@ protected :
 	 * Read signal list in database as property.
 	 *
 	 */
-	vector<string> get_hdb_signal_list();
+	void get_hdb_signal_list(vector<string> &);
 	/**
 	 * Build signal vector
 	 *
