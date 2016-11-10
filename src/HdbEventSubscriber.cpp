@@ -242,7 +242,8 @@ void HdbEventSubscriber::init_device()
 			hdb_dev->contexts_map.insert(make_pair(res[0], res[1]));
 			hdb_dev->contexts_map_upper.insert(make_pair(context_upper, res[0]));
 			string context_list_element = *it;
-			attr_ContextsList_read[index] = CORBA::string_dup(context_list_element.c_str());
+			ContextsList_str[index]=context_list_element;
+			attr_ContextsList_read[index] = const_cast<char*>(ContextsList_str[index].c_str());
 			index++;
 		}
 	}
@@ -252,7 +253,8 @@ void HdbEventSubscriber::init_device()
 		hdb_dev->contexts_map.insert(make_pair(ALWAYS_CONTEXT, ALWAYS_CONTEXT_DESC));
 		hdb_dev->contexts_map_upper.insert(make_pair(ALWAYS_CONTEXT, ALWAYS_CONTEXT));
 		string context_list_element = string(ALWAYS_CONTEXT) + ": " + string(ALWAYS_CONTEXT_DESC);
-		attr_ContextsList_read[index] = CORBA::string_dup(context_list_element.c_str());
+		ContextsList_str[index]=context_list_element;
+		attr_ContextsList_read[index] = const_cast<char*>(ContextsList_str[index].c_str());
 		index++;
 		contextsList.push_back(context_list_element);
 	}
@@ -262,7 +264,8 @@ void HdbEventSubscriber::init_device()
 	map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(defaultStrategy_upper);
 	if(it != hdb_dev->contexts_map_upper.end())
 	{
-		*attr_Context_read = CORBA::string_dup(it->second.c_str());
+		context_read = it->second.c_str();
+		*attr_Context_read = const_cast<char*>(context_read.c_str());
 		context_set = it->first;
 	}
 	else
@@ -832,7 +835,8 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
 					(const char *)__func__);
 	}
 	context_set = itmap->first;
-	*attr_Context_read = CORBA::string_dup(itmap->second.c_str());
+	context_read = itmap->second.c_str();
+	*attr_Context_read = const_cast<char*>(context_read.c_str());
 	
 	vector<string> att_list_tmp;
 	hdb_dev->get_sig_list(att_list_tmp);
