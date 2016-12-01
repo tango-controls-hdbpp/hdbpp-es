@@ -102,13 +102,21 @@ void SharedData::remove(string &signame, bool stop)
 			{
 				if(event_id != ERR && attr)
 				{
-					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing... "<< signame << endl;
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ARCHIVE_EVENT... "<< signame << endl;
 					//unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
 					sig->siglock->writerOut();
 					attr->unsubscribe_event(event_id);
+					sig->siglock->writerIn();
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ARCHIVE_EVENT... "<< signame << endl;
+				}
+				if(event_conf_id != ERR && attr)
+				{
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ATTR_CONF_EVENT... "<< signame << endl;
+					//unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
+					sig->siglock->writerOut();
 					attr->unsubscribe_event(event_conf_id);
 					sig->siglock->writerIn();
-					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed... "<< signame << endl;
+					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ATTR_CONF_EVENT... "<< signame << endl;
 				}
 			}
 			catch (Tango::DevFailed &e)
@@ -1247,12 +1255,12 @@ void SharedData::subscribe_events()
 
 			try
 			{
-				event_conf_id = sig->attr->subscribe_event(
-												Tango::ATTR_CONF_EVENT,
-												sig->archive_cb,
-												/*stateless=*/false);
 				event_id = sig->attr->subscribe_event(
 												Tango::ARCHIVE_EVENT,
+												sig->archive_cb,
+												/*stateless=*/false);
+				event_conf_id = sig->attr->subscribe_event(
+												Tango::ATTR_CONF_EVENT,
 												sig->archive_cb,
 												/*stateless=*/false);
 				/*sig->evstate  = Tango::ON;
