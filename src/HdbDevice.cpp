@@ -463,7 +463,7 @@ bool HdbDevice::get_error_list(vector<string> & error_list)
 			//find *it in sig_list and replace string in error_list with "DB error"
 			vector<string>::iterator itsig_list = find(sig_list.begin(), sig_list.end(), *it);
 			size_t idx = itsig_list - sig_list.begin();
-			if(idx < error_list.size())
+			if(itsig_list != sig_list.end() && idx < error_list.size())
 			{
 				string dberr = push_shared->get_sig_status(*it);
 				if(dberr != error_list[idx])
@@ -499,8 +499,13 @@ void  HdbDevice::get_event_number_list()
 		}*/
 		long ok_ev_t=0;
 		long nok_ev_t=0;
-		ok_ev_t = shared->get_ok_event(signame);
-		nok_ev_t = shared->get_nok_event(signame);
+		try
+		{
+			ok_ev_t = shared->get_ok_event(signame);
+			nok_ev_t = shared->get_nok_event(signame);
+		}
+		catch(Tango::DevFailed &e)
+		{}
 		AttributeEventNumberList[i] = ok_ev_t + nok_ev_t;
 	}
 }
