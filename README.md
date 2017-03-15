@@ -1,4 +1,4 @@
-# hdbpp-cm
+# hdbpp-es
 Tango device server for the HDB++ Event Subscriber
 
 ## building
