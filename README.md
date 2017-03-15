@@ -1,7 +1,7 @@
-# hdbpp-es
-Tango device server for the HDB++ Event Subscriber
+# liphdbpp
+Interface library for HDB++
 
 ## building
-git clone --recursive http://github.com/ELETTRA-SincrotroneTrieste/hdbpp-es.git  
-cd hdbpp-es  
+git clone --recursive http://github.com/ELETTRA-SincrotroneTrieste/libhdbpp.git  
+cd libhdbpp  
 make
