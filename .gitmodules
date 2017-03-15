@@ -1,0 +1,8 @@
+[submodule ".hdbpp-common"]
+	path = .hdbpp-common
+	url = https://github.com/ELETTRA-SincrotroneTrieste/hdbpp-common.git
+	branch = master
+[submodule ".libhdbpp"]
+	path = .libhdbpp
+	url = https://github.com/ELETTRA-SincrotroneTrieste/libhdbpp.git
+	branch = master
