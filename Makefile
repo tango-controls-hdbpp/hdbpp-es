@@ -3,12 +3,20 @@ NAME_SRV = hdb++es-srv
 LIBHDBPP_DIR = .libhdbpp
 LIBHDBPP_INC = ./$(LIBHDBPP_DIR)/src
 LIBHDBPP_LIB = ./$(LIBHDBPP_DIR)/lib
-MAKE_INC = .hdbpp-common
 
 CXXFLAGS += -DRELEASE='"$HeadURL$ "' -I./$(LIBHDBPP_INC)
 LDFLAGS = -lhdb++ -L./$(LIBHDBPP_LIB)
 
-include ./$(MAKE_INC)/Make-hdbpp.in
+TANGO_INC := ${TANGO_DIR}/include/tango
+OMNIORB_INC := ${OMNIORB_DIR}/include
+ZMQ_INC :=  ${ZMQ_DIR}/include
+
+TANGO_LIB = ${TANGO_DIR}/lib
+OMNIORB_LIB = ${OMNIORB_DIR}/lib
+ZMQ_LIB = ${ZMQ_DIR}/lib
+
+INC_DIR = -I${TANGO_INC} -I${OMNIORB_INC} -I${ZMQ_INC}
+LIB_DIR = -L${TANGO_LIB} -L${OMNIORB_LIB} -L${ZMQ_LIB} -L/usr/local/lib
 
 #-----------------------------------------
 #	 Default make entry
