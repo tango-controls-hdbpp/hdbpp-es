@@ -1,4 +1,4 @@
 [submodule ".libhdbpp"]
 	path = .libhdbpp
-	url = https://github.com/ELETTRA-SincrotroneTrieste/libhdbpp.git
+	url = https://github.com/tango-controls/libhdbpp.git
 	branch = master
