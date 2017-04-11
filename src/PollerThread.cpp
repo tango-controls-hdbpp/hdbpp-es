@@ -137,6 +137,13 @@ void *PollerThread::run_undetached(void *ptr)
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("Context",static_cast<HdbEventSubscriber *>(hdb_dev->_device)->attr_Context_read);
+			(hdb_dev->_device)->push_archive_event("Context",static_cast<HdbEventSubscriber *>(hdb_dev->_device)->attr_Context_read);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
 
 		if (hdb_dev->shared->is_initialized())
 		{
