@@ -92,6 +92,7 @@ typedef struct
 	bool stopped;
 	vector<string> contexts;
 	vector<string> contexts_upper;
+	Tango::DevULong ttl;
 	ReadersWritersLock *siglock;
 }
 HdbSignal;
@@ -132,8 +133,8 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, const vector<string> & contexts);
-	void add(string &signame, const vector<string> & contexts, int to_do, bool start);
+	void add(string &signame, const vector<string> & contexts, Tango::DevULong ttl);
+	void add(string &signame, const vector<string> & contexts, Tango::DevULong ttl, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
@@ -142,6 +143,10 @@ public:
 	 * Update contexts for a signal.
 	 */
 	void update(string &signame, const vector<string> & contexts);
+	/**
+	 * Update ttl for a signal.
+	 */
+	void updatettl(string &signame, Tango::DevULong ttl);
 	/**
 	 * Start saving on DB a signal.
 	 */
@@ -273,7 +278,7 @@ public:
 	/**
 	 *	Return the complete, started and stopped lists of signals
 	 */
-	bool  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list);
+	bool  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list, Tango::DevULong *ttl_list);
 	/**
 	 *	Increment the ok counter of event rx
 	 */
@@ -322,6 +327,10 @@ public:
 	 *	Return the contexts of specified signal
 	 */
 	string  get_sig_context(string &signame);
+	/**
+	 *	Return the ttl of specified signal
+	 */
+	Tango::DevULong  get_sig_ttl(string &signame);
 	/**
 	 *	Set Archive periodic event period
 	 */

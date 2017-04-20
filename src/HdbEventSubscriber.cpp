@@ -91,6 +91,8 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  SetAttributeStrategy  |  set_attribute_strategy
 //  GetAttributeStrategy  |  get_attribute_strategy
 //  StopFaulty            |  stop_faulty
+//  SetAttributeTTL       |  set_attribute_ttl
+//  GetAttributeTTL       |  get_attribute_ttl
 //================================================================
 
 //================================================================
@@ -125,6 +127,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributePausedList         |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeStrategyList       |  Tango::DevString	Spectrum  ( max = 10000)
 //  ContextsList                |  Tango::DevString	Spectrum  ( max = 1000)
+//  AttributeTTLList            |  Tango::DevULong	Spectrum  ( max = 10000)
 //================================================================
 
 namespace HdbEventSubscriber_ns
@@ -1104,6 +1107,24 @@ void HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr)
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_ContextsList
 }
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeTTLList related method
+ *	Description: Returns the list of attribute strategy
+ *
+ *	Data type:	Tango::DevULong
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeTTLList) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(hdb_dev->attr_AttributeTTLList_read, hdb_dev->attr_AttributeNumber_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeTTLList
+}
 
 //--------------------------------------------------------
 /**
@@ -1137,6 +1158,7 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 	//	Add your own code
 	string	signame;
 	vector<string> contexts;
+	Tango::DevULong ttl=DEFAULT_TTL;
 	bool context_error = false;
 	string requested_strategy("");
 	string applied_strategy("");
@@ -1144,14 +1166,14 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 	{
 		signame = string((*argin)[0]);
 	}
-	for(size_t i = 0; i < argin->length() -1; i++)
+
+	if(argin->length() >= 1)
 	{
-		string context((*argin)[i+1]);
+		string context((*argin)[1]);
 		if(context.length() > 0)
 		{
 			requested_strategy += context;
-			if(i != argin->length() -2)
-				requested_strategy += string("|");
+
 			vector<string> res;
 			hdb_dev->string_explode(context, "|", &res);
 
@@ -1173,7 +1195,22 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 	}
 	if(contexts.size()==0)
 		contexts.push_back(defaultStrategy);
-	hdb_dev->add(signame, contexts);
+	if(argin->length() >= 2)
+	{
+		string s_ttl((*argin)[2]);
+		try
+		{
+			stringstream val;
+			val << s_ttl;
+			val >> ttl;
+		}
+		catch(...)
+		{
+			DEBUG_STREAM << __func__ << ": error extracting ttl from '" << s_ttl << "'";
+		}
+	}
+
+	hdb_dev->add(signame, contexts, ttl);
 
 	bool is_current_context;
 	try
@@ -1779,6 +1816,69 @@ void HdbEventSubscriber::stop_faulty()
 		attribute_stop((Tango::DevString)att_list_tmp[i].c_str());
 	}
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::stop_faulty
+}
+//--------------------------------------------------------
+/**
+ *	Command SetAttributeTTL related method
+ *	Description: Update TTL associated to an already archived attribute.
+ *
+ *	@param argin Attribute name, TTL
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::set_attribute_ttl(const Tango::DevVarStringArray *argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::SetAttributeTTL()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::set_attribute_ttl) ENABLED START -----*/
+
+	//	Add your own code
+	string	signame;
+	Tango::DevULong ttl = DEFAULT_TTL;
+	if(argin->length() > 0)
+	{
+		signame = string((*argin)[0]);
+	}
+	if(argin->length() > 1)
+	{
+		string s_ttl = string((*argin)[1]);
+		try
+		{
+			stringstream val;
+			val << s_ttl;
+			val >> ttl;
+		}
+		catch(...)
+		{
+			DEBUG_STREAM << __func__ << ": error extracting ttl from '" << s_ttl << "'";
+		}
+	}
+	DEBUG_STREAM << __func__<<": before updatettl name="<<signame<<" ttl="<<ttl;
+	hdb_dev->updatettl(signame, ttl);
+
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::set_attribute_ttl
+}
+//--------------------------------------------------------
+/**
+ *	Command GetAttributeTTL related method
+ *	Description: Read an attribute TTL.
+ *
+ *	@param argin The attribute name
+ *	@returns The attribute TTL.
+ */
+//--------------------------------------------------------
+Tango::DevULong HdbEventSubscriber::get_attribute_ttl(Tango::DevString argin)
+{
+	Tango::DevULong argout;
+	DEBUG_STREAM << "HdbEventSubscriber::GetAttributeTTL()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_attribute_ttl) ENABLED START -----*/
+
+	//	Add your own code
+	string	signame(argin);
+	hdb_dev->fix_tango_host(signame);
+
+	argout = hdb_dev->shared->get_sig_ttl(signame);
+
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_attribute_ttl
+	return argout;
 }
 //--------------------------------------------------------
 /**

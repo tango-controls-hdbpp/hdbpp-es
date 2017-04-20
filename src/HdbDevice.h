@@ -40,7 +40,9 @@
 #define _HDBDEVICE_H
 
 #define MAX_ATTRIBUTES		10000
-#define CONTEXT_KEY	"strategy"
+#define CONTEXT_KEY		"strategy"
+#define TTL_KEY			"ttl"
+#define DEFAULT_TTL		0	//0 -> infinite, >0 -> time to live in hours
 #define ALWAYS_CONTEXT	"ALWAYS"
 #define ALWAYS_CONTEXT_DESC	"Always stored"
 
@@ -142,6 +144,8 @@ public:
 	Tango::DevString	attr_AttributeErrorList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeContextList_read[MAX_ATTRIBUTES];
 
+	Tango::DevULong		attr_AttributeTTLList_read[MAX_ATTRIBUTES];
+
 	vector<string> attribute_list_str;
 	vector<string> old_attribute_list_str;
 	size_t attribute_list_str_size;
@@ -199,7 +203,7 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, vector<string> contexts);
+	void add(string &signame, vector<string> contexts, Tango::DevULong ttl);
 	/**
 	 * AddRemove a signal in the list.
 	 */
@@ -208,7 +212,10 @@ public:
 	 * Update contexts for a signal.
 	 */
 	void update(string &signame, vector<string> contexts);
-
+	/**
+	 * Update ttl for a signal.
+	 */
+	void updatettl(string &signame, Tango::DevULong ttl);
 	/**
 	 *	Update SignalList property
 	 */
@@ -297,7 +304,7 @@ public:
 	/**
 	 *	Return the complete, started  and stopped lists of signals
 	 */
-	bool  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list);
+	bool  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list, Tango::DevULong *ttl_list);
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */

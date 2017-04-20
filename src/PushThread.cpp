@@ -983,6 +983,13 @@ void  PushThreadShared::remove_attr(string &signame)
 	push_back_cmd(cmd);
 }
 
+void  PushThreadShared::updatettl(string &signame, Tango::DevULong ttl)
+{
+	//------Configure DB------------------------------------------------
+	HdbCmdData *cmd = new HdbCmdData(DB_UPDATETTL, ttl, signame);
+	push_back_cmd(cmd);
+}
+
 void  PushThreadShared::start_all()
 {
 	sig_lock->lock();
@@ -1108,6 +1115,23 @@ void *PushThread::run_undetached(void *ptr)
 					{
 						//	Send it to DB
 						int ret = shared->mdb->event_Attr(cmd->attr_name, cmd->op_code);
+						if(ret < 0)
+						{
+							//TODO
+						}
+					}
+					catch(Tango::DevFailed  &e)
+					{
+						Tango::Except::print_exception(e);
+					}
+					break;
+				}
+				case DB_UPDATETTL:
+				{
+					try
+					{
+						//	Send it to DB
+						int ret = shared->mdb->updateTTL_Attr(cmd->attr_name, cmd->ttl);
 						if(ret < 0)
 						{
 							//TODO

@@ -439,6 +439,19 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_ContextsList_allowed(ty);}
 };
 
+//	Attribute AttributeTTLList class definition
+class AttributeTTLListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributeTTLListAttrib():SpectrumAttr("AttributeTTLList",
+			Tango::DEV_ULONG, Tango::READ, 10000) {};
+	~AttributeTTLListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeTTLList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeTTLList_allowed(ty);}
+};
+
 
 //=========================================
 //	Define classes for commands
@@ -740,6 +753,52 @@ public:
 	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
 	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
 	{return (static_cast<HdbEventSubscriber *>(dev))->is_StopFaulty_allowed(any);}
+};
+
+//	Command SetAttributeTTL class definition
+class SetAttributeTTLClass : public Tango::Command
+{
+public:
+	SetAttributeTTLClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	SetAttributeTTLClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~SetAttributeTTLClass() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_SetAttributeTTL_allowed(any);}
+};
+
+//	Command GetAttributeTTL class definition
+class GetAttributeTTLClass : public Tango::Command
+{
+public:
+	GetAttributeTTLClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out,
+				   const char        *in_desc,
+				   const char        *out_desc,
+				   Tango::DispLevel  level)
+	:Command(name,in,out,in_desc,out_desc, level)	{};
+
+	GetAttributeTTLClass(const char   *name,
+	               Tango::CmdArgType in,
+				   Tango::CmdArgType out)
+	:Command(name,in,out)	{};
+	~GetAttributeTTLClass() {};
+	
+	virtual CORBA::Any *execute (Tango::DeviceImpl *dev, const CORBA::Any &any);
+	virtual bool is_allowed (Tango::DeviceImpl *dev, const CORBA::Any &any)
+	{return (static_cast<HdbEventSubscriber *>(dev))->is_GetAttributeTTL_allowed(any);}
 };
 
 

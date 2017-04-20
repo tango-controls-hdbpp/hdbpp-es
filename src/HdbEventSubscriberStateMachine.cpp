@@ -526,6 +526,22 @@ bool HdbEventSubscriber::is_ContextsList_allowed(TANGO_UNUSED(Tango::AttReqType 
 	return true;
 }
 
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeTTLList_allowed()
+ *	Description : Execution allowed for AttributeTTLList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeTTLList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeTTLList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeTTLListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeTTLListStateAllowed_READ
+	return true;
+}
+
 
 //=================================================
 //		Commands Allowed Methods
@@ -723,6 +739,36 @@ bool HdbEventSubscriber::is_StopFaulty_allowed(TANGO_UNUSED(const CORBA::Any &an
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::StopFaultyStateAllowed) ENABLED START -----*/
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::StopFaultyStateAllowed
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_SetAttributeTTL_allowed()
+ *	Description : Execution allowed for SetAttributeTTL attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_SetAttributeTTL_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for SetAttributeTTL command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::SetAttributeTTLStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::SetAttributeTTLStateAllowed
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_GetAttributeTTL_allowed()
+ *	Description : Execution allowed for GetAttributeTTL attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_GetAttributeTTL_allowed(TANGO_UNUSED(const CORBA::Any &any))
+{
+	//	Not any excluded states for GetAttributeTTL command.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::GetAttributeTTLStateAllowed) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::GetAttributeTTLStateAllowed
 	return true;
 }
 

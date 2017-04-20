@@ -218,6 +218,24 @@
       </argout>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
+    <commands name="SetAttributeTTL" description="Update TTL associated to an already archived attribute." execMethod="set_attribute_ttl" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="Attribute name, TTL">
+        <type xsi:type="pogoDsl:StringArrayType"/>
+      </argin>
+      <argout description="">
+        <type xsi:type="pogoDsl:VoidType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </commands>
+    <commands name="GetAttributeTTL" description="Read an attribute TTL." execMethod="get_attribute_ttl" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
+      <argin description="The attribute name">
+        <type xsi:type="pogoDsl:StringType"/>
+      </argin>
+      <argout description="The attribute TTL.">
+        <type xsi:type="pogoDsl:UIntType"/>
+      </argout>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+    </commands>
     <attributes name="AttributeOkNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:IntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
@@ -492,6 +510,15 @@
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+    </attributes>
+    <attributes name="AttributeTTLList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
+      <dataType xsi:type="pogoDsl:UIntType"/>
+      <changeEvent fire="true" libCheckCriteria="true"/>
+      <archiveEvent fire="true" libCheckCriteria="true"/>
+      <dataReadyEvent fire="false" libCheckCriteria="true"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <properties description="Returns the list of attribute strategy" label="" unit="" standardUnit="" displayUnit="" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
+      <evArchiveCriteria relChange="" absChange="" period="3600000"/>
     </attributes>
     <states name="ON" description="Archiving running and everything is OK.">
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>

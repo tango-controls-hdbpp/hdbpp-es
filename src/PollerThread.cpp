@@ -175,7 +175,7 @@ void *PollerThread::run_undetached(void *ptr)
 		catch(Tango::DevFailed &e){}
 		usleep(1000);
 
-		bool changed = hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str);
+		bool changed = hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str, hdb_dev->attr_AttributeTTLList_read);
 		if(changed)
 		{
 			for (size_t i=0 ; i<hdb_dev->attribute_list_str.size() && i < MAX_ATTRIBUTES; i++)
@@ -238,6 +238,13 @@ void *PollerThread::run_undetached(void *ptr)
 		{
 			(hdb_dev->_device)->push_change_event("AttributeStrategyList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
 			(hdb_dev->_device)->push_archive_event("AttributeStrategyList",&hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
+		}
+		catch(Tango::DevFailed &e){}
+		usleep(1000);
+		try
+		{
+			(hdb_dev->_device)->push_change_event("AttributeTTLList",&hdb_dev->attr_AttributeTTLList_read[0], hdb_dev->attribute_list_str_size);
+			(hdb_dev->_device)->push_archive_event("AttributeTTLList",&hdb_dev->attr_AttributeTTLList_read[0], hdb_dev->attribute_list_str_size);
 		}
 		catch(Tango::DevFailed &e){}
 		usleep(1000);

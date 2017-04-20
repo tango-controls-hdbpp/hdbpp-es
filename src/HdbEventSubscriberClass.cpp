@@ -414,6 +414,45 @@ CORBA::Any *StopFaultyClass::execute(Tango::DeviceImpl *device, TANGO_UNUSED(con
 	return new CORBA::Any();
 }
 
+//--------------------------------------------------------
+/**
+ * method : 		SetAttributeTTLClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *SetAttributeTTLClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+{
+	cout2 << "SetAttributeTTLClass::execute(): arrived" << endl;
+	const Tango::DevVarStringArray *argin;
+	extract(in_any, argin);
+	((static_cast<HdbEventSubscriber *>(device))->set_attribute_ttl(argin));
+	return new CORBA::Any();
+}
+
+//--------------------------------------------------------
+/**
+ * method : 		GetAttributeTTLClass::execute()
+ * description : 	method to trigger the execution of the command.
+ *
+ * @param	device	The device on which the command must be executed
+ * @param	in_any	The command input data
+ *
+ *	returns The command output data (packed in the Any object)
+ */
+//--------------------------------------------------------
+CORBA::Any *GetAttributeTTLClass::execute(Tango::DeviceImpl *device, const CORBA::Any &in_any)
+{
+	cout2 << "GetAttributeTTLClass::execute(): arrived" << endl;
+	Tango::DevString argin;
+	extract(in_any, argin);
+	return insert((static_cast<HdbEventSubscriber *>(device))->get_attribute_ttl(argin));
+}
+
 
 //===================================================================
 //	Properties management
@@ -1734,6 +1773,33 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	Not Memorized
 	att_list.push_back(contextslist);
 
+	//	Attribute : AttributeTTLList
+	AttributeTTLListAttrib	*attributettllist = new AttributeTTLListAttrib();
+	Tango::UserDefaultAttrProp	attributettllist_prop;
+	attributettllist_prop.set_description("Returns the list of attribute strategy");
+	//	label	not set for AttributeTTLList
+	//	unit	not set for AttributeTTLList
+	//	standard_unit	not set for AttributeTTLList
+	//	display_unit	not set for AttributeTTLList
+	//	format	not set for AttributeTTLList
+	//	max_value	not set for AttributeTTLList
+	//	min_value	not set for AttributeTTLList
+	//	max_alarm	not set for AttributeTTLList
+	//	min_alarm	not set for AttributeTTLList
+	//	max_warning	not set for AttributeTTLList
+	//	min_warning	not set for AttributeTTLList
+	//	delta_t	not set for AttributeTTLList
+	//	delta_val	not set for AttributeTTLList
+	attributettllist_prop.set_archive_event_period("3600000");
+	
+	attributettllist->set_default_properties(attributettllist_prop);
+	//	Not Polled
+	attributettllist->set_disp_level(Tango::OPERATOR);
+	//	Not Memorized
+	attributettllist->set_change_event(true, true);
+	attributettllist->set_archive_event(true, true);
+	att_list.push_back(attributettllist);
+
 
 	//	Create a list of static attributes
 	create_static_attribute_list(get_class_attr()->get_attr_list());
@@ -1893,6 +1959,24 @@ void HdbEventSubscriberClass::command_factory()
 			"",
 			Tango::OPERATOR);
 	command_list.push_back(pStopFaultyCmd);
+
+	//	Command SetAttributeTTL
+	SetAttributeTTLClass	*pSetAttributeTTLCmd =
+		new SetAttributeTTLClass("SetAttributeTTL",
+			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
+			"Attribute name, TTL",
+			"",
+			Tango::OPERATOR);
+	command_list.push_back(pSetAttributeTTLCmd);
+
+	//	Command GetAttributeTTL
+	GetAttributeTTLClass	*pGetAttributeTTLCmd =
+		new GetAttributeTTLClass("GetAttributeTTL",
+			Tango::DEV_STRING, Tango::DEV_ULONG,
+			"The attribute name",
+			"The attribute TTL.",
+			Tango::OPERATOR);
+	command_list.push_back(pGetAttributeTTLCmd);
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriberClass::command_factory_after) ENABLED START -----*/
 

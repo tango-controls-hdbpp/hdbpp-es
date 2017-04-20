@@ -149,6 +149,7 @@ public:
 	Tango::DevString	*attr_AttributePausedList_read;
 	Tango::DevString	*attr_AttributeStrategyList_read;
 	Tango::DevString	*attr_ContextsList_read;
+	Tango::DevULong	*attr_AttributeTTLList_read;
 
 //	Constructors and destructors
 public:
@@ -479,6 +480,15 @@ public:
  */
 	virtual void read_ContextsList(Tango::Attribute &attr);
 	virtual bool is_ContextsList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeTTLList related methods
+ *	Description: Returns the list of attribute strategy
+ *
+ *	Data type:	Tango::DevULong
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeTTLList(Tango::Attribute &attr);
+	virtual bool is_AttributeTTLList_allowed(Tango::AttReqType type);
 
 
 	//--------------------------------------------------------
@@ -595,6 +605,23 @@ public:
 	 */
 	virtual void stop_faulty();
 	virtual bool is_StopFaulty_allowed(const CORBA::Any &any);
+	/**
+	 *	Command SetAttributeTTL related method
+	 *	Description: Update TTL associated to an already archived attribute.
+	 *
+	 *	@param argin Attribute name, TTL
+	 */
+	virtual void set_attribute_ttl(const Tango::DevVarStringArray *argin);
+	virtual bool is_SetAttributeTTL_allowed(const CORBA::Any &any);
+	/**
+	 *	Command GetAttributeTTL related method
+	 *	Description: Read an attribute TTL.
+	 *
+	 *	@param argin The attribute name
+	 *	@returns The attribute TTL.
+	 */
+	virtual Tango::DevULong get_attribute_ttl(Tango::DevString argin);
+	virtual bool is_GetAttributeTTL_allowed(const CORBA::Any &any);
 
 
 	//--------------------------------------------------------

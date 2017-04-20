@@ -198,6 +198,7 @@ public:
 	void  start_all();
 	void  pause_all();
 	void  stop_all();
+	void  updatettl(string &signame, Tango::DevULong ttl);
 
 	/**
 	 *	Return ALARM if at list one signal is not saving in DB.

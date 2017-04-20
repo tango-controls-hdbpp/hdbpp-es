@@ -195,25 +195,70 @@ void HdbDevice::build_signal_vector(vector<string> list, string defaultStrategy)
 				vector<string> list_exploded;
 				string_explode(list[i], string(";"), &list_exploded);
 				vector<string> contexts;
-				bool found_contexts = false;
-				string context_key = string(CONTEXT_KEY)+string("=");
-				if(list_exploded.size() >= 2)
+				Tango::DevULong ttl=DEFAULT_TTL;
+
+				if(list_exploded.size() > 1)
 				{
-					size_t pos = list_exploded[1].find(context_key);
-					if(pos != string::npos)
+					//skip attr_name and transform remaining vector to a map
+					vector<string> v_conf(list_exploded.begin()+1,list_exploded.end());
+					string separator("=");
+					map<string,string> db_conf;
+					//void HdbClient::string_vector2map(vector<string> str, string separator, map<string,string>* results)
 					{
-						string_explode(list_exploded[1].substr(pos+context_key.length()), string("|"), &contexts);
-						found_contexts = true;
+						for(vector<string>::iterator it=v_conf.begin(); it != v_conf.end(); it++)
+						{
+							string::size_type found_eq;
+							found_eq = it->find_first_of(separator);
+							if(found_eq != string::npos && found_eq > 0)
+							{
+								db_conf.insert(make_pair(it->substr(0,found_eq),it->substr(found_eq+1)));
+								DEBUG_STREAM <<__func__ << ": added in map '" << it->substr(0,found_eq) << "' -> '" << it->substr(found_eq+1) << "' now size="<<db_conf.size();
+							}
+						}
+					}
+
+					string s_contexts;
+					try
+					{
+						s_contexts = db_conf.at(CONTEXT_KEY);
+						string_explode(s_contexts, string("|"), &contexts);
+					}
+					catch(const std::out_of_range& e)
+					{
+						stringstream tmp;
+						tmp << ": Configuration parsing error looking for key '"<<CONTEXT_KEY<<"'";
+						DEBUG_STREAM << __func__ << tmp.str();
+						string context_key = string(CONTEXT_KEY)+string("=");
+						size_t pos = defaultStrategy.find(context_key);
+						if(pos != string::npos)
+						{
+							string_explode(defaultStrategy.substr(pos+context_key.length()), string("|"), &contexts);
+						}
+					}
+					catch(...)
+					{
+						DEBUG_STREAM << __func__ << "generic exception looking for '" << CONTEXT_KEY << "'";
+					}
+					string s_ttl;
+					try
+					{
+						s_ttl = db_conf.at(TTL_KEY);
+						stringstream val;
+						val << s_ttl;
+						val >> ttl;
+					}
+					catch(const std::out_of_range& e)
+					{
+						stringstream tmp;
+						tmp << " Configuration parsing error looking for key '"<<TTL_KEY<<"'";
+						DEBUG_STREAM << __func__ << tmp.str();
+					}
+					catch(...)
+					{
+						DEBUG_STREAM << __func__ << ": error extracting ttl from '" << s_ttl << "'";
 					}
 				}
-				if(!found_contexts)
-				{
-					size_t pos = defaultStrategy.find(context_key);
-					if(pos != string::npos)
-					{
-						string_explode(defaultStrategy.substr(pos+context_key.length()), string("|"), &contexts);
-					}
-				}
+
 				vector<string> adjusted_contexts;
 				for(vector<string>::iterator it = contexts.begin(); it != contexts.end(); it++)
 				{
@@ -229,7 +274,8 @@ void HdbDevice::build_signal_vector(vector<string> list, string defaultStrategy)
 						INFO_STREAM << "HdbDevice::" << __func__<< " attr="<<list_exploded[0]<<" IGNORING context '"<<*it<<"'";
 					}
 				}
-				shared->add(list_exploded[0], adjusted_contexts);
+				shared->add(list_exploded[0], adjusted_contexts, ttl);
+				push_shared->updatettl(list_exploded[0], ttl);
 			}
 		}
 		catch (Tango::DevFailed &e)
@@ -241,10 +287,10 @@ void HdbDevice::build_signal_vector(vector<string> list, string defaultStrategy)
 }
 //=============================================================================
 //=============================================================================
-void HdbDevice::add(string &signame, vector<string> contexts)
+void HdbDevice::add(string &signame, vector<string> contexts, Tango::DevULong ttl)
 {
 	fix_tango_host(signame);
-	shared->add(signame, contexts, UPDATE_PROP, false);
+	shared->add(signame, contexts, ttl, UPDATE_PROP, false);
 }
 //=============================================================================
 //=============================================================================
@@ -261,6 +307,14 @@ void HdbDevice::update(string &signame, vector<string> contexts)
 {
 	fix_tango_host(signame);
 	shared->update(signame, contexts);
+}
+//=============================================================================
+//=============================================================================
+void HdbDevice::updatettl(string &signame, Tango::DevULong ttl)
+{
+	fix_tango_host(signame);
+	shared->updatettl(signame, ttl);
+	push_shared->updatettl(signame, ttl);
 }
 //=============================================================================
 //=============================================================================
@@ -305,13 +359,36 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 			{
 				tmplist_name = tmplist[i].substr(0,found);
 				tmplist_conf = tmplist[i].substr(found+1);
-				if(tmplist_conf.find(string(CONTEXT_KEY)+"=") == string::npos)
-					tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;//TODO: loosing all the other configurations if any
+				size_t pos_strat = tmplist_conf.find(string(CONTEXT_KEY)+"=");
+				size_t pos_ttl = tmplist_conf.find(string(TTL_KEY)+"=");
+				if(tmplist_conf.length() == 0 || (pos_strat == string::npos && pos_ttl == string::npos))
+				{
+					stringstream ssttl;
+					ssttl << DEFAULT_TTL;
+					tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy + TTL_KEY + "=" + ssttl.str();//TODO: loosing all the other configurations if any
+				}
+				else if(pos_strat != string::npos && pos_ttl == string::npos)
+				{
+					if(tmplist_conf[tmplist_conf.length()-1] != ';')
+						tmplist_conf += string(";");
+					stringstream ssttl;
+					ssttl << DEFAULT_TTL;
+					tmplist_conf += string(TTL_KEY) + "=" + ssttl.str();
+				}
+				else if(pos_strat == string::npos && pos_ttl != string::npos)
+				{
+					if(tmplist_conf[tmplist_conf.length()-1] != ';')
+						tmplist_conf += string(";");
+					tmplist_conf += string(CONTEXT_KEY) + "=" + defaultStrategy;
+				}
 			}
 			else	//if present only the attribute name
 			{
 				tmplist_name = tmplist[i];
 				tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;
+				stringstream ssttl;
+				ssttl << DEFAULT_TTL;
+				tmplist_conf += string(";") + string(TTL_KEY) + "=" + ssttl.str();
 			}
 
 			fix_tango_host(tmplist_name);
@@ -606,9 +683,9 @@ void  HdbDevice::reset_freq_statistics()
 }
 //=============================================================================
 //=============================================================================
-bool  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list)
+bool  HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list, Tango::DevULong *ttl_list)
 {
-	return shared->get_lists(_list, _start_list, _pause_list, _stop_list, _context_list);
+	return shared->get_lists(_list, _start_list, _pause_list, _stop_list, _context_list, ttl_list);
 }
 //=============================================================================
 //=============================================================================
