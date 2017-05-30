@@ -1069,26 +1069,19 @@ void *PushThread::run_undetached(void *ptr)
 					double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
 					try
 					{
-						//	Send it to DB
-						int ret = shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
-						if(ret < 0)
-						{
-							shared->set_nok_db(cmd->ev_data->attr_name, "");
-						}
-						else
-						{
-							gettimeofday(&now, NULL);
-							double	dnow = now.tv_sec + (double)now.tv_usec/1.0e6;
-							double	rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/1.0e6;
-							shared->set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
-						}
+						shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
+
+						gettimeofday(&now, NULL);
+						double  dnow = now.tv_sec + (double)now.tv_usec/1.0e6;
+						double  rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/1.0e6;
+						shared->set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
 					}
 					catch(Tango::DevFailed  &e)
 					{
 						shared->set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
 						Tango::Except::print_exception(e);
 					}
-						break;
+					break;
 				}
 				case DB_INSERT_PARAM:
 				{
@@ -1098,10 +1091,11 @@ void *PushThread::run_undetached(void *ptr)
 					try
 					{
 						//	Send it to DB
-						/*int ret =*/ shared->mdb->insert_param_Attr(cmd->ev_data_param, cmd->ev_data_type);
+						shared->mdb->insert_param_Attr(cmd->ev_data_param, cmd->ev_data_type);
 					}
 					catch(Tango::DevFailed  &e)
 					{
+						shared->set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
 						Tango::Except::print_exception(e);
 					}
 					break;
@@ -1114,14 +1108,11 @@ void *PushThread::run_undetached(void *ptr)
 					try
 					{
 						//	Send it to DB
-						int ret = shared->mdb->event_Attr(cmd->attr_name, cmd->op_code);
-						if(ret < 0)
-						{
-							//TODO
-						}
+						shared->mdb->event_Attr(cmd->attr_name, cmd->op_code);
 					}
 					catch(Tango::DevFailed  &e)
 					{
+						shared->set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
 						Tango::Except::print_exception(e);
 					}
 					break;
@@ -1131,14 +1122,11 @@ void *PushThread::run_undetached(void *ptr)
 					try
 					{
 						//	Send it to DB
-						int ret = shared->mdb->updateTTL_Attr(cmd->attr_name, cmd->ttl);
-						if(ret < 0)
-						{
-							//TODO
-						}
+						shared->mdb->updateTTL_Attr(cmd->attr_name, cmd->ttl);
 					}
 					catch(Tango::DevFailed  &e)
 					{
+						shared->set_nok_db(cmd->attr_name, string(e.errors[0].desc));
 						Tango::Except::print_exception(e);
 					}
 					break;
