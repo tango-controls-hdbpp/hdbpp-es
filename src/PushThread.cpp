@@ -38,10 +38,8 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 //
 //-=============================================================================
 
-
 #include <PushThread.h>
 #include <HdbDevice.h>
-
 
 namespace HdbEventSubscriber_ns
 {
@@ -1045,6 +1043,12 @@ Tango::DevState PushThreadShared::state()
 }
 
 
+//=============================================================================
+//=============================================================================
+PushThread::PushThread(PushThreadShared	*pts, HdbDevice *dev) : Tango::LogAdapter(dev->_device)
+{
+	shared=pts;
+};
 
 //=============================================================================
 /**
@@ -1053,6 +1057,7 @@ Tango::DevState PushThreadShared::state()
 //=============================================================================
 void *PushThread::run_undetached(void *ptr)
 {
+    sleep(5);
 
 	while(shared->get_if_stop()==false)
 	{
@@ -1085,9 +1090,6 @@ void *PushThread::run_undetached(void *ptr)
 				}
 				case DB_INSERT_PARAM:
 				{
-					timeval now;
-					gettimeofday(&now, NULL);
-					double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
 					try
 					{
 						//	Send it to DB
@@ -1095,7 +1097,9 @@ void *PushThread::run_undetached(void *ptr)
 					}
 					catch(Tango::DevFailed  &e)
 					{
-						shared->set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
+						ERROR_STREAM << "PushThread::run_undetached: An error detected when inserting attribute parameter for: "
+									 << cmd->ev_data->attr_name << endl;
+
 						Tango::Except::print_exception(e);
 					}
 					break;

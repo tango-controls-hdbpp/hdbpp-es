@@ -220,7 +220,7 @@ public:
  *	Create a thread to write data read from shared vector.
  */
 //=========================================================
-class PushThread: public omni_thread
+class PushThread: public omni_thread, public Tango::LogAdapter
 {
 	PushThreadShared	*shared;
 
@@ -228,8 +228,7 @@ public:
 /**
  *	Initialize the sub process parameters (name, domain, log_file).
  */
-	PushThread(PushThreadShared	*pts) \
-			{ shared=pts;};
+	PushThread(PushThreadShared	*pts, HdbDevice *dev);
 	
 /**
  * Execute the fork of the sub process in a thread.
