@@ -1057,8 +1057,6 @@ PushThread::PushThread(PushThreadShared	*pts, HdbDevice *dev) : Tango::LogAdapte
 //=============================================================================
 void *PushThread::run_undetached(void *ptr)
 {
-    sleep(5);
-
 	while(shared->get_if_stop()==false)
 	{
 		//	Check if command ready
