@@ -1095,7 +1095,7 @@ void *PushThread::run_undetached(void *ptr)
 					}
 					catch(Tango::DevFailed  &e)
 					{
-						ERROR_STREAM << "PushThread::run_undetached: An error detected when inserting attribute parameter for: "
+						ERROR_STREAM << "PushThread::run_undetached: An error was detected when inserting attribute parameter for: "
 									 << cmd->ev_data->attr_name << endl;
 
 						Tango::Except::print_exception(e);
@@ -1114,7 +1114,9 @@ void *PushThread::run_undetached(void *ptr)
 					}
 					catch(Tango::DevFailed  &e)
 					{
-						shared->set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
+						ERROR_STREAM << "PushThread::run_undetached: An was error detected when removing attribute: "
+									 << cmd->ev_data->attr_name << endl;
+
 						Tango::Except::print_exception(e);
 					}
 					break;
@@ -1128,7 +1130,9 @@ void *PushThread::run_undetached(void *ptr)
 					}
 					catch(Tango::DevFailed  &e)
 					{
-						shared->set_nok_db(cmd->attr_name, string(e.errors[0].desc));
+						ERROR_STREAM << "PushThread::run_undetached: An was error detected when updating the TTL on attribute: "
+									 << cmd->ev_data->attr_name << endl;
+
 						Tango::Except::print_exception(e);
 					}
 					break;
