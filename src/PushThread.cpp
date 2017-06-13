@@ -1114,7 +1114,7 @@ void *PushThread::run_undetached(void *ptr)
 					}
 					catch(Tango::DevFailed  &e)
 					{
-						ERROR_STREAM << "PushThread::run_undetached: An was error detected when removing attribute: "
+						ERROR_STREAM << "PushThread::run_undetached: An was error detected when recording a start, stop, pause or remove event for attribute: "
 									 << cmd->ev_data->attr_name << endl;
 
 						Tango::Except::print_exception(e);
