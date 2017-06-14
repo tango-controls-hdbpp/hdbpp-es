@@ -1167,7 +1167,7 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 		signame = string((*argin)[0]);
 	}
 
-	if(argin->length() >= 1)
+	if(argin->length() > 1)
 	{
 		string context((*argin)[1]);
 		if(context.length() > 0)
@@ -1195,7 +1195,7 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 	}
 	if(contexts.size()==0)
 		contexts.push_back(defaultStrategy);
-	if(argin->length() >= 2)
+	if(argin->length() > 2)
 	{
 		string s_ttl((*argin)[2]);
 		try
