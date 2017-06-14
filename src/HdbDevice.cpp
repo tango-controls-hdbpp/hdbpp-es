@@ -159,7 +159,7 @@ void HdbDevice::initialize()
 	attr_AttributeMaxStoreTime_read = -1;
 	attr_AttributeMinProcessingTime_read = -1;
 	attr_AttributeMaxProcessingTime_read = -1;
-	push_thread = new PushThread(push_shared);
+	push_thread = new PushThread(push_shared, this);
 	stats_thread = new StatsThread(this);
 	stats_thread->period = stats_window;
 	poller_thread = new PollerThread(this);
