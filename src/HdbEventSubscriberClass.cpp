@@ -1790,7 +1790,9 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	min_warning	not set for AttributeTTLList
 	//	delta_t	not set for AttributeTTLList
 	//	delta_val	not set for AttributeTTLList
+	attributettllist_prop.set_event_abs_change("1");
 	attributettllist_prop.set_archive_event_period("3600000");
+	attributettllist_prop.set_archive_event_abs_change("1");
 	
 	attributettllist->set_default_properties(attributettllist_prop);
 	//	Not Polled
