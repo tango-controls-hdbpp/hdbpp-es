@@ -1169,7 +1169,7 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 
 	if(argin->length() > 1)
 	{
-        string context((*argin)[1]);
+		string context((*argin)[1]);
 		if(context.length() > 0)
 		{
 			requested_strategy += context;
@@ -1180,7 +1180,7 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 			{
 				string context_upper(*its);
 				std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
-                map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(context_upper);
+				map<string, string>::iterator it = hdb_dev->contexts_map_upper.find(context_upper);
 				if(it == hdb_dev->contexts_map_upper.end())
 				{
 					context_error = true;
@@ -1209,11 +1209,11 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
 		}
 	}
 
-    hdb_dev->add(signame, contexts, ttl);
+	hdb_dev->add(signame, contexts, ttl);
     
-    // since ttl is a parameter to this function, we should also
-    // update this value inside the subscriber and database
-    hdb_dev->updatettl(signame, ttl);
+	// since ttl is a parameter to this function, we should also
+	// update this value inside the subscriber and database
+	hdb_dev->updatettl(signame, ttl);
 
 	bool is_current_context;
 	try
