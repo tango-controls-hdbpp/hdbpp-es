@@ -1849,7 +1849,7 @@ void HdbEventSubscriberClass::command_factory()
 	AttributeAddClass	*pAttributeAddCmd =
 		new AttributeAddClass("AttributeAdd",
 			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
-			"Attribute name, strategy",
+			"Attribute name, strategy, ttl",
 			"",
 			Tango::OPERATOR);
 	command_list.push_back(pAttributeAddCmd);

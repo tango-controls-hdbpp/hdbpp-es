@@ -102,7 +102,7 @@
       <status abstract="true" inherited="true" concrete="true" concreteHere="false"/>
     </commands>
     <commands name="AttributeAdd" description="Add a new attribute to archive in HDB." execMethod="attribute_add" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
-      <argin description="Attribute name, strategy">
+      <argin description="Attribute name, strategy, ttl">
         <type xsi:type="pogoDsl:StringArrayType"/>
       </argin>
       <argout description="">

@@ -508,7 +508,7 @@ public:
 	 *	Command AttributeAdd related method
 	 *	Description: Add a new attribute to archive in HDB.
 	 *
-	 *	@param argin Attribute name, strategy
+	 *	@param argin Attribute name, strategy, ttl
 	 */
 	virtual void attribute_add(const Tango::DevVarStringArray *argin);
 	virtual bool is_AttributeAdd_allowed(const CORBA::Any &any);
