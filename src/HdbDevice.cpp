@@ -891,8 +891,6 @@ void ArchiveCB::push_event(Tango::EventData *data)
 //=============================================================================
 void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 {
-
-	time_t	t = time(NULL);
 	//DEBUG_STREAM << __func__<<": AttrConfEvent '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
 	hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
 

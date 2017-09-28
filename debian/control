@@ -1,0 +1,26 @@
+Source: hdbpp-es
+Priority: optional
+Maintainer: Stuart James <stuart.james@esrf.fr>
+Build-Depends: libhdb++-dev,
+               libtango-dev (=9.2.5a+dfsg1-2),  
+               libomnithread3-dev, 
+               libomniorb4-dev,
+               debhelper (>= 9.0.0), 
+               make
+Standards-Version: 3.9.3
+Section: misc
+Homepage: https://github.com/tango-controls/hdbpp-es
+
+Package: hdbpp-es
+Priority: optional
+Section: misc
+Architecture: any
+Depends: libhdb++6, 
+         libtango9 (=9.2.5a+dfsg1-2), 
+         libomniorb4-1, 
+         libomnithread3c2,
+         ${misc:Depends}
+Description: Event subscriber device server for Tango Controls archive system.
+ Part of the Tango Controls database archive system. This device server handles
+ attribute subscription and archives the events from the subscriptions to the 
+ selected database.

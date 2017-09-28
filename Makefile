@@ -1,47 +1,80 @@
+#-----------------------------------------
+#	 Setup
+#-----------------------------------------
+
 NAME_SRV = hdb++es-srv
+PREFIX=/usr/local
 
-LIBHDBPP_DIR = .libhdbpp
-LIBHDBPP_INC = ./$(LIBHDBPP_DIR)/src
-LIBHDBPP_LIB = ./$(LIBHDBPP_DIR)/lib
+#-----------------------------------------
+#	 Include Paths
+#-----------------------------------------
 
-CXXFLAGS += -DRELEASE='"$HeadURL$ "' -I./$(LIBHDBPP_INC)
-LDFLAGS = -lhdb++ -L./$(LIBHDBPP_LIB)
+ifdef TANGO_DIR
+	INC_DIR += -I${TANGO_DIR}/include/tango
+	LIB_DIR	+= -L${TANGO_DIR}/lib
+else
+	ifdef TANGO_INC
+		INC_DIR += -I${TANGO_INC}
+	endif
 
-TANGO_INC := ${TANGO_DIR}/include/tango
-OMNIORB_INC := ${OMNIORB_DIR}/include
-ZMQ_INC :=  ${ZMQ_DIR}/include
+	ifdef TANGO_LIB
+		LIB_DIR	+= -L${TANGO_LIB}
+	endif
+endif
 
-TANGO_LIB = ${TANGO_DIR}/lib
-OMNIORB_LIB = ${OMNIORB_DIR}/lib
-ZMQ_LIB = ${ZMQ_DIR}/lib
+ifdef OMNIORB_DIR
+	INC_DIR += -I${OMNIORB_DIR}/include
+	LIB_DIR	+= -L${OMNIORB_DIR}/lib
+else
+	ifdef OMNIORB_INC
+		INC_DIR += -I${OMNIORB_INC}
+	endif
 
-INC_DIR = -I${TANGO_INC} -I${OMNIORB_INC} -I${ZMQ_INC}
-LIB_DIR = -L${TANGO_LIB} -L${OMNIORB_LIB} -L${ZMQ_LIB} -L/usr/local/lib
+	ifdef OMNIORB_LIB
+		LIB_DIR	+= -L${OMNIORB_LIB}
+	endif
+endif
+
+ifdef LIBHDBPP_DIR
+	INC_DIR += -I${LIBHDBPP_DIR}/include
+	LIB_DIR	+= -L${LIBHDBPP_DIR}/lib
+else
+	ifdef LIBHDBPP_INC
+		INC_DIR += -I${LIBHDBPP_INC}
+	endif
+
+	ifdef LIBHDBPP_LIB
+		LIB_DIR	+= -L${LIBHDBPP_LIB}
+	endif
+endif
 
 #-----------------------------------------
 #	 Default make entry
 #-----------------------------------------
+
 default: release
 release debug: bin/$(NAME_SRV)
 
 #-----------------------------------------
 #	Set CXXFLAGS and LDFLAGS
 #-----------------------------------------
+
 CXXFLAGS += -std=gnu++0x -D__linux__ -D__OSVERSION__=2 -pedantic -Wall \
-	-Wno-non-virtual-dtor -Wno-long-long -DOMNI_UNLOADABLE_STUBS \
-	$(INC_DIR) -Isrc
+	-Wno-non-virtual-dtor -Wno-long-long -DOMNI_UNLOADABLE_STUBS $(INC_DIR) -Isrc
+
 ifeq ($(GCCMAJOR),4)
     CXXFLAGS += -Wextra
 endif
 ifeq ($(GCCMAJOR),5)
     CXXFLAGS += -Wextra
 endif
-LDFLAGS += $(LIB_DIR) -ltango -llog4tango -lomniORB4 -lomniDynamic4 \
-	-lCOS4 -lomnithread -lzmq
+
+LDFLAGS += $(LIB_DIR) -lhdb++ -ltango -llog4tango -lomniORB4 -lomniDynamic4 -lomnithread
 
 #-----------------------------------------
 #	Set dependencies
 #-----------------------------------------
+
 SRC_FILES += $(wildcard src/*.cpp)
 OBJ_FILES += $(addprefix obj/,$(notdir $(SRC_FILES:.cpp=.o)))
 
@@ -55,20 +88,24 @@ obj/%.o: $(SRC_FILES:%.cpp)
 #-----------------------------------------
 #	 Main make entries
 #-----------------------------------------
+
 bin/$(NAME_SRV): bin obj $(OBJ_FILES) 
-	$(MAKE) -C $(LIBHDBPP_DIR)
 	$(CXX) $(CXXFLAGS) $(OBJ_FILES) -o bin/$(NAME_SRV) $(LDFLAGS)
 
 clean:
-	$(MAKE) -C $(LIBHDBPP_DIR) clean
 	@rm -fr obj/ bin/ core* .nse_depinfo src/*~
 
 bin obj:
 	@ test -d $@ || mkdir $@
 
+install:
+	install -d ${DESTDIR}/$(PREFIX)/bin
+	install -m 755 bin/hdb++es-srv ${DESTDIR}$(PREFIX)/bin
+
 #-----------------------------------------
 #	 Target specific options
 #-----------------------------------------
+
 release: CXXFLAGS += -O2 -DNDEBUG
 release: LDFLAGS += -s
 debug: CXXFLAGS += -ggdb3
