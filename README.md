@@ -24,7 +24,9 @@ make
 
 ### Build Flags
 
-There are two sets of flags to assist in building the binary. Only use one set for each dependency. The flags are only required if you have installed a dependency in a non-standard location. The first define the install location of a dependency:
+There are two sets of flags to assist in building the binary. Only use one set for each dependency. The flags are only required if you have installed a dependency in a non-standard location. 
+
+The first define the install location of a dependency:
 
 | Flag | Notes |
 |------|-------|
@@ -32,7 +34,7 @@ There are two sets of flags to assist in building the binary. Only use one set f
 | OMNIORB_DIR | Omniorb install root |
 | LIBHDBPP_DIR | Libhdb++ install root |
 
-The above take priority in the build over the following:
+The above take priority in the build over the following, which define the include and lib directory for each dependency: 
 
 | Flag | Notes |
 |------|-------|
