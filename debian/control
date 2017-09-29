@@ -19,6 +19,7 @@ Depends: libhdb++6,
          libtango9 (=9.2.5a+dfsg1-2), 
          libomniorb4-1, 
          libomnithread3c2,
+         ${shlibs:Depends},         
          ${misc:Depends}
 Description: Event subscriber device server for Tango Controls archive system.
  Part of the Tango Controls database archive system. This device server handles

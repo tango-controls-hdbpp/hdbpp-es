@@ -3,11 +3,14 @@ Upstream-Name: libhdbpp
 Source: https://github.com/tango-controls/libhdbpp
 
 Files: *
-Copyright: 2014-2017 Graziano Scalamera
+Copyright: 2014-2017 Elettra - Sincrotrone Trieste S.C.p.A.
+                     Strada Statale 14 - km 163,5 in AREA Science Park
+                     34149 Basovizza, Trieste, Italy.
 License: LGPL-3.0+
 
 Files: debian/*
-Copyright: 2017 Stuart James <stuart.james@esrf.fr>
+Copyright: 2017 European Synchrotron Radiation Facility
+                BP 220, Grenoble 38043, FRANCE
 License: LGPL-3.0+
 
 License: LGPL-3.0+
