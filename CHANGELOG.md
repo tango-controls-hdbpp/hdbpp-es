@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-* Makefile: Added install rules, clean up, more paths to keep it building
+* Makefile: Added install rules, clean up paths etc
 * Makefile: Cleaned up the linkage (removed unneeded libraries, libzmq, libCOS)
 * Cleaned up some unused variable warnings
 * libhdb++ include paths to match new install location.

@@ -9,43 +9,24 @@ PREFIX=/usr/local
 #	 Include Paths
 #-----------------------------------------
 
-ifdef TANGO_DIR
-	INC_DIR += -I${TANGO_DIR}/include/tango
-	LIB_DIR	+= -L${TANGO_DIR}/lib
-else
-	ifdef TANGO_INC
-		INC_DIR += -I${TANGO_INC}
-	endif
-
-	ifdef TANGO_LIB
-		LIB_DIR	+= -L${TANGO_LIB}
-	endif
+ifdef TANGO_INC
+	INC_DIR += -I${TANGO_INC}
 endif
 
-ifdef OMNIORB_DIR
-	INC_DIR += -I${OMNIORB_DIR}/include
-	LIB_DIR	+= -L${OMNIORB_DIR}/lib
-else
-	ifdef OMNIORB_INC
-		INC_DIR += -I${OMNIORB_INC}
-	endif
-
-	ifdef OMNIORB_LIB
-		LIB_DIR	+= -L${OMNIORB_LIB}
-	endif
+ifdef TANGO_LIB
+	LIB_DIR	+= -L${TANGO_LIB}
 endif
 
-ifdef LIBHDBPP_DIR
-	INC_DIR += -I${LIBHDBPP_DIR}/include
-	LIB_DIR	+= -L${LIBHDBPP_DIR}/lib
-else
-	ifdef LIBHDBPP_INC
-		INC_DIR += -I${LIBHDBPP_INC}
-	endif
+ifdef OMNIORB_LIB
+	LIB_DIR	+= -L${OMNIORB_LIB}
+endif
 
-	ifdef LIBHDBPP_LIB
-		LIB_DIR	+= -L${LIBHDBPP_LIB}
-	endif
+ifdef LIBHDBPP_INC
+	INC_DIR += -I${LIBHDBPP_INC}
+endif
+
+ifdef LIBHDBPP_LIB
+	LIB_DIR	+= -L${LIBHDBPP_LIB}
 endif
 
 #-----------------------------------------

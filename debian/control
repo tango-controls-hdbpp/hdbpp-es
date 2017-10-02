@@ -1,7 +1,7 @@
 Source: hdbpp-es
 Priority: optional
 Maintainer: Stuart James <stuart.james@esrf.fr>
-Build-Depends: libhdb++-dev,
+Build-Depends: libhdb++6-dev,
                libtango-dev (=9.2.5a+dfsg1-2),  
                libomnithread3-dev, 
                libomniorb4-dev,
@@ -11,7 +11,7 @@ Standards-Version: 3.9.3
 Section: misc
 Homepage: https://github.com/tango-controls/hdbpp-es
 
-Package: hdbpp-es
+Package: hdb++es
 Priority: optional
 Section: misc
 Architecture: any
