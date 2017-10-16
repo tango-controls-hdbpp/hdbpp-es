@@ -17,8 +17,16 @@ ifdef TANGO_LIB
 	LIB_DIR	+= -L${TANGO_LIB}
 endif
 
+ifdef OMNIORB_INC
+	INC_DIR	+= -L${OMNIORB_INC}
+endif
+
 ifdef OMNIORB_LIB
 	LIB_DIR	+= -L${OMNIORB_LIB}
+endif
+
+ifdef ZMQ_INC
+	INC_DIR += -I${ZMQ_INC}
 endif
 
 ifdef LIBHDBPP_INC
@@ -80,7 +88,7 @@ bin obj:
 	@ test -d $@ || mkdir $@
 
 install:
-	install -d ${DESTDIR}/$(PREFIX)/bin
+	install -d ${DESTDIR}$(PREFIX)/bin
 	install -m 755 bin/hdb++es-srv ${DESTDIR}$(PREFIX)/bin
 
 #-----------------------------------------
