@@ -2,7 +2,7 @@ Source: hdbpp-es
 Priority: optional
 Maintainer: Stuart James <stuart.james@esrf.fr>
 Build-Depends: libhdb++6-dev,
-               libtango-dev (=9.2.5a+dfsg1-2),  
+               libtango-dev,  
                libomnithread3-dev, 
                libomniorb4-dev,
                debhelper (>= 9.0.0), 
@@ -16,7 +16,7 @@ Priority: optional
 Section: misc
 Architecture: any
 Depends: libhdb++6, 
-         libtango9 (=9.2.5a+dfsg1-2), 
+         libtango9, 
          libomniorb4-1, 
          libomnithread3c2,
          ${shlibs:Depends},         

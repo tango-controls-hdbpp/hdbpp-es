@@ -6,6 +6,10 @@ Tango device server for the HDB++ Event Subscriber
 
 The current release version is 1.0.0
 
+### **Important Changes** 0.9.0 -> 1.0.0
+
+* The include file LibHdb++.h has changed from `include "LibHdb++.h"` to `include "libhdb++/LibHdb++.h"`. This reflects the standard install path of the headers. If building against [libhdbpp](https://github.com/tango-controls-hdbpp/libhdbpp) from a standard system install, then this change makes no difference. If libhdbpp is installed to a custom location, ensure you add the path to the CMAKE_INCLUDE_PATH.
+
 ## Documentation
 
 * See the Tango documentation [here](http://tango-controls.readthedocs.io/en/latest/administration/services/hdbpp/index.html#hdb-an-archiving-historian-service) for broader information about the HB++ archiving system and its integration into Tango Controls
@@ -17,10 +21,10 @@ The current release version is 1.0.0
 
 Ensure the development version of the dependencies are installed. These are as follows:
 
-* HDB++ library libhdbpp
-* Tango Controls 9.2.5a - either via debian package or source install.
-* omniORB release 4 - libomniorb4 and libomnithread
-* libzmq - libzmq3-dev or libzmq5-dev
+* HDB++ library libhdbpp.
+* Tango Controls 9 or higher.
+* omniORB release 4 - libomniorb4 and libomnithread.
+* libzmq - libzmq3-dev or libzmq5-dev.
 
 ### Build Flags
 
@@ -61,4 +65,4 @@ Once built simply run `make install`. The install can be passed a PREFIX variabl
 
 ## License
 
-The code is released under the LGPL3 license and a copy of this license is provided with the code. 
+The code is released under the GPL3 license and a copy of this license is provided with the code. 
