@@ -43,6 +43,7 @@ There are a set of library and include variables that can be set to inform the b
 | ZMQ_INC | ZMQ include files directory |
 | LIBHDBPP_INC | Libhdb++ include files directory |
 | LIBHDBPP_LIB | Libhdb++ lib files directory |
+| ADDITIONAL_LIBS | Add additional paths and libraries to the build, eg "-L/lib -lCOS4" |
 
 ### Build
 

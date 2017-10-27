@@ -38,7 +38,7 @@ ifdef LIBHDBPP_LIB
 endif
 
 ifdef ADDITIONAL_LIBS
-	LIB_DIR	+= -L${ADDITIONAL_LIBS}
+	LIB_DIR	+= ${ADDITIONAL_LIBS}
 endif
 
 #-----------------------------------------
