@@ -18,7 +18,7 @@ ifdef TANGO_LIB
 endif
 
 ifdef OMNIORB_INC
-	INC_DIR	+= -L${OMNIORB_INC}
+	INC_DIR	+= -I${OMNIORB_INC}
 endif
 
 ifdef OMNIORB_LIB
@@ -35,6 +35,10 @@ endif
 
 ifdef LIBHDBPP_LIB
 	LIB_DIR	+= -L${LIBHDBPP_LIB}
+endif
+
+ifdef ADDITIONAL_LIBS
+	LIB_DIR	+= -L${ADDITIONAL_LIBS}
 endif
 
 #-----------------------------------------
