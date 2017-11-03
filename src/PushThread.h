@@ -49,8 +49,7 @@
 
 #include <tango.h>
 #include <stdint.h>
-
-#include "LibHdb++.h"
+#include <libhdb++/LibHdb++.h>
 
 
 namespace HdbEventSubscriber_ns

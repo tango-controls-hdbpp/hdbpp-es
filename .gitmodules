@@ -1,4 +1,0 @@
-[submodule ".libhdbpp"]
-	path = .libhdbpp
-	url = https://github.com/tango-controls/libhdbpp.git
-	branch = master
