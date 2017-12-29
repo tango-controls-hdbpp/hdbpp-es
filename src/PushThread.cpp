@@ -1096,7 +1096,7 @@ void *PushThread::run_undetached(void *ptr)
 					catch(Tango::DevFailed  &e)
 					{
 						ERROR_STREAM << "PushThread::run_undetached: An error was detected when inserting attribute parameter for: "
-									 << cmd->ev_data->attr_name << endl;
+									 << cmd->ev_data_param->attr_name << endl;
 
 						Tango::Except::print_exception(e);
 					}
@@ -1115,7 +1115,7 @@ void *PushThread::run_undetached(void *ptr)
 					catch(Tango::DevFailed  &e)
 					{
 						ERROR_STREAM << "PushThread::run_undetached: An was error detected when recording a start, stop, pause or remove event for attribute: "
-									 << cmd->ev_data->attr_name << endl;
+									 << cmd->attr_name << endl;
 
 						Tango::Except::print_exception(e);
 					}
@@ -1131,7 +1131,7 @@ void *PushThread::run_undetached(void *ptr)
 					catch(Tango::DevFailed  &e)
 					{
 						ERROR_STREAM << "PushThread::run_undetached: An was error detected when updating the TTL on attribute: "
-									 << cmd->ev_data->attr_name << endl;
+									 << cmd->attr_name << endl;
 
 						Tango::Except::print_exception(e);
 					}
