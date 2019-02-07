@@ -1304,23 +1304,31 @@ void SharedData::subscribe_events()
 
 			try
 			{
-				try
-				{
-				    event_id = sig->attr->subscribe_event(
-				                                    Tango::ARCHIVE_EVENT,
-				                                    sig->archive_cb,
-				                                    /*stateless=*/false);
-				}
-				catch (Tango::DevFailed &e)
-				{
-				    INFO_STREAM <<__func__<< " sig->attr->subscribe_event EXCEPTION, try CHANGE_EVENT" << endl;
-				    Tango::Except::print_exception(e);
-				    event_id = sig->attr->subscribe_event(
-				                                    Tango::CHANGE_EVENT,
-				                                    sig->archive_cb,
-				                                    /*stateless=*/false);
-				    INFO_STREAM <<__func__<< " sig->attr->subscribe_event CHANGE_EVENT SUBSCRIBED" << endl;
-				}
+                try
+                {
+                    event_id = sig->attr->subscribe_event(
+                                                    Tango::ARCHIVE_EVENT,
+                                                    sig->archive_cb,
+                                                    /*stateless=*/false);
+                }
+                catch (Tango::DevFailed &e)
+                {
+                    if (hdb_dev->SubscribeChangeAsFallback)
+                    {
+                        INFO_STREAM <<__func__<< " sig->attr->subscribe_event EXCEPTION, try CHANGE_EVENT" << endl;
+                        Tango::Except::print_exception(e);
+                        event_id = sig->attr->subscribe_event(
+                                                        Tango::CHANGE_EVENT,
+                                                        sig->archive_cb,
+                                                        /*stateless=*/false);
+                        INFO_STREAM <<__func__<< " sig->attr->subscribe_event CHANGE_EVENT SUBSCRIBED" << endl;
+                    } 
+                    else 
+                    {
+                        throw(e);
+                    }
+                }
+                
 				event_conf_id = sig->attr->subscribe_event(
                                                 Tango::ATTR_CONF_EVENT,
                                                 sig->archive_cb,

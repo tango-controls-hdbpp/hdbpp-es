@@ -341,6 +341,7 @@ void HdbEventSubscriber::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("LibConfiguration"));
 	dev_prop.push_back(Tango::DbDatum("ContextsList"));
 	dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
+	dev_prop.push_back(Tango::DbDatum("SubscribeChangeAsFallback"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -442,6 +443,17 @@ void HdbEventSubscriber::get_device_property()
 		}
 		//	And try to extract DefaultStrategy value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  defaultStrategy;
+
+		//	Try to initialize SubscribeChangeAsFallback from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  subscribeChangeAsFallback;
+		else {
+			//	Try to initialize SubscribeChangeAsFallback from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  subscribeChangeAsFallback;
+		}
+		//	And try to extract SubscribeChangeAsFallback value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeChangeAsFallback;
 
 	}
 
