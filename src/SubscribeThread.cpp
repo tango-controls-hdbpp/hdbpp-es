@@ -1314,7 +1314,7 @@ void SharedData::subscribe_events()
 				}
 				catch (Tango::DevFailed &e)
 				{
-					if ((static_cast<HdbEventSubscriber *>(hdb_dev->_device))->subscribeChangeAsFallback)
+					if (hdb_dev->subscribe_change)
 					{
 						INFO_STREAM <<__func__<< " " << sig->name << "->subscribe_event EXCEPTION, try CHANGE_EVENT" << endl;
 						Tango::Except::print_exception(e);

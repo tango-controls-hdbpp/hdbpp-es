@@ -91,13 +91,14 @@ HdbDevice::~HdbDevice()
 }
 //=============================================================================
 //=============================================================================
-HdbDevice::HdbDevice(int p, int pp, int s, int c, Tango::DeviceImpl *device)
+HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, Tango::DeviceImpl *device)
 				:Tango::LogAdapter(device)
 {
 	this->period = p;
 	this->poller_period = pp;
 	this->stats_window = s;
 	this->check_periodic_delay = c;
+	this->subscribe_change = ch;
 	_device = device;
 #ifdef _USE_FERMI_DB_RW
 	host_rw = "";

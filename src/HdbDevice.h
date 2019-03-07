@@ -106,6 +106,7 @@ public:
 	int					poller_period;
 	int					stats_window;
 	int					check_periodic_delay;
+	bool				subscribe_change;
 	/**
 	 *	Shared data
 	 */
@@ -192,8 +193,9 @@ public:
 	 *	@param pp	 	Poller thread Period
 	 *	@param s	 	Period to compute statistics
 	 *	@param c	 	Delay before timeout on periodic events
+	 *	@param ch	 	Subscribe to change event if archive event is not used
 	 */
-	HdbDevice(int p, int pp, int s, int c, Tango::DeviceImpl *device);
+	HdbDevice(int p, int pp, int s, int c, bool ch, Tango::DeviceImpl *device);
 	~HdbDevice();
 	/**
 	 * initialize object

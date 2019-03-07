@@ -231,7 +231,7 @@ void HdbEventSubscriber::init_device()
 	//	Create one event handler by HDB access device
 	INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
 	string	status("");
-	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, this);
+	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, this);
 	uint8_t index=0;
 	for(vector<string>::iterator it = contextsList.begin(); it != contextsList.end(); it++)
 	{
@@ -327,6 +327,7 @@ void HdbEventSubscriber::get_device_property()
 
 	//	Initialize property data members
 	subscribeRetryPeriod = 60;
+	subscribeChangeAsFallback = false;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_device_property_before
 
@@ -462,6 +463,7 @@ void HdbEventSubscriber::get_device_property()
 	//	Check device property data members init
 	//DEBUG_STREAM << "hdbAccessDevice      = " << hdbAccessDevice << endl;
 	DEBUG_STREAM << "subscribeRetryPeriod = " << subscribeRetryPeriod << endl;
+	DEBUG_STREAM << "subscribeChangeAsFallback = " << subscribeChangeAsFallback << endl;
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_device_property_after
 }
