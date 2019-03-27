@@ -42,6 +42,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 
 #include <HdbDevice.h>
+#include <HdbEventSubscriber.h>
 
 
 namespace HdbEventSubscriber_ns
@@ -1304,14 +1305,35 @@ void SharedData::subscribe_events()
 
 			try
 			{
-				event_id = sig->attr->subscribe_event(
-												Tango::ARCHIVE_EVENT,
-												sig->archive_cb,
-												/*stateless=*/false);
+				try
+				{
+					event_id = sig->attr->subscribe_event(
+						Tango::ARCHIVE_EVENT,
+						sig->archive_cb,
+						/*stateless=*/false);
+				}
+				catch (Tango::DevFailed &e)
+				{
+					if (hdb_dev->subscribe_change)
+					{
+						INFO_STREAM <<__func__<< " " << sig->name << "->subscribe_event EXCEPTION, try CHANGE_EVENT" << endl;
+						Tango::Except::print_exception(e);
+						event_id = sig->attr->subscribe_event(
+							Tango::CHANGE_EVENT,
+							sig->archive_cb,
+							/*stateless=*/false);
+						INFO_STREAM <<__func__<< " " << sig->name << "->subscribe_event CHANGE_EVENT SUBSCRIBED" << endl;
+					} 
+					else 
+					{
+						throw(e);
+					}
+				}
+                
 				event_conf_id = sig->attr->subscribe_event(
-												Tango::ATTR_CONF_EVENT,
-												sig->archive_cb,
-												/*stateless=*/false);
+					Tango::ATTR_CONF_EVENT,
+					sig->archive_cb,
+					/*stateless=*/false);                
 				/*sig->evstate  = Tango::ON;
 				//sig->first  = false;	//first event already arrived at subscribe_event
 				sig->status.clear();

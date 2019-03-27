@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ASCII"?>
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
   <classes name="HdbEventSubscriber" pogoRevision="9.4">
-    <description description="This class is able to subscribe on archive events and store value in Historical DB" title="Tango Device Server" sourcePath="/mntdirect/_users/sjames/workspace/hdb++/hdbpp-es/src" language="Cpp" filestogenerate="XMI   file,Code files,Protected Regions" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
+    <description description="This class is able to subscribe on archive events and store value in Historical DB" title="Tango Device Server" sourcePath="/home/srubio/src/hdbpp-es-alba/src" language="Cpp" filestogenerate="XMI   file,Code files,Protected Regions" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_4Impl" sourcePath=""/>
       <identification contact="at elettra.eu - graziano.scalamera" author="graziano.scalamera" emailDomain="elettra.eu" classFamily="Miscellaneous" siteSpecific="" platform="Unix Like" bus="Not Applicable" manufacturer="none" reference=""/>
     </description>
@@ -41,6 +41,11 @@
       <type xsi:type="pogoDsl:StringType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>ALWAYS</DefaultPropValue>
+    </classProperties>
+    <classProperties name="SubscribeChangeAsFallback" description="It will subscribe to change event &#xA;if archive events are not configured">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>False</DefaultPropValue>
     </classProperties>
     <deviceProperties name="SubscribeRetryPeriod" description="Subscribe event retrying period in seconds.">
       <type xsi:type="pogoDsl:IntType"/>
@@ -82,6 +87,11 @@
       <type xsi:type="pogoDsl:StringType"/>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <DefaultPropValue>ALWAYS</DefaultPropValue>
+    </deviceProperties>
+    <deviceProperties name="SubscribeChangeAsFallback" description="It will subscribe to change event &#xA;if archive events are not configured">
+      <type xsi:type="pogoDsl:BooleanType"/>
+      <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
+      <DefaultPropValue>False</DefaultPropValue>
     </deviceProperties>
     <commands name="State" description="This command gets the device state (stored in its &lt;i>device_state&lt;/i> data member) and returns it to the caller." execMethod="dev_state" displayLevel="OPERATOR" polledPeriod="0">
       <argin description="none.">
@@ -533,7 +543,7 @@
     <states name="FAULT" description="All attributes faulty">
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </states>
-    <preferences docHome="./doc_html" makefileHome="/segfs/tango/cppserver/env"/>
+    <preferences docHome="./doc_html" makefileHome="/usr/share/pogo/preferences"/>
     <additionalFiles name="HdbDevice" path="/mntdirect/_segfs/tango/cppserver/admin/hdbevent/HdbDevice.cpp"/>
     <additionalFiles name="PushThread" path="/mntdirect/_segfs/tango/cppserver/admin/hdbevent/PushThread.cpp"/>
     <additionalFiles name="SubscribeThread" path="/mntdirect/_segfs/tango/cppserver/admin/hdbevent/SubscribeThread.cpp"/>

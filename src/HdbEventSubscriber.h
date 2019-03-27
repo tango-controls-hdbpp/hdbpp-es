@@ -117,6 +117,9 @@ public:
 	vector<string>	contextsList;
 	//	DefaultStrategy:	Default strategy to be used when not specified in the single attribute configuration
 	string	defaultStrategy;
+	//	SubscribeChangeAsFallback:	It will subscribe to change event 
+	//  if archive events are not configured
+	Tango::DevBoolean	subscribeChangeAsFallback;
 
 //	Attribute data members
 public:
