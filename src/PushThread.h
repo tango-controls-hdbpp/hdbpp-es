@@ -49,7 +49,8 @@
 
 #include <tango.h>
 #include <stdint.h>
-#include <libhdb++/LibHdb++.h>
+#include "hdb++/HdbClient.h"
+#include "HdbCmdData.h"
 
 
 namespace HdbEventSubscriber_ns
@@ -207,7 +208,7 @@ public:
 	omni_mutex *sig_lock;
 	vector<HdbStat>	signals;
 
-	HdbClient *mdb;
+	hdbpp::HdbClient *mdb;
 
 
 };

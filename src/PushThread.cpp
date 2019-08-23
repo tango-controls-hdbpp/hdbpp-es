@@ -51,7 +51,7 @@ PushThreadShared::PushThreadShared(HdbDevice *dev, vector<string> configuration)
 
 	try
 	{
-		mdb = new HdbClient(configuration);
+		mdb = new hdbpp::HdbClient(configuration);
 	}
 	catch (Tango::DevFailed &err)
 	{

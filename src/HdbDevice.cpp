@@ -717,7 +717,7 @@ void ArchiveCB::push_event(Tango::EventData *data)
 		hdb_dev->shared->veclock.readerOut();
 		return;
 	}
-	HdbEventDataType ev_data_type;
+	hdbpp::HdbEventDataType ev_data_type;
 	ev_data_type.attr_name = data->attr_name;
 	if(!hdb_dev->shared->is_first(data->attr_name))
 	{
@@ -902,7 +902,7 @@ void ArchiveCB::push_event(Tango::AttrConfEventData *data)
 		INFO_STREAM << data->errors[0].desc  << endl;
 		return;
 	}
-	HdbEventDataType ev_data_type;
+	hdbpp::HdbEventDataType ev_data_type;
 	ev_data_type.attr_name = data->attr_name;
 	hdb_dev->shared->veclock.readerIn();
 	HdbSignal	*signal=hdb_dev->shared->get_signal(data->attr_name);
