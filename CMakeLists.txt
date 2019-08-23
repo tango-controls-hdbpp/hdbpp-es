@@ -54,7 +54,7 @@ if(FETCH_LIBHDBPP)
     set(FETCH_REPOSITORY_ADDRESS "https://github.com/tango-controls-hdbpp/libhdbpp.git")
     set(FETCH_REPOSITORY_TAG ${FETCH_LIBHDBPP_TAG})
  
-    configure_file(cmake/FetchExternal.cmake.in libhdb++-download/CMakeLists.txt)
+    configure_file(cmake/FetchExternal.cmake.in ${FETCH_PROJECT_NAME}-download/CMakeLists.txt)
 
     execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download" )
