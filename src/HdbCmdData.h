@@ -25,6 +25,9 @@
 #include <tango.h>
 #include <string>
 
+namespace HdbEventSubscriber_ns
+{
+
 class  HdbCmdData
 {
 public:
@@ -70,4 +73,5 @@ public:
 	unsigned int  ttl;
 	std::string attr_name;
 };
+}	// namespace_ns
 #endif // _HDB_CMD_DATA_H
