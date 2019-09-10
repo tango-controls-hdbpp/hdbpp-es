@@ -32,6 +32,7 @@ list(APPEND LIBRARY_PATHS ${CMAKE_LIBRARY_PATH})
 # Start the project
 project(hdbpp_es VERSION ${VERSION_STRING} LANGUAGES CXX)
 
+set(FETCH_LIBHDBPP_TAG "master" CACHE STRING "Libhdbpp branch/tag to clone 'master'")
 option(FETCH_LIBHDBPP "Download and build using a local copy of libhdb++" OFF)
 option(FETCH_LIBHDBPP_TAG "When FETCH_LIBHDBPP is enabled, this is the tag fetch, default is 'master'" "master")
 option(ENABLE_CLANG "Enable clang code and layout analysis" OFF)
@@ -54,7 +55,7 @@ if(FETCH_LIBHDBPP)
     set(FETCH_REPOSITORY_ADDRESS "https://github.com/tango-controls-hdbpp/libhdbpp.git")
     set(FETCH_REPOSITORY_TAG ${FETCH_LIBHDBPP_TAG})
  
-    configure_file(cmake/FetchExternal.cmake.in ${FETCH_PROJECT_NAME}-download/CMakeLists.txt)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FetchExternal.cmake.in ${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download/CMakeLists.txt)
 
     execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download" )
@@ -62,7 +63,7 @@ if(FETCH_LIBHDBPP)
     execute_process(COMMAND "${CMAKE_COMMAND}" --build .
         WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download" )
 
-    add_subdirectory("${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-src" EXCLUDE_FROM_ALL)
+    add_subdirectory("${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-src" "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-build" EXCLUDE_FROM_ALL)
 
     # For ease of use, we set the libhdb++ output to our projects build directory,
     # making linking and running easy
