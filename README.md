@@ -6,7 +6,7 @@ Tango device server for the HDB++ Event Subscriber
 
 ## Version
 
-The current release version is 1.0.1
+The current release version is 1.0.2
 
 ### **Important Changes** 0.9.0 -> 1.0.0
 
