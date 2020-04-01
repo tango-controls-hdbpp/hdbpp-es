@@ -49,7 +49,7 @@ set(HDBPP_ES_LIBRARIES)
 set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
 list(APPEND CMAKE_PREFIX_PATH "/usr")
 
-# Fetch libhdb++ -----------------------------------
+# Find Dependencies  -----------------------------------
 if(FETCH_LIBHDBPP)
     set(FETCH_PROJECT_NAME "libhdb++")
     set(FETCH_REPOSITORY_ADDRESS "https://github.com/tango-controls-hdbpp/libhdbpp.git")
@@ -70,20 +70,21 @@ if(FETCH_LIBHDBPP)
     set_target_properties(libhdbpp_shared_library
         PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-            
-endif(FETCH_LIBHDBPP)
 
-# Find Dependencies  -----------------------------------
+    elseif(NOT LIBHDBPP_PROJECT_BUILD AND NOT FETCH_LIBHDBPP)
+        find_library(LIBHDBPP_LIB_SEARCH libhdb++.so.2 PATHS LIBRARY_PATHS)
+        message(STATUS "Found: ${LIBHDBPP_LIB_SEARCH}")
+endif()
 
 # split the generator expression out to here so we can make it more
 # readable
-string(CONCAT LIBHDBPP_LIB 
+string(CONCAT HDBPP_LIB 
     "$<IF:"
         "$<OR:"
             "$<BOOL:${LIBHDBPP_PROJECT_BUILD}>,"
             "$<BOOL:${FETCH_LIBHDBPP}>"
         ">,"
-        "libhdbpp_shared_library,libhdb++.so.2"
+        "libhdbpp_shared_library,${LIBHDBPP_LIB_SEARCH}"
     ">")
 
 # Find tango if it has not already been found. Returns an interface library
@@ -122,7 +123,7 @@ add_executable(hdbpp_es ${SRC_FILES})
 target_link_libraries(hdbpp_es 
     PRIVATE 
         TangoInterfaceLibrary 
-        ${LIBHDBPP_LIB})
+        ${HDBPP_LIB})
 
 target_include_directories(hdbpp_es 
     PRIVATE 
