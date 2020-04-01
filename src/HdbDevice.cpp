@@ -154,6 +154,7 @@ void HdbDevice::initialize()
 
 	//	Create thread to send commands to HdbAccess device
 	push_shared = new PushThreadShared(this,
+			Tango::Util::instance()->get_ds_inst_name(),
 			(static_cast<HdbEventSubscriber *>(_device))->libConfiguration);
 
 	attr_AttributeMinStoreTime_read = -1;

@@ -45,13 +45,14 @@ namespace HdbEventSubscriber_ns
 {
 //=============================================================================
 //=============================================================================
-PushThreadShared::PushThreadShared(HdbDevice *dev, vector<string> configuration):Tango::LogAdapter(dev->_device)
+PushThreadShared::PushThreadShared(
+	HdbDevice *dev, const string &ds_name, vector<string> configuration):Tango::LogAdapter(dev->_device)
 {
 	max_waiting=0; stop_it=false;
 
 	try
 	{
-		mdb = new hdbpp::HdbClient(configuration);
+		mdb = new hdbpp::HdbClient(ds_name, configuration);
 	}
 	catch (Tango::DevFailed &err)
 	{
@@ -1072,7 +1073,7 @@ void *PushThread::run_undetached(void *ptr)
 					double	dstart = now.tv_sec + (double)now.tv_usec/1.0e6;
 					try
 					{
-						shared->mdb->insert_Attr(cmd->ev_data, cmd->ev_data_type);
+						shared->mdb->insert_event(cmd->ev_data, cmd->ev_data_type);
 
 						gettimeofday(&now, NULL);
 						double  dnow = now.tv_sec + (double)now.tv_usec/1.0e6;
@@ -1091,7 +1092,7 @@ void *PushThread::run_undetached(void *ptr)
 					try
 					{
 						//	Send it to DB
-						shared->mdb->insert_param_Attr(cmd->ev_data_param, cmd->ev_data_type);
+						shared->mdb->insert_param_event(cmd->ev_data_param, cmd->ev_data_type);
 					}
 					catch(Tango::DevFailed  &e)
 					{
@@ -1110,7 +1111,7 @@ void *PushThread::run_undetached(void *ptr)
 					try
 					{
 						//	Send it to DB
-						shared->mdb->event_Attr(cmd->attr_name, cmd->op_code);
+						shared->mdb->insert_history_event(cmd->attr_name, cmd->op_code);
 					}
 					catch(Tango::DevFailed  &e)
 					{
@@ -1126,7 +1127,7 @@ void *PushThread::run_undetached(void *ptr)
 					try
 					{
 						//	Send it to DB
-						shared->mdb->updateTTL_Attr(cmd->attr_name, cmd->ttl);
+						shared->mdb->update_ttl(cmd->attr_name, cmd->ttl);
 					}
 					catch(Tango::DevFailed  &e)
 					{

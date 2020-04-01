@@ -105,7 +105,7 @@ private:
 
 public:
 	//PushThreadShared() { max_waiting=0; stop_it=false;};
-	PushThreadShared(HdbDevice *dev, vector<string> configuration);
+	PushThreadShared(HdbDevice *dev, const string &ds_name, vector<string> configuration);
 	~PushThreadShared();
 
 	void push_back_cmd(HdbCmdData *argin);
