@@ -97,11 +97,11 @@ public:
 	//	Data members here
 	//-----------------------------------------
 	string				status;
-	SubscribeThread		*thread;
-	PushThread			*push_thread;
-	StatsThread			*stats_thread;
-	CheckPeriodicThread	*check_periodic_thread;
-	PollerThread		*poller_thread;
+	std::unique_ptr<SubscribeThread> thread;
+	std::unique_ptr<PushThread> push_thread;
+	std::unique_ptr<StatsThread> stats_thread;
+	std::unique_ptr<CheckPeriodicThread> check_periodic_thread;
+	std::unique_ptr<PollerThread> poller_thread;
 	int					period;
 	int					poller_period;
 	int					stats_window;
@@ -110,9 +110,9 @@ public:
 	/**
 	 *	Shared data
 	 */
-	SharedData			*shared;
-	PushThreadShared	*push_shared;
-	Tango::DeviceImpl 	*_device;
+	std::shared_ptr<SharedData> shared;
+	std::shared_ptr<PushThreadShared> push_shared;
+	Tango::DeviceImpl *_device;
 	map<string, string> domain_map;
 
 	Tango::DevDouble	AttributeRecordFreq;
@@ -205,7 +205,7 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, vector<string> contexts, Tango::DevULong ttl);
+	void add(string &signame, vector<string>& contexts, int data_type, int data_format, int write_type);
 	/**
 	 * AddRemove a signal in the list.
 	 */
@@ -213,7 +213,7 @@ public:
 	/**
 	 * Update contexts for a signal.
 	 */
-	void update(string &signame, vector<string> contexts);
+	void update(string &signame, vector<string>& contexts);
 	/**
 	 * Update ttl for a signal.
 	 */
@@ -310,11 +310,11 @@ public:
 	/**
 	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
 	 */
-	string	get_only_signal_name(string signame);
+	auto	get_only_signal_name(const string &signame) -> string;
 	/**
 	 *	Returns the tango host (tango host has been added sinse tango 7.1.1)
 	 */
-	string	get_only_tango_host(string signame);
+	auto	get_only_tango_host(const string &signame) -> string;
 	/**
 	 *	Check if fqdn, otherwise fix it
 	 */
@@ -326,12 +326,12 @@ public:
 	/**
 	 *	Remove domain
 	 */
-	string remove_domain(string str);
+	auto remove_domain(const string &str) -> string;
 #ifndef _MULTI_TANGO_HOST
 	/**
 	 *	Compare without domain
 	 */
-	bool compare_without_domain(string str1, string str2);
+	bool compare_without_domain(const string &str1, const string &str2);
 #else
 	/**
 	 *	compare 2 tango names considering fqdn, domain, multi tango host
@@ -342,7 +342,7 @@ public:
 	/**
 	 *	explode a string in multiple strings using separator
 	 */
-	void string_explode(string str, string separator, vector<string>* results);
+	void string_explode(const string &str, const string &separator, vector<string>& results);
 
 protected :	
 	/**
@@ -355,7 +355,7 @@ protected :
 	 *
 	 *	@param list 	signal names vector
 	 */
-	void build_signal_vector(vector<string>, string);
+	void build_signal_vector(const vector<string> &, const string &);
 	/**
 	 *	Store double (vector) in HDB
 	 */

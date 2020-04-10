@@ -982,6 +982,13 @@ void  PushThreadShared::remove_attr(string &signame)
 	push_back_cmd(cmd);
 }
 
+void PushThreadShared::add_attr(string &signame, int data_type, int data_format, int write_type)
+{
+	//------Configure DB------------------------------------------------
+	HdbCmdData *cmd = new HdbCmdData(DB_ADD, data_type, data_format, write_type, signame);
+	push_back_cmd(cmd);
+}
+
 void  PushThreadShared::updatettl(string &signame, Tango::DevULong ttl)
 {
 	//------Configure DB------------------------------------------------
@@ -1046,7 +1053,7 @@ Tango::DevState PushThreadShared::state()
 
 //=============================================================================
 //=============================================================================
-PushThread::PushThread(PushThreadShared	*pts, HdbDevice *dev) : Tango::LogAdapter(dev->_device)
+PushThread::PushThread(shared_ptr<PushThreadShared> pts, HdbDevice *dev) : Tango::LogAdapter(dev->_device)
 {
 	shared=pts;
 };
@@ -1132,6 +1139,22 @@ void *PushThread::run_undetached(void *ptr)
 					catch(Tango::DevFailed  &e)
 					{
 						ERROR_STREAM << "PushThread::run_undetached: An was error detected when updating the TTL on attribute: "
+									 << cmd->attr_name << endl;
+
+						Tango::Except::print_exception(e);
+					}
+					break;
+				}
+				case DB_ADD:
+				{
+					try
+					{
+						//	add it to DB
+						shared->mdb->add_attribute(cmd->attr_name, cmd->data_type, cmd->data_format, cmd->write_type);
+					}
+					catch(Tango::DevFailed  &e)
+					{
+						ERROR_STREAM << "PushThread::run_undetached: An was error detected when adding the attribute: "
 									 << cmd->attr_name << endl;
 
 						Tango::Except::print_exception(e);

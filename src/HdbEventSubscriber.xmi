@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ASCII"?>
 <pogoDsl:PogoSystem xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.esrf.fr/tango/pogo/PogoDsl">
-  <classes name="HdbEventSubscriber" pogoRevision="9.4">
-    <description description="This class is able to subscribe on archive events and store value in Historical DB" title="Tango Device Server" sourcePath="/home/srubio/src/hdbpp-es-alba/src" language="Cpp" filestogenerate="XMI   file,Code files,Protected Regions" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
+  <classes name="HdbEventSubscriber" pogoRevision="9.6">
+    <description description="This class is able to subscribe on archive events and store value in Historical DB" title="Tango Device Server" sourcePath="/home/leon/opt/hdbpp-es/src" language="Cpp" filestogenerate="XMI   file,Code files,Protected Regions" hasMandatoryProperty="false" hasConcreteProperty="true" hasAbstractCommand="false" hasAbstractAttribute="false">
       <inheritances classname="Device_4Impl" sourcePath=""/>
       <identification contact="at elettra.eu - graziano.scalamera" author="graziano.scalamera" emailDomain="elettra.eu" classFamily="Miscellaneous" siteSpecific="" platform="Unix Like" bus="Not Applicable" manufacturer="none" reference=""/>
     </description>
@@ -112,7 +112,7 @@
       <status abstract="true" inherited="true" concrete="true" concreteHere="false"/>
     </commands>
     <commands name="AttributeAdd" description="Add a new attribute to archive in HDB." execMethod="attribute_add" displayLevel="OPERATOR" polledPeriod="0" isDynamic="false">
-      <argin description="Attribute name, strategy, ttl">
+      <argin description="Attribute name, strategy, data_type, data_format, write_type">
         <type xsi:type="pogoDsl:StringArrayType"/>
       </argin>
       <argout description="">
@@ -543,7 +543,7 @@
     <states name="FAULT" description="All attributes faulty">
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </states>
-    <preferences docHome="./doc_html" makefileHome="/usr/share/pogo/preferences"/>
+    <preferences docHome="./doc_html" makefileHome="$(TANGO_HOME)"/>
     <additionalFiles name="HdbDevice" path="/mntdirect/_segfs/tango/cppserver/admin/hdbevent/HdbDevice.cpp"/>
     <additionalFiles name="PushThread" path="/mntdirect/_segfs/tango/cppserver/admin/hdbevent/PushThread.cpp"/>
     <additionalFiles name="SubscribeThread" path="/mntdirect/_segfs/tango/cppserver/admin/hdbevent/SubscribeThread.cpp"/>

@@ -195,6 +195,7 @@ public:
 	void  pause_attr(string &signame);
 	void  stop_attr(string &signame);
 	void  remove_attr(string &signame);
+	void  add_attr(string &signame, int data_type, int data_format, int write_type);
 	void  start_all();
 	void  pause_all();
 	void  stop_all();
@@ -222,13 +223,13 @@ public:
 //=========================================================
 class PushThread: public omni_thread, public Tango::LogAdapter
 {
-	PushThreadShared	*shared;
+	std::shared_ptr<PushThreadShared> shared;
 
 public:
 /**
  *	Initialize the sub process parameters (name, domain, log_file).
  */
-	PushThread(PushThreadShared	*pts, HdbDevice *dev);
+	PushThread(std::shared_ptr<PushThreadShared> pts, HdbDevice *dev);
 	
 /**
  * Execute the fork of the sub process in a thread.

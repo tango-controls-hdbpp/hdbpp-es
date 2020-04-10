@@ -59,26 +59,28 @@ SharedData::SharedData(HdbDevice *dev):Tango::LogAdapter(dev->_device)
  *	get signal by name.
  */
 //=============================================================================
-HdbSignal *SharedData::get_signal(string signame)
+auto SharedData::get_signal(const string &signame) -> const HdbSignal &
 {
 	//omni_mutex_lock sync(*this);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		HdbSignal	*sig = &signals[i];
-		if (sig->name==signame)
-			return sig;
+		if (signal.name==signame)
+			return signal;
 	}
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	
+	for (const auto &signal : signals)
 	{
-		HdbSignal	*sig = &signals[i];
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(sig->name,signame))
+		if (hdb_dev->compare_without_domain(signal.name, signame))
 #else		
-		if (!hdb_dev->compare_tango_names(sig->name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name, signame))
 #endif
-			return sig;
+			return signal;
 	}
-	return NULL;
+	Tango::Except::throw_exception(
+			(const char *)"BadSignalName",
+			"Signal " + signame + " NOT FOUND in signal list",
+			(const char *)"SharedData::get_signal()");
 }
 //=============================================================================
 /**
@@ -91,32 +93,32 @@ void SharedData::remove(string &signame, bool stop)
 	{
 		if(!stop)
 			veclock.readerIn();
-		HdbSignal	*sig = get_signal(signame);
-		int event_id = sig->event_id;
-		int event_conf_id = sig->event_conf_id;
-		Tango::AttributeProxy *attr = sig->attr;
+		auto sig = get_signal(signame);
+		int event_id = sig.event_id;
+		int event_conf_id = sig.event_conf_id;
+		Tango::AttributeProxy *attr = sig.attr;
 		if(!stop)
 			veclock.readerOut();
 		if(stop)
 		{
 			try
 			{
-				if(event_id != ERR && attr)
+				if(event_id != ERR && attr != nullptr)
 				{
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ARCHIVE_EVENT... "<< signame << endl;
 					//unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
-					sig->siglock->writerOut();
+					sig.siglock->writerOut();
 					attr->unsubscribe_event(event_id);
-					sig->siglock->writerIn();
+					sig.siglock->writerIn();
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ARCHIVE_EVENT... "<< signame << endl;
 				}
-				if(event_conf_id != ERR && attr)
+				if(event_conf_id != ERR && attr != nullptr)
 				{
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ATTR_CONF_EVENT... "<< signame << endl;
 					//unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
-					sig->siglock->writerOut();
+					sig.siglock->writerOut();
 					attr->unsubscribe_event(event_conf_id);
-					sig->siglock->writerIn();
+					sig.siglock->writerIn();
 					DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ATTR_CONF_EVENT... "<< signame << endl;
 				}
 			}
@@ -124,16 +126,16 @@ void SharedData::remove(string &signame, bool stop)
 			{
 				//	Do nothing
 				//	Unregister failed means Register has also failed
-				sig->siglock->writerIn();
+				sig.siglock->writerIn();
 				INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
 			}
 		}
 
 		if(!stop)
 			veclock.writerIn();
-		vector<HdbSignal>::iterator	pos = signals.begin();
+		auto pos = signals.begin();
 		
-		bool	found = false;
+		bool found = false;
 		for (unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
 		{
 			HdbSignal	*sig = &signals[i];
@@ -151,9 +153,8 @@ void SharedData::remove(string &signame, bool stop)
 							delete sig->archive_cb;
 						}
 						sig->event_id = ERR;
-						if(sig->attr)
-							delete sig->attr;
-						sig->attr = NULL;
+						delete sig->attr;
+						sig->attr = nullptr;
 					}
 					catch (Tango::DevFailed &e)
 					{
@@ -204,9 +205,8 @@ void SharedData::remove(string &signame, bool stop)
 								delete sig->archive_cb;
 							}
 							sig->event_id = ERR;
-							if(sig->attr)
-								delete sig->attr;
-							sig->attr = NULL;
+							delete sig->attr;
+							sig->attr = nullptr;
 						}
 						catch (Tango::DevFailed &e)
 						{
@@ -262,75 +262,77 @@ void SharedData::start(string &signame)
 	ReaderLock lock(veclock);
 	vector<string> contexts;	//TODO: not used in add(..., true)!!!
 	Tango::DevULong ttl;	//TODO: not used in add(..., true)!!!
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name == signame)
 		{
-			signals[i].siglock->writerIn();
-			if(!signals[i].running)
+			signal.siglock->writerIn();
+			if(!signal.running)
 			{
-				if(signals[i].stopped)
+				if(signal.stopped)
 				{
 					hdb_dev->attr_AttributeStoppedNumber_read--;
 					try
 					{
-						add(signame, contexts, ttl, NOTHING, true);
+						add(signame, contexts, NOTHING, true);
+						updatettl(signame, ttl);
 					}
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
 						INFO_STREAM << "SharedData::start: error adding  " << signame <<" err="<< e.errors[0].desc << endl;
-						signals[i].status = e.errors[0].desc;
-						/*signals[i].siglock->writerOut();
+						signal.status = e.errors[0].desc;
+						/*signal.siglock->writerOut();
 						return;*/
 					}
 				}
-				signals[i].running=true;
-				if(signals[i].paused)
+				signal.running=true;
+				if(signal.paused)
 					hdb_dev->attr_AttributePausedNumber_read--;
 				hdb_dev->attr_AttributeStartedNumber_read++;
-				signals[i].paused=false;
-				signals[i].stopped=false;
+				signal.paused=false;
+				signal.stopped=false;
 			}
-			signals[i].siglock->writerOut();
+			signal.siglock->writerOut();
 			return;
 		}
 	}
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name, signame))
 #else	
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name, signame))
 #endif
 		{
-			signals[i].siglock->writerIn();
-			if(!signals[i].running)
+			signal.siglock->writerIn();
+			if(!signal.running)
 			{
-				if(signals[i].stopped)
+				if(signal.stopped)
 				{
 					hdb_dev->attr_AttributeStoppedNumber_read--;
 					try
 					{
-						add(signame, contexts, ttl, NOTHING, true);
+						add(signame, contexts, NOTHING, true);
+						updatettl(signame, ttl);
 					}
 					catch (Tango::DevFailed &e)
 					{
 						//Tango::Except::print_exception(e);
 						INFO_STREAM << "SharedData::start: error adding  " << signame << endl;
-						signals[i].status = e.errors[0].desc;
-						/*signals[i].siglock->writerOut();
+						signal.status = e.errors[0].desc;
+						/*signal.siglock->writerOut();
 						return;*/
 					}
 				}
-				signals[i].running=true;
-				if(signals[i].paused)
+				signal.running=true;
+				if(signal.paused)
 					hdb_dev->attr_AttributePausedNumber_read--;
 				hdb_dev->attr_AttributeStartedNumber_read++;
-				signals[i].paused=false;
-				signals[i].stopped=false;
+				signal.paused=false;
+				signal.stopped=false;
 			}
-			signals[i].siglock->writerOut();
+			signal.siglock->writerOut();
 			return;
 		}
 	}
@@ -349,47 +351,48 @@ void SharedData::start(string &signame)
 void SharedData::pause(string &signame)
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name == signame)
 		{
-			signals[i].siglock->writerIn();
-			if(!signals[i].paused)
+			signal.siglock->writerIn();
+			if(!signal.paused)
 			{
-				signals[i].paused=true;
+				signal.paused=true;
 				hdb_dev->attr_AttributePausedNumber_read++;
-				if(signals[i].running)
+				if(signal.running)
 					hdb_dev->attr_AttributeStartedNumber_read--;
-				if(signals[i].stopped)
+				if(signal.stopped)
 					hdb_dev->attr_AttributeStoppedNumber_read--;
-				signals[i].running=false;
-				signals[i].stopped=false;
+				signal.running=false;
+				signal.stopped=false;
 			}
-			signals[i].siglock->writerOut();
+			signal.siglock->writerOut();
 			return;
 		}
 	}
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	
+	for (auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->writerIn();
-			if(!signals[i].paused)
+			signal.siglock->writerIn();
+			if(!signal.paused)
 			{
-				signals[i].paused=true;
+				signal.paused=true;
 				hdb_dev->attr_AttributePausedNumber_read++;
-				if(signals[i].running)
+				if(signal.running)
 					hdb_dev->attr_AttributeStartedNumber_read--;
-				if(signals[i].stopped)
+				if(signal.stopped)
 					hdb_dev->attr_AttributeStoppedNumber_read--;
-				signals[i].running=false;
-				signals[i].stopped=false;
+				signal.running=false;
+				signal.stopped=false;
 			}
-			signals[i].siglock->writerOut();
+			signal.siglock->writerOut();
 			return;
 		}
 	}
@@ -408,16 +411,16 @@ void SharedData::pause(string &signame)
 void SharedData::stop(string &signame)
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->writerIn();
-			if(!signals[i].stopped)
+			signal.siglock->writerIn();
+			if(!signal.stopped)
 			{
-				signals[i].stopped=true;
+				signal.stopped=true;
 				hdb_dev->attr_AttributeStoppedNumber_read++;
-				if(signals[i].running)
+				if(signal.running)
 				{
 					hdb_dev->attr_AttributeStartedNumber_read--;
 					try
@@ -430,7 +433,7 @@ void SharedData::stop(string &signame)
 						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
-				if(signals[i].paused)
+				if(signal.paused)
 				{
 					hdb_dev->attr_AttributePausedNumber_read--;
 					try
@@ -443,27 +446,27 @@ void SharedData::stop(string &signame)
 						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
-				signals[i].running=false;
-				signals[i].paused=false;
+				signal.running=false;
+				signal.paused=false;
 			}
-			signals[i].siglock->writerOut();
+			signal.siglock->writerOut();
 			return;
 		}
 	}
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else		
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->writerIn();
-			if(!signals[i].stopped)
+			signal.siglock->writerIn();
+			if(!signal.stopped)
 			{
-				signals[i].stopped=true;
+				signal.stopped=true;
 				hdb_dev->attr_AttributeStoppedNumber_read++;
-				if(signals[i].running)
+				if(signal.running)
 				{
 					hdb_dev->attr_AttributeStartedNumber_read--;
 					try
@@ -476,7 +479,7 @@ void SharedData::stop(string &signame)
 						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
-				if(signals[i].paused)
+				if(signal.paused)
 				{
 					hdb_dev->attr_AttributePausedNumber_read--;
 					try
@@ -489,10 +492,10 @@ void SharedData::stop(string &signame)
 						INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
 					}
 				}
-				signals[i].running=false;
-				signals[i].paused=false;
+				signal.running=false;
+				signal.paused=false;
 			}
-			signals[i].siglock->writerOut();
+			signal.siglock->writerOut();
 			return;
 		}
 	}
@@ -511,13 +514,13 @@ void SharedData::stop(string &signame)
 void SharedData::start_all()
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		signals[i].siglock->writerIn();
-		signals[i].running=true;
-		signals[i].paused=false;
-		signals[i].stopped=false;
-		signals[i].siglock->writerOut();
+		signal.siglock->writerIn();
+		signal.running=true;
+		signal.paused=false;
+		signal.stopped=false;
+		signal.siglock->writerOut();
 	}
 	hdb_dev->attr_AttributeStoppedNumber_read=0;
 	hdb_dev->attr_AttributePausedNumber_read=0;
@@ -531,13 +534,13 @@ void SharedData::start_all()
 void SharedData::pause_all()
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		signals[i].siglock->writerIn();
-		signals[i].running=false;
-		signals[i].paused=true;
-		signals[i].stopped=false;
-		signals[i].siglock->writerOut();
+		signal.siglock->writerIn();
+		signal.running=false;
+		signal.paused=true;
+		signal.stopped=false;
+		signal.siglock->writerOut();
 	}
 	hdb_dev->attr_AttributeStoppedNumber_read=0;
 	hdb_dev->attr_AttributePausedNumber_read=signals.size();
@@ -551,13 +554,13 @@ void SharedData::pause_all()
 void SharedData::stop_all()
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		signals[i].siglock->writerIn();
-		signals[i].running=false;
-		signals[i].paused=false;
-		signals[i].stopped=true;
-		signals[i].siglock->writerOut();
+		signal.siglock->writerIn();
+		signal.running=false;
+		signal.paused=false;
+		signal.stopped=true;
+		signal.siglock->writerOut();
 	}
 	hdb_dev->attr_AttributeStoppedNumber_read=signals.size();
 	hdb_dev->attr_AttributePausedNumber_read=0;
@@ -568,32 +571,32 @@ void SharedData::stop_all()
  * Is a signal saved on DB?
  */
 //=============================================================================
-bool SharedData::is_running(string &signame)
+auto SharedData::is_running(string &signame) -> bool
 {
 	bool retval=true;
 	//to be locked if called outside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].running;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.running;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size(); i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else	
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].running;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.running;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -611,32 +614,32 @@ bool SharedData::is_running(string &signame)
  * Is a signal saved on DB?
  */
 //=============================================================================
-bool SharedData::is_paused(string &signame)
+auto SharedData::is_paused(string &signame) -> bool
 {
 	bool retval=true;
 	//to be locked if called outside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].paused;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.paused;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size(); i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].paused;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.paused;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -654,32 +657,32 @@ bool SharedData::is_paused(string &signame)
  * Is a signal not subscribed?
  */
 //=============================================================================
-bool SharedData::is_stopped(string &signame)
+auto SharedData::is_stopped(string &signame) -> bool
 {
 	bool retval=true;
 	//to be locked if called outside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].stopped;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.stopped;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size(); i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].stopped;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.stopped;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -697,7 +700,7 @@ bool SharedData::is_stopped(string &signame)
  * Is a signal to be archived with current context?
  */
 //=============================================================================
-bool SharedData::is_current_context(string &signame, string context)
+auto SharedData::is_current_context(string &signame, string context) -> bool
 {
 	bool retval=false;
 	std::transform(context.begin(), context.end(), context.begin(), ::toupper);
@@ -707,46 +710,46 @@ bool SharedData::is_current_context(string &signame, string context)
 		return retval;
 	}
 	//to be locked if called outside lock
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			vector<string>::iterator it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), context);
-			if(it != signals[i].contexts_upper.end())
+			signal.siglock->readerIn();
+			auto it = find(signal.contexts_upper.begin(), signal.contexts_upper.end(), context);
+			if(it != signal.contexts_upper.end())
 			{
 				retval = true;
 			}
-			it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), ALWAYS_CONTEXT);
-			if(it != signals[i].contexts_upper.end())
+			it = find(signal.contexts_upper.begin(), signal.contexts_upper.end(), ALWAYS_CONTEXT);
+			if(it != signal.contexts_upper.end())
 			{
 				retval = true;
 			}
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size(); i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			vector<string>::iterator it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), context);
-			if(it != signals[i].contexts_upper.end())
+			signal.siglock->readerIn();
+			auto it = find(signal.contexts_upper.begin(), signal.contexts_upper.end(), context);
+			if(it != signal.contexts_upper.end())
 			{
 				retval = true;
 			}
-			it = find(signals[i].contexts_upper.begin(), signals[i].contexts_upper.end(), ALWAYS_CONTEXT);
-			if(it != signals[i].contexts_upper.end())
+			it = find(signal.contexts_upper.begin(), signal.contexts_upper.end(), ALWAYS_CONTEXT);
+			if(it != signal.contexts_upper.end())
 			{
 				retval = true;
 			}
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -764,32 +767,32 @@ bool SharedData::is_current_context(string &signame, string context)
  * Is a signal first event arrived?
  */
 //=============================================================================
-bool SharedData::is_first(string &signame)
+auto SharedData::is_first(string &signame) -> bool
 {
 	bool retval;
 	//not to be locked, called only inside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].first;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.first;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else	
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].first;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.first;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -810,28 +813,28 @@ bool SharedData::is_first(string &signame)
 void SharedData::set_first(string &signame)
 {
 	//not to be locked, called only inside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->writerIn();
-			signals[i].first = false;
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.first = false;
+			signal.siglock->writerOut();
 			return;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else	
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->writerIn();
-			signals[i].first = false;
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.first = false;
+			signal.siglock->writerOut();
 			return;
 		}
 	}
@@ -848,32 +851,32 @@ void SharedData::set_first(string &signame)
  * Is a signal first consecutive error event arrived?
  */
 //=============================================================================
-bool SharedData::is_first_err(string &signame)
+auto SharedData::is_first_err(string &signame) -> bool
 {
 	bool retval;
 	//not to be locked, called only inside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].first_err;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.first_err;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else	
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].first_err;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.first_err;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -894,28 +897,28 @@ bool SharedData::is_first_err(string &signame)
 void SharedData::set_first_err(string &signame)
 {
 	//not to be locked, called only inside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->writerIn();
-			signals[i].first_err = false;
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.first_err = false;
+			signal.siglock->writerOut();
 			return;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else	
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->writerIn();
-			signals[i].first_err = false;
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.first_err = false;
+			signal.siglock->writerOut();
 			return;
 		}
 	}
@@ -938,44 +941,42 @@ void SharedData::unsubscribe_events()
 	veclock.readerIn();
 	vector<HdbSignal>	local_signals(signals);
 	veclock.readerOut();
-	for (unsigned int i=0 ; i<local_signals.size() ; i++)
+	for (const auto &signal : local_signals)
 	{
-		HdbSignal	*sig = &local_signals[i];
-		if (local_signals[i].event_id != ERR && sig->attr)
+		if (signal.event_id != ERR && signal.attr != nullptr)
 		{
-			DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribe " << sig->name << " id="<<omni_thread::self()->id()<< endl;
+			DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribe " << signal.name << " id="<<omni_thread::self()->id()<< endl;
 			try
 			{
-				sig->attr->unsubscribe_event(sig->event_id);
-				sig->attr->unsubscribe_event(sig->event_conf_id);
-				DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribed " << sig->name << endl;
+				signal.attr->unsubscribe_event(signal.event_id);
+				signal.attr->unsubscribe_event(signal.event_conf_id);
+				DEBUG_STREAM <<"SharedData::"<<__func__<< "    unsubscribed " << signal.name << endl;
 			}
 			catch (Tango::DevFailed &e)
 			{
 				//	Do nothing
 				//	Unregister failed means Register has also failed
-				INFO_STREAM <<"SharedData::"<<__func__<< "    ERROR unsubscribing " << sig->name << " err="<<e.errors[0].desc<< endl;
+				INFO_STREAM <<"SharedData::"<<__func__<< "    ERROR unsubscribing " << signal.name << " err="<<e.errors[0].desc<< endl;
 			}
 		}
 	}
 	veclock.writerIn();
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		HdbSignal	*sig = &signals[i];
-		sig->siglock->writerIn();
-		if (signals[i].event_id != ERR && sig->attr)
+		signal.siglock->writerIn();
+		if (signal.event_id != ERR && signal.attr != nullptr)
 		{
-			delete sig->archive_cb;
-			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted cb " << sig->name << endl;
+			delete signal.archive_cb;
+			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted cb " << signal.name << endl;
 		}
-		if(sig->attr)
+		if(signal.attr)
 		{
-			delete sig->attr;
-			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted proxy " << sig->name << endl;
+			delete signal.attr;
+			DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted proxy " << signal.name << endl;
 		}
-		sig->siglock->writerOut();
-		delete sig->siglock;
-		DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted lock " << sig->name << endl;
+		signal.siglock->writerOut();
+		delete signal.siglock;
+		DEBUG_STREAM <<"SharedData::"<<__func__<< "    deleted lock " << signal.name << endl;
 	}
 	DEBUG_STREAM <<"SharedData::"<<__func__<< "    ended loop, deleting vector" << endl;
 
@@ -995,16 +996,16 @@ void SharedData::unsubscribe_events()
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame, const vector<string> & contexts, Tango::DevULong ttl)
+void SharedData::add(string &signame, const vector<string> & contexts)
 {
-	add(signame, contexts, ttl, NOTHING, false);
+	add(signame, contexts, NOTHING, false);
 }
 //=============================================================================
 /**
  * Add a new signal.
  */
 //=============================================================================
-void SharedData::add(string &signame, const vector<string> & contexts, Tango::DevULong ttl, int to_do, bool start)
+void SharedData::add(string &signame, const vector<string> & contexts, int to_do, bool start)
 {
 	DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
 	{
@@ -1037,7 +1038,7 @@ void SharedData::add(string &signame, const vector<string> & contexts, Tango::De
 		if (!found && !start)
 		{
 			//	on name, split device name and attrib name
-			string::size_type idx = signame.find_last_of("/");
+			string::size_type idx = signame.find_last_of('/');
 			if (idx==string::npos)
 			{
 				Tango::Except::throw_exception(
@@ -1058,9 +1059,8 @@ void SharedData::add(string &signame, const vector<string> & contexts, Tango::De
 			signal->paused = false;
 			signal->contexts = contexts;
 			signal->contexts_upper = contexts;
-			signal->ttl = ttl;
-			for(vector<string>::iterator it = signal->contexts_upper.begin(); it != signal->contexts_upper.end(); it++)
-			    std::transform(it->begin(), it->end(), it->begin(), ::toupper);
+			for(auto &it : signal->contexts_upper)
+			    std::transform(it.begin(), it.end(), it.begin(), ::toupper);
 			//DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
 		}
 		else if(found && start)
@@ -1255,8 +1255,7 @@ void SharedData::subscribe_events()
 				try
 				{
 					vector<string> contexts;	//TODO: not used in add(..., true)!!!
-					Tango::DevULong ttl;	//TODO: not used in add(..., true)!!!
-					add(sig->name, contexts, ttl, NOTHING, true);
+					add(sig->name, contexts, NOTHING, true);
 				}
 				catch (Tango::DevFailed &e)
 				{
@@ -1305,6 +1304,10 @@ void SharedData::subscribe_events()
 
 			try
 			{
+				event_conf_id = sig->attr->subscribe_event(
+					Tango::ATTR_CONF_EVENT,
+					sig->archive_cb,
+					/*stateless=*/false);                
 				try
 				{
 					event_id = sig->attr->subscribe_event(
@@ -1330,10 +1333,6 @@ void SharedData::subscribe_events()
 					}
 				}
                 
-				event_conf_id = sig->attr->subscribe_event(
-					Tango::ATTR_CONF_EVENT,
-					sig->archive_cb,
-					/*stateless=*/false);                
 				/*sig->evstate  = Tango::ON;
 				//sig->first  = false;	//first event already arrived at subscribe_event
 				sig->status.clear();
@@ -2339,7 +2338,7 @@ void  SharedData::set_nok_periodic_event(string &signame)
  *	Return the status of specified signal
  */
 //=============================================================================
-string  SharedData::get_sig_status(string &signame)
+auto SharedData::get_sig_status(const string &signame) -> string
 {
 	string retval;
 	ReaderLock lock(veclock);
@@ -2381,32 +2380,32 @@ string  SharedData::get_sig_status(string &signame)
  *	Return the state of specified signal
  */
 //=============================================================================
-Tango::DevState  SharedData::get_sig_state(string &signame)
+auto SharedData::get_sig_state(const string &signame) -> Tango::DevState
 {
 	Tango::DevState retval;
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].evstate;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.evstate;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].evstate;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.evstate;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -2423,21 +2422,21 @@ Tango::DevState  SharedData::get_sig_state(string &signame)
  *	Return the context of specified signal
  */
 //=============================================================================
-string  SharedData::get_sig_context(string &signame)
+auto SharedData::get_sig_context(const string &signame) -> string
 {
 	string retval;
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name == signame)
 		{
-			signals[i].siglock->readerIn();
-			for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			signal.siglock->readerIn();
+			for(auto it = signal.contexts.cbegin(); it != signal.contexts.cend(); it++)
 			{
 				try
 				{
 					retval += *it;
-					if(it != signals[i].contexts.end() -1)
+					if(it != signal.contexts.end() - 1)
 						retval += "|";
 				}
 				catch(std::out_of_range &e)
@@ -2445,26 +2444,26 @@ string  SharedData::get_sig_context(string &signame)
 
 				}
 			}
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			for(vector<string>::iterator it = signals[i].contexts.begin(); it != signals[i].contexts.end(); it++)
+			signal.siglock->readerIn();
+			for(auto it = signal.contexts.cbegin(); it != signal.contexts.cend(); it++)
 			{
 				try
 				{
 					retval += *it;
-					if(it != signals[i].contexts.end() -1)
+					if(it != signal.contexts.end() - 1)
 						retval += "|";
 				}
 				catch(std::out_of_range &e)
@@ -2472,7 +2471,7 @@ string  SharedData::get_sig_context(string &signame)
 
 				}
 			}
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -2489,32 +2488,32 @@ string  SharedData::get_sig_context(string &signame)
  *	Return the ttl of specified signal
  */
 //=============================================================================
-Tango::DevULong  SharedData::get_sig_ttl(string &signame)
+auto SharedData::get_sig_ttl(const string &signame) -> Tango::DevULong
 {
 	Tango::DevULong retval;
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].ttl;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.ttl;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
 
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name, signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name, signame))
 #endif
 		{
-			signals[i].siglock->readerIn();
-			retval = signals[i].ttl;
-			signals[i].siglock->readerOut();
+			signal.siglock->readerIn();
+			retval = signal.ttl;
+			signal.siglock->readerOut();
 			return retval;
 		}
 	}
@@ -2531,30 +2530,30 @@ Tango::DevULong  SharedData::get_sig_ttl(string &signame)
  *	Set Archive periodic event period
  */
 //=============================================================================
-void SharedData::set_conf_periodic_event(string &signame, string period)
+void SharedData::set_conf_periodic_event(const string &signame, const string &period)
 {
 	//not to be locked, called only inside lock in ArchiveCB::push_event
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		if (signals[i].name==signame)
+		if (signal.name==signame)
 		{
-			signals[i].siglock->writerIn();
-			signals[i].periodic_ev = atoi(period.c_str());
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.periodic_ev = atoi(period.c_str());
+			signal.siglock->writerOut();
 			return;
 		}
 	}
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
 #ifndef _MULTI_TANGO_HOST
-		if (hdb_dev->compare_without_domain(signals[i].name,signame))
+		if (hdb_dev->compare_without_domain(signal.name,signame))
 #else
-		if (!hdb_dev->compare_tango_names(signals[i].name,signame))
+		if (!hdb_dev->compare_tango_names(signal.name,signame))
 #endif
 		{
-			signals[i].siglock->writerIn();
-			signals[i].periodic_ev = atoi(period.c_str());
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.periodic_ev = atoi(period.c_str());
+			signal.siglock->writerOut();
 			return;
 		}
 	}
@@ -2569,39 +2568,39 @@ void SharedData::set_conf_periodic_event(string &signame, string period)
  *	Check Archive periodic event period
  */
 //=============================================================================
-int  SharedData::check_periodic_event_timeout(int delay_tolerance_ms)
+auto SharedData::check_periodic_event_timeout(int delay_tolerance_ms) -> int
 {
 	ReaderLock lock(veclock);
 	timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	double min_time_to_timeout_ms = 10000;
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		signals[i].siglock->readerIn();
-		if(!signals[i].running)
+		signal.siglock->readerIn();
+		if(!signal.running)
 		{
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			continue;
 		}
-		if(signals[i].evstate != Tango::ON)
+		if(signal.evstate != Tango::ON)
 		{
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			continue;
 		}
-		if(signals[i].periodic_ev <= 0)
+		if(signal.periodic_ev <= 0)
 		{
-			signals[i].siglock->readerOut();
+			signal.siglock->readerOut();
 			continue;
 		}
-		double diff_time_ms = (now.tv_sec - signals[i].last_ev.tv_sec) * 1000 + ((double)(now.tv_nsec - signals[i].last_ev.tv_nsec))/1000000;
-		double time_to_timeout_ms = (double)(signals[i].periodic_ev + delay_tolerance_ms) - diff_time_ms;
-		signals[i].siglock->readerOut();
+		double diff_time_ms = (now.tv_sec - signal.last_ev.tv_sec) * 1000 + ((double)(now.tv_nsec - signal.last_ev.tv_nsec))/1000000;
+		double time_to_timeout_ms = (double)(signal.periodic_ev + delay_tolerance_ms) - diff_time_ms;
+		signal.siglock->readerOut();
 		if(time_to_timeout_ms <= 0)
 		{
-			signals[i].siglock->writerIn();
-			signals[i].evstate = Tango::ALARM;
-			signals[i].status = "Timeout on periodic event";
-			signals[i].siglock->writerOut();
+			signal.siglock->writerIn();
+			signal.evstate = Tango::ALARM;
+			signal.status = "Timeout on periodic event";
+			signal.siglock->writerOut();
 		}
 		else if(time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0)
 			min_time_to_timeout_ms = time_to_timeout_ms;
@@ -2616,12 +2615,12 @@ int  SharedData::check_periodic_event_timeout(int delay_tolerance_ms)
 void SharedData::reset_statistics()
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		signals[i].siglock->writerIn();
-		signals[i].nokev_counter=0;
-		signals[i].okev_counter=0;
-		signals[i].siglock->writerOut();
+		signal.siglock->writerIn();
+		signal.nokev_counter=0;
+		signal.okev_counter=0;
+		signal.siglock->writerOut();
 	}
 }
 //=============================================================================
@@ -2632,12 +2631,12 @@ void SharedData::reset_statistics()
 void SharedData::reset_freq_statistics()
 {
 	ReaderLock lock(veclock);
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (auto &signal : signals)
 	{
-		signals[i].siglock->writerIn();
-		signals[i].nokev_counter_freq=0;
-		signals[i].okev_counter_freq=0;
-		signals[i].siglock->writerOut();
+		signal.siglock->writerIn();
+		signal.nokev_counter_freq=0;
+		signal.okev_counter_freq=0;
+		signal.siglock->writerOut();
 	}
 }
 //=============================================================================
@@ -2645,19 +2644,19 @@ void SharedData::reset_freq_statistics()
  *	Return ALARM if at list one signal is not subscribed.
  */
 //=============================================================================
-Tango::DevState SharedData::state()
+auto SharedData::state() -> Tango::DevState
 {
 	ReaderLock lock(veclock);
 	Tango::DevState	state = Tango::ON;
-	for (unsigned int i=0 ; i<signals.size() ; i++)
+	for (const auto &sig : signals)
 	{
-		signals[i].siglock->readerIn();
-		if (signals[i].evstate==Tango::ALARM && signals[i].running)
+		sig.siglock->readerIn();
+		if (sig.evstate==Tango::ALARM && sig.running)
 		{
 			state = Tango::ALARM;
 
 		}
-		signals[i].siglock->readerOut();
+		sig.siglock->readerOut();
 		if(state == Tango::ALARM)
 			break;
 	}
@@ -2665,7 +2664,7 @@ Tango::DevState SharedData::state()
 }
 //=============================================================================
 //=============================================================================
-bool SharedData::get_if_stop()
+auto SharedData::get_if_stop() -> bool
 {
 	//omni_mutex_lock sync(*this);
 	return stop_it;
@@ -2699,10 +2698,10 @@ void SubscribeThread::updateProperty()
 }
 //=============================================================================
 //=============================================================================
-void *SubscribeThread::run_undetached(void *ptr)
+auto SubscribeThread::run_undetached(void * /*ptr*/) -> void *
 {
 	INFO_STREAM << "SubscribeThread id="<<omni_thread::self()->id()<<endl;
-	while(shared->get_if_stop()==false)
+	while(!shared->get_if_stop())
 	{
 		//	Try to subscribe
 		DEBUG_STREAM << __func__<<": AWAKE"<<endl;
@@ -2734,7 +2733,7 @@ void *SubscribeThread::run_undetached(void *ptr)
 	}
 	shared->unsubscribe_events();
 	INFO_STREAM <<"SubscribeThread::"<< __func__<<": exiting..."<<endl;
-	return NULL;
+	return nullptr;
 }
 //=============================================================================
 //=============================================================================
