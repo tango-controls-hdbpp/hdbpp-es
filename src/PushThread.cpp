@@ -1154,7 +1154,7 @@ void *PushThread::run_undetached(void *ptr)
 					}
 					catch(Tango::DevFailed  &e)
 					{
-						ERROR_STREAM << "PushThread::run_undetached: An was error detected when adding the attribute: "
+						ERROR_STREAM << "PushThread::run_undetached: An error was detected when adding the attribute: "
 									 << cmd->attr_name << endl;
 
 						Tango::Except::print_exception(e);
