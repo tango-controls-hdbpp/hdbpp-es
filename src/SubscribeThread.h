@@ -133,8 +133,8 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, const vector<string> & contexts, Tango::DevULong ttl);
-	void add(string &signame, const vector<string> & contexts, Tango::DevULong ttl, int to_do, bool start);
+	void add(string &signame, const vector<string> & contexts);
+	void add(string &signame, const vector<string> & contexts, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
@@ -206,7 +206,7 @@ public:
 	/**
 	 *	get signal by name.
 	 */
-	HdbSignal *get_signal(string name);
+	auto get_signal(const string &name) -> const HdbSignal &;
 	/**
 	 * Subscribe achive event for each signal
 	 */
@@ -318,23 +318,23 @@ public:
 	/**
 	 *	Return the status of specified signal
 	 */
-	string  get_sig_status(string &signame);
+	auto get_sig_status(const string &signame) -> string;
 	/**
 	 *	Return the state of specified signal
 	 */
-	Tango::DevState  get_sig_state(string &signame);
+	auto get_sig_state(const string &signame) -> Tango::DevState;
 	/**
 	 *	Return the contexts of specified signal
 	 */
-	string  get_sig_context(string &signame);
+	auto get_sig_context(const string &signame) -> string;
 	/**
 	 *	Return the ttl of specified signal
 	 */
-	Tango::DevULong  get_sig_ttl(string &signame);
+	auto get_sig_ttl(const string &signame) -> Tango::DevULong;
 	/**
 	 *	Set Archive periodic event period
 	 */
-	void  set_conf_periodic_event(string &signame, string period);
+	void  set_conf_periodic_event(const string &signame, const string &period);
 	/**
 	 *	Check Archive periodic event period
 	 */
@@ -376,7 +376,7 @@ private:
 	/**
 	 *	Shared data
 	 */
-	SharedData	*shared;
+	std::shared_ptr<SharedData> shared;
 	int			period;
 	/**
 	 *	HdbDevice object

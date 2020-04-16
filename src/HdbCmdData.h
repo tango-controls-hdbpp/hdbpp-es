@@ -57,6 +57,15 @@ public:
         ev_data(nullptr),
         ev_data_param(nullptr) {}
 
+	HdbCmdData(uint8_t op_code_, int data_type_, int data_format_, int write_type_, const std::string &attr_name_) : 
+        op_code(op_code_),
+        attr_name(attr_name_),
+        data_type(data_type_),
+        data_format(data_format_),
+        write_type(write_type_),
+        ev_data(nullptr),
+        ev_data_param(nullptr) {}
+
     ~HdbCmdData()
     {
         if(ev_data) 
@@ -72,6 +81,9 @@ public:
 	uint8_t op_code;
 	unsigned int  ttl;
 	std::string attr_name;
+	int data_type;
+	int data_format;
+	int write_type;
 };
 }	// namespace_ns
 #endif // _HDB_CMD_DATA_H

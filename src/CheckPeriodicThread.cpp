@@ -40,10 +40,10 @@ CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): Tango::LogAdapter(dev-
 }
 //=============================================================================
 //=============================================================================
-void *CheckPeriodicThread::run_undetached(void *ptr)
+auto CheckPeriodicThread::run_undetached(void * /*ptr*/) -> void *
 {
 	INFO_STREAM << "CheckPeriodicThread delay_tolerance_ms="<<delay_tolerance_ms<<" id="<<omni_thread::self()->id()<<endl;
-	while(abortflag==false)
+	while(!abortflag)
 	{
 		double min_time_to_timeout_ms = 0;
 		try
@@ -56,7 +56,7 @@ void *CheckPeriodicThread::run_undetached(void *ptr)
 		abort_sleep(1.0 + 0.001*min_time_to_timeout_ms);
 	}
 	INFO_STREAM <<"CheckPeriodicThread::"<< __func__<<": exiting..."<<endl;
-	return NULL;
+	return nullptr;
 }
 //=============================================================================
 //=============================================================================
