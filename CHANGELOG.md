@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+* DB_ADD command support to register an attribute in the db from the AttributeAdd command.
 * New CMake build system that can download libhdbpp when requested
 * Moved HDBCmdData source from libhdbpp project
 * Clang integration
 
 ### Changed
 
+* Small refactoring and code modernization to get rid of some clang warnings.
 * Updated README for new build system
 * Observe new namespace in libhdbpp
 * Changed libhdbpp includes to new path (hdb++) and new split header files
