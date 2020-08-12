@@ -40,12 +40,12 @@ StatsThread::StatsThread(HdbDevice *dev):Tango::LogAdapter(dev->_device)
 }
 //=============================================================================
 //=============================================================================
-void *StatsThread::run_undetached(void *ptr)
+void *StatsThread::run_undetached(void * /*ptr*/)
 {
 	DEBUG_STREAM << "StatsThread id="<<omni_thread::self()->id()<<endl;
 	hdb_dev->AttributeRecordFreq = -1;
 	hdb_dev->AttributeFailureFreq = -1;
-	while(abortflag==false)
+	while(!abortflag)
 	{
 		if(period > 0)
 			abort_sleep((double)period);
@@ -134,11 +134,11 @@ void *StatsThread::run_undetached(void *ptr)
 			INFO_STREAM <<"StatsThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
 		}
 
-		gettimeofday(&last_stat, NULL);
+		gettimeofday(&last_stat, nullptr);
 		hdb_dev->reset_freq_statistics();
 	}
 	DEBUG_STREAM <<"StatsThread::"<< __func__<<": exiting..."<<endl;
-	return NULL;
+	return nullptr;
 }
 //=============================================================================
 //=============================================================================

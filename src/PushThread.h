@@ -49,7 +49,8 @@
 
 #include <tango.h>
 #include <stdint.h>
-#include <libhdb++/LibHdb++.h>
+#include "hdb++/HdbClient.h"
+#include "HdbCmdData.h"
 
 
 namespace HdbEventSubscriber_ns
@@ -104,7 +105,7 @@ private:
 
 public:
 	//PushThreadShared() { max_waiting=0; stop_it=false;};
-	PushThreadShared(HdbDevice *dev, vector<string> configuration);
+	PushThreadShared(HdbDevice *dev, const string &ds_name, vector<string> configuration);
 	~PushThreadShared();
 
 	void push_back_cmd(HdbCmdData *argin);
@@ -194,6 +195,7 @@ public:
 	void  pause_attr(string &signame);
 	void  stop_attr(string &signame);
 	void  remove_attr(string &signame);
+	void  add_attr(string &signame, int data_type, int data_format, int write_type);
 	void  start_all();
 	void  pause_all();
 	void  stop_all();
@@ -207,7 +209,7 @@ public:
 	omni_mutex *sig_lock;
 	vector<HdbStat>	signals;
 
-	HdbClient *mdb;
+	hdbpp::HdbClient *mdb;
 
 
 };
@@ -221,13 +223,13 @@ public:
 //=========================================================
 class PushThread: public omni_thread, public Tango::LogAdapter
 {
-	PushThreadShared	*shared;
+	std::shared_ptr<PushThreadShared> shared;
 
 public:
 /**
  *	Initialize the sub process parameters (name, domain, log_file).
  */
-	PushThread(PushThreadShared	*pts, HdbDevice *dev);
+	PushThread(std::shared_ptr<PushThreadShared> pts, HdbDevice *dev);
 	
 /**
  * Execute the fork of the sub process in a thread.
