@@ -52,7 +52,7 @@ PushThreadShared::PushThreadShared(
 
 	try
 	{
-		mdb = new hdbpp::HdbClient(ds_name, configuration);
+		mdb = getDBFactory()->create_db(ds_name, configuration);
 	}
 	catch (Tango::DevFailed &err)
 	{
