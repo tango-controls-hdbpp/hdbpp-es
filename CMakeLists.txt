@@ -91,9 +91,10 @@ elseif(NOT LIBHDBPP_PROJECT_BUILD AND NOT FETCH_LIBHDBPP)
     find_package(${BACKEND_NAME})
 
     # The find package must set the backend target variable to be valid
-    if(NOT ${BACKEND_TARGET})
-	    message(STATUS "ERROR ${PACKAGES_FOUND}")
-    endif(NOT ${BACKEND_TARGET})
+    if(NOT DEFINED BACKEND_TARGET)
+        message(FATAL_ERROR "Backend ${BACKEND_NAME} does not define the
+        BACKEND_TARGET variable needed to build.")
+    endif(NOT DEFINED BACKEND_TARGET)
 endif()
 
 # Find tango if it has not already been found. Returns an interface library
