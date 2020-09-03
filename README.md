@@ -51,7 +51,7 @@ Build dependencies:
 
 * libhdbpp version 2 or greater. Not compatible with any version below this.
 
-The build requires the libhdbpp project headers for building and shared library to link against. There is two methods to include this dependency:
+The build requires the libhdbpp project headers for building. There is two methods to include this dependency:
 
 * libhdbpp can be installed in either a standard or non-standard location and cmake flags used to locate it.
 * Enabled the custom cmake flag FETCH_LIBHDBPP (see below) and cmake will download the project at configuration time and integrate it directly into the build. This is ideal for testing the project in isolation from a deployed system.
@@ -77,6 +77,7 @@ If wishing to build the project, ensure the following dependencies are met:
 |------|-----|-----|-----|
 | ENABLE_CLANG | ON/OFF | OFF | Clang code static analysis and cppcore guideline enforcement |
 | FETCH_LIBHDBPP | ON/OFF | OFF | Download and build against libhdbpp locally |
+| LIBHDBPP_BACKEND | "backend_name" | "timescaledb" | Backend to use for this build. Supported values are timescaledb, mysql, cassandra. |
 | FETCH_LIBHDBPP_TAG | tag/branch | master | When FETCH_LIBHDBPP is enabled, this flag defines the tag/branch to download |
 
 ### Standard CMake Flags
