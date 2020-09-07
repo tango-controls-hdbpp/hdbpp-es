@@ -23,9 +23,7 @@
 #ifndef _CHECK_PERIODIC_THREAD_H
 #define _CHECK_PERIODIC_THREAD_H
 
-#include <tango.h>
-#include <eventconsumer.h>
-#include <stdint.h>
+#include "AbortableThread.h"
 
 /**
  * @author	$Author: graziano $
@@ -43,7 +41,10 @@ namespace HdbEventSubscriber_ns
  *	Create a thread retry to check periodic event.
  */
 //=========================================================
-class CheckPeriodicThread: public omni_thread, public Tango::LogAdapter
+
+class HdbDevice;
+
+class CheckPeriodicThread: public AbortableThread
 {
 private:
 	/**
@@ -51,16 +52,18 @@ private:
 	 */
 	HdbDevice	*hdb_dev;
 
+	timespec	last_check;
+
+protected:
+
+        void init_abort_loop() override;
+        void run_abort_loop() override;
+        void finalize_abort_loop() override;
+        auto get_abort_loop_period_ms() -> unsigned int override;
 
 public:
-	bool		abortflag;
-	timespec	last_check;
 	int			delay_tolerance_ms;
 	CheckPeriodicThread(HdbDevice *dev);
-
-	void *run_undetached(void *);
-	void start() {start_undetached();}
-	void abort_sleep(double time);
 };
 
 

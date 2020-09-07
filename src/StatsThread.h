@@ -25,7 +25,8 @@
 
 #include <tango.h>
 #include <eventconsumer.h>
-#include <stdint.h>
+#include <cstdint>
+#include "AbortableThread.h"
 
 /**
  * @author	$Author: graziano $
@@ -38,12 +39,13 @@
 namespace HdbEventSubscriber_ns
 {
 
+class HdbDevice;
 //=========================================================
 /**
  *	Create a thread retry to subscribe event.
  */
 //=========================================================
-class StatsThread: public omni_thread, public Tango::LogAdapter
+class StatsThread: public AbortableThread
 {
 private:
 	/**
@@ -51,20 +53,16 @@ private:
 	 */
 	HdbDevice	*hdb_dev;
 
+protected:
+
+        void init_abort_loop() override;
+        void run_abort_loop() override;
+        void finalize_abort_loop() override;
+        auto get_abort_loop_period_ms() -> unsigned int override;
 
 public:
-	int			period;
-	bool		abortflag;
 	timeval		last_stat;
 	StatsThread(HdbDevice *dev);
-	/**
-	 *	Execute the thread loop.
-	 *	This thread is awaken when a command has been received 
-	 *	and falled asleep when no command has been received from a long time.
-	 */
-	void *run_undetached(void *);
-	void start() {start_undetached();}
-	void abort_sleep(double time);
 };
 
 

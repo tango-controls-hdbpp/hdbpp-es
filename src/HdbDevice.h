@@ -52,6 +52,7 @@
 #include <StatsThread.h>
 #include <PollerThread.h>
 #include <CheckPeriodicThread.h>
+
 /**
  * @author	$Author: graziano $
  * @version	$Revision: 1.5 $
@@ -96,7 +97,7 @@ class HdbDevice: public Tango::LogAdapter
 public:
 	//	Data members here
 	//-----------------------------------------
-	string				status;
+        std::string				status;
 	std::unique_ptr<SubscribeThread> thread;
 	std::unique_ptr<PushThread> push_thread;
 	std::unique_ptr<StatsThread> stats_thread;
@@ -113,7 +114,7 @@ public:
 	std::shared_ptr<SharedData> shared;
 	std::shared_ptr<PushThreadShared> push_shared;
 	Tango::DeviceImpl *_device;
-	map<string, string> domain_map;
+        std::map<std::string, std::string> domain_map;
 
 	Tango::DevDouble	AttributeRecordFreq;
 	Tango::DevDouble	AttributeFailureFreq;
@@ -148,31 +149,22 @@ public:
 	Tango::DevULong		attr_AttributeTTLList_read[MAX_ATTRIBUTES];
 
 	vector<string> attribute_list_str;
-	vector<string> old_attribute_list_str;
 	size_t attribute_list_str_size;
 	vector<string> attribute_ok_list_str;
-	vector<string> old_attribute_ok_list_str;
 	size_t attribute_ok_list_str_size;
 	vector<string> attribute_nok_list_str;
-	vector<string> old_attribute_nok_list_str;
 	size_t attribute_nok_list_str_size;
 	vector<string> attribute_pending_list_str;
-	vector<string> old_attribute_pending_list_str;
 	size_t attribute_pending_list_str_size;
 	vector<string> attribute_started_list_str;
-	vector<string> old_attribute_started_list_str;
 	size_t attribute_started_list_str_size;
 	vector<string> attribute_paused_list_str;
-	vector<string> old_attribute_paused_list_str;
 	size_t attribute_paused_list_str_size;
 	vector<string> attribute_stopped_list_str;
-	vector<string> old_attribute_stopped_list_str;
 	size_t attribute_stopped_list_str_size;
 	vector<string> attribute_error_list_str;
-	vector<string> old_attribute_error_list_str;
 	size_t attribute_error_list_str_size;
 	vector<string> attribute_context_list_str;
-	vector<string> old_attribute_context_list_str;
 	size_t attribute_context_list_str_size;
 
 	map<string,string> contexts_map;

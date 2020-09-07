@@ -13,6 +13,7 @@ cmake_minimum_required(VERSION 3.8)
 set(CMAKE_SKIP_RPATH true)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_COLOR_MAKEFILE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Output name for the final binary
 set(HDBPP_ES_NAME "hdb++es-srv")
@@ -32,6 +33,8 @@ list(APPEND LIBRARY_PATHS ${CMAKE_LIBRARY_PATH})
 # Start the project
 project(hdbpp_es VERSION ${VERSION_STRING} LANGUAGES CXX)
 
+
+# Build options
 set(FETCH_LIBHDBPP_TAG "master" CACHE STRING "Libhdbpp branch/tag to clone 'master'")
 set(LIBHDBPP_BACKEND "timescaledb" CACHE STRING "Backend to use.")
 option(LIBHDBPP_BACKEND "Backend to be used for libhdb++" "timescaledb")
@@ -164,3 +167,4 @@ install(
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 message(STATUS "Configured hdbpp-es project")
+

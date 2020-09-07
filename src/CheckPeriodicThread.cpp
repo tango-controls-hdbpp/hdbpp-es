@@ -21,54 +21,59 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 //-=============================================================================
 
 
-#include <HdbDevice.h>
+#include "CheckPeriodicThread.h"
+#include "HdbDevice.h"
 
 
 namespace HdbEventSubscriber_ns
 {
 
-
 //=============================================================================
 //=============================================================================
-CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): Tango::LogAdapter(dev->_device)
+CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): AbortableThread(dev->_device)
+                                                          , last_check()
+                                                          , delay_tolerance_ms(0)
 {
 	hdb_dev = dev;
-	abortflag = false;
 	last_check.tv_sec = 0;
 	last_check.tv_nsec = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_check);
 }
+
 //=============================================================================
 //=============================================================================
-auto CheckPeriodicThread::run_undetached(void * /*ptr*/) -> void *
+auto CheckPeriodicThread::init_abort_loop() -> void
 {
-	INFO_STREAM << "CheckPeriodicThread delay_tolerance_ms="<<delay_tolerance_ms<<" id="<<omni_thread::self()->id()<<endl;
-	while(!abortflag)
-	{
-		double min_time_to_timeout_ms = 0;
-		try
-		{
-			min_time_to_timeout_ms = hdb_dev->shared->check_periodic_event_timeout(delay_tolerance_ms);
-		}catch(Tango::DevFailed &e)
-		{
-		}
-		//sleep 1 second more than the first expiration time calculated
-		abort_sleep(1.0 + 0.001*min_time_to_timeout_ms);
-	}
-	INFO_STREAM <<"CheckPeriodicThread::"<< __func__<<": exiting..."<<endl;
-	return nullptr;
-}
-//=============================================================================
-//=============================================================================
-void CheckPeriodicThread::abort_sleep(double time)
-{
-	for (int i = 0; i < (time/0.1); i++) {
-		if (abortflag)
-			break;
-		omni_thread::sleep(0,100000000);
-	}
+    INFO_STREAM << "CheckPeriodicThread delay_tolerance_ms="<<delay_tolerance_ms<<" id="<<omni_thread::self()->id()<<endl;
 }
 
+//=============================================================================
+//=============================================================================
+auto CheckPeriodicThread::get_abort_loop_period_ms() -> unsigned int
+{
+    unsigned int min_time_to_timeout_ms = 0;
+    try
+    {
+        min_time_to_timeout_ms = hdb_dev->shared->check_periodic_event_timeout(delay_tolerance_ms);
+    }catch(Tango::DevFailed &e)
+    {
+    }
 
+    //sleep 1 second more than the first expiration time calculated
+    return 1000 + min_time_to_timeout_ms;
+}
+
+//=============================================================================
+//=============================================================================
+auto CheckPeriodicThread::finalize_abort_loop() -> void
+{
+    INFO_STREAM <<"CheckPeriodicThread::"<< __func__<<": exiting..."<<endl;
+}
+
+//=============================================================================
+//=============================================================================
+auto CheckPeriodicThread::run_abort_loop() -> void
+{
+}
 
 }	//	namespace

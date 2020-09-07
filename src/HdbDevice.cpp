@@ -64,9 +64,9 @@ HdbDevice::~HdbDevice()
 {
 	INFO_STREAM << "	Deleting HdbDevice" << endl;
 	DEBUG_STREAM << "	Stopping stats thread" << endl;
-	stats_thread->abortflag=true;
-	check_periodic_thread->abortflag=true;
-	poller_thread->abortflag=true;
+	stats_thread->abort();
+	check_periodic_thread->abort();
+	poller_thread->abort();
 	check_periodic_thread->join(nullptr);
 	DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
 	stats_thread->join(nullptr);
@@ -158,7 +158,7 @@ void HdbDevice::initialize()
 	attr_AttributeMaxProcessingTime_read = -1;
 	push_thread = std::unique_ptr<PushThread>(new PushThread(push_shared, this));
 	stats_thread = std::unique_ptr<StatsThread>(new StatsThread(this));
-	stats_thread->period = stats_window;
+	stats_thread->set_period(stats_window);
 	poller_thread = std::unique_ptr<PollerThread>(new PollerThread(this));
 	check_periodic_thread = std::unique_ptr<CheckPeriodicThread>(new CheckPeriodicThread(this));
 	check_periodic_thread->delay_tolerance_ms = check_periodic_delay*1000;
@@ -1375,14 +1375,21 @@ void HdbDevice::error_attribute(Tango::EventData *data)
 //=============================================================================
 void HdbDevice::storage_time(Tango::EventData *data, double elapsed)
 {
-	char el_time[80];
-	char *el_ptr = el_time;
-	sprintf (el_ptr, "%.3f ms", elapsed);
+	int size = snprintf( nullptr, 0, "%.3f ms", elapsed ) + 1;
+	if( size <= 0 )
+        {
+            //An error occured during formatting, what should we do ?
+        }
+	std::unique_ptr<char[]> buf( new char[ size ] );
+        
+        snprintf( buf.get(), size, "%.3f ms", elapsed);
+        
+        std::string fmt_time( buf.get(), buf.get() + size - 1 );
 	
-	INFO_STREAM << "Storage time : " << el_time << " for " << data->attr_name << endl;
+	INFO_STREAM << "Storage time : " << fmt_time << " for " << data->attr_name << endl;
 
 	if ( elapsed > 50 )
-		ERROR_STREAM << "LONG Storage time : " << el_time << " for " << data->attr_name << endl;
+		ERROR_STREAM << "LONG Storage time : " << fmt_time << " for " << data->attr_name << endl;
 }
 	
 //=============================================================================
