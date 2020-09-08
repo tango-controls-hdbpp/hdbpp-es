@@ -231,7 +231,7 @@ void HdbEventSubscriber::init_device()
 	//	Create one event handler by HDB access device
 	INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
 	string	status("");
-	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, this);
+	hdb_dev = new HdbDevice(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, attributeListFile, this);
 	uint8_t index=0;
 	for(vector<string>::iterator it = contextsList.begin(); it != contextsList.end(); it++)
 	{
@@ -343,6 +343,7 @@ void HdbEventSubscriber::get_device_property()
 	dev_prop.push_back(Tango::DbDatum("ContextsList"));
 	dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
 	dev_prop.push_back(Tango::DbDatum("SubscribeChangeAsFallback"));
+	dev_prop.push_back(Tango::DbDatum("AttributeListFile"));
 
 	//	is there at least one property to be read ?
 	if (dev_prop.size()>0)
@@ -455,6 +456,17 @@ void HdbEventSubscriber::get_device_property()
 		}
 		//	And try to extract SubscribeChangeAsFallback value from database
 		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeChangeAsFallback;
+
+		//	Try to initialize AttributeListFile from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  attributeListFile;
+		else {
+			//	Try to initialize AttributeListFile from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  attributeListFile;
+		}
+		//	And try to extract AttributeListFile value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeListFile;
 
 	}
 
@@ -1161,7 +1173,7 @@ void HdbEventSubscriber::add_dynamic_attributes()
  *	Command AttributeAdd related method
  *	Description: Add a new attribute to archive in HDB.
  *
- *	@param argin Attribute name, strategy, data_type, data_format, write_type 
+ *	@param argin Attribute name, strategy, data_type, data_format, write_type
  */
 //--------------------------------------------------------
 void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
