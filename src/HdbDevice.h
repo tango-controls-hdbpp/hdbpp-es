@@ -49,9 +49,7 @@
 #include <tango.h>
 #include <SubscribeThread.h>
 #include <PushThread.h>
-#include <StatsThread.h>
-#include <PollerThread.h>
-#include <CheckPeriodicThread.h>
+#include "Consts.h"
 
 /**
  * @author	$Author: graziano $
@@ -85,6 +83,10 @@
 
 namespace HdbEventSubscriber_ns
 {
+
+class PollerThread;
+class StatsThread;
+class CheckPeriodicThread;
 
 //==========================================================
 /**
@@ -336,6 +338,11 @@ public:
 	 */
 	void string_explode(const string &str, const string &separator, vector<string>& results);
 
+        template<typename T>
+        void push_events(const std::string& att_name, T* data, bool sleep = false);
+        template<typename T>
+        void push_events(const std::string& att_name, T* data, long size, bool sleep = false);
+
 protected :	
 	/**
 	 * Read signal list in database as property.
@@ -382,7 +389,35 @@ public:
 	virtual void push_event(Tango::AttrConfEventData* data);
 };
 
+template<typename T>
+void HdbDevice::push_events(const std::string& attr_name, T* data, bool sleep)
+{
+    try
+    {
+        _device->push_change_event(attr_name, data);
+        _device->push_archive_event(attr_name, data);
+    }
+    catch(Tango::DevFailed &e){}
 
+    // TODO is this needed ?
+    if(sleep)
+        usleep(1 * s_to_ms_factor);
+}
+
+template<typename T>
+void HdbDevice::push_events(const std::string& attr_name, T* data, long size, bool sleep)
+{
+    try
+    {
+        _device->push_change_event(attr_name, data, size);
+        _device->push_archive_event(attr_name, data, size);
+    }
+    catch(Tango::DevFailed &e){}
+
+    // TODO is this needed ?
+    if(sleep)
+        usleep(1 * s_to_ms_factor);
+}
 }	// namespace_ns
 
 #endif	// _HDBDEVICE_H

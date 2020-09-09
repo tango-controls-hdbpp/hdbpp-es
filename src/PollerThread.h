@@ -28,42 +28,45 @@
 #include <stdint.h>
 #include "AbortableThread.h"
 
+
 /**
  * @author	$Author: graziano $
  * @version	$Revision: 1.5 $
  */
 
- //	constants definitions here.
- //-----------------------------------------------
+//	constants definitions here.
+//-----------------------------------------------
 
 namespace HdbEventSubscriber_ns
 {
 
-//=========================================================
-/**
- *	Create a thread retry to subscribe event.
- */
-//=========================================================
-class PollerThread: public AbortableThread
-{
-private:
-	/**
-	 *	HdbDevice object
-	 */
-	HdbDevice	*hdb_dev;
-	bool is_list_changed(const vector<string> & newlist, vector<string> &oldlist);
+    class HdbDevice;
+    //=========================================================
+    /**
+     *	Create a thread retry to subscribe event.
+     */
+    //=========================================================
+    class PollerThread: public AbortableThread
+    {
+        private:
 
-protected:
+            /**
+             *	HdbDevice object
+             */
+            HdbDevice	*hdb_dev;
+            static auto is_list_changed(const vector<string> & newlist, vector<string> &oldlist) -> bool;
 
-        void init_abort_loop() override;
-        void run_abort_loop() override;
-        void finalize_abort_loop() override;
-        auto get_abort_loop_period_ms() -> unsigned int override;
+        protected:
 
-public:
-	timeval		last_stat;
-	PollerThread(HdbDevice *dev);
-};
+            void init_abort_loop() override;
+            void run_abort_loop() override;
+            void finalize_abort_loop() override;
+            auto get_abort_loop_period_ms() -> unsigned int override;
+
+        public:
+            timeval		last_stat;
+            PollerThread(HdbDevice *dev);
+    };
 
 
 }	// namespace_ns

@@ -54,6 +54,9 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include <HdbEventSubscriber.h>
 #include <sys/time.h>
 #include <netdb.h> //for getaddrinfo
+#include "PollerThread.h"
+#include "StatsThread.h"
+#include "CheckPeriodicThread.h"
 
 namespace HdbEventSubscriber_ns
 {

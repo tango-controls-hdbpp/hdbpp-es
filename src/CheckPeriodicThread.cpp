@@ -28,6 +28,8 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 namespace HdbEventSubscriber_ns
 {
 
+const unsigned int default_period = 1000;
+
 //=============================================================================
 //=============================================================================
 CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): AbortableThread(dev->_device)
@@ -60,7 +62,7 @@ auto CheckPeriodicThread::get_abort_loop_period_ms() -> unsigned int
     }
 
     //sleep 1 second more than the first expiration time calculated
-    return 1000 + min_time_to_timeout_ms;
+    return default_period + min_time_to_timeout_ms;
 }
 
 //=============================================================================

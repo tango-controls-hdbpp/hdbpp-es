@@ -62,6 +62,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 #include <tango.h>
 #include <HdbEventSubscriber.h>
 #include <HdbEventSubscriberClass.h>
+#include "StatsThread.h"
 
 /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber.cpp
 
