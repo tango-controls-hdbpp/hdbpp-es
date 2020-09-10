@@ -23,6 +23,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include "PollerThread.h"
 #include <HdbDevice.h>
 #include <HdbEventSubscriber.h>
+#include "SubscribeThread.h"
 
 
 namespace HdbEventSubscriber_ns
@@ -52,7 +53,7 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    void PollerThread::run_abort_loop()
+    void PollerThread::run_thread_loop()
     {
         //DEBUG_STREAM << "PollerThread awake!"<<endl;
 
@@ -96,25 +97,14 @@ namespace HdbEventSubscriber_ns
         bool changed = hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str, hdb_dev->attr_AttributeTTLList_read);
         if(changed)
         {
-            for (size_t i=0 ; i<hdb_dev->attribute_list_str.size() && i < MAX_ATTRIBUTES; i++)
-                hdb_dev->attr_AttributeList_read[i] = const_cast<char*>(hdb_dev->attribute_list_str[i].c_str());
-            hdb_dev->attribute_list_str_size = hdb_dev->attribute_list_str.size();
+            update_array(hdb_dev->attr_AttributeList_read, hdb_dev->attribute_list_str_size, hdb_dev->attribute_list_str);
+            update_array(hdb_dev->attr_AttributeStartedList_read, hdb_dev->attribute_started_list_str_size, hdb_dev->attribute_started_list_str);
             
-            for (size_t i=0 ; i<hdb_dev->attribute_started_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-                hdb_dev->attr_AttributeStartedList_read[i] = const_cast<char*>(hdb_dev->attribute_started_list_str[i].c_str());
-            hdb_dev->attribute_started_list_str_size = hdb_dev->attribute_started_list_str.size();
+            update_array(hdb_dev->attr_AttributePausedList_read, hdb_dev->attribute_paused_list_str_size, hdb_dev->attribute_paused_list_str);
             
-            for (size_t i=0 ; i<hdb_dev->attribute_paused_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-                hdb_dev->attr_AttributePausedList_read[i] = const_cast<char*>(hdb_dev->attribute_paused_list_str[i].c_str());
-            hdb_dev->attribute_paused_list_str_size = hdb_dev->attribute_paused_list_str.size();
+            update_array(hdb_dev->attr_AttributeStoppedList_read, hdb_dev->attribute_stopped_list_str_size, hdb_dev->attribute_stopped_list_str);
             
-            for (size_t i=0 ; i<hdb_dev->attribute_stopped_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-                hdb_dev->attr_AttributeStoppedList_read[i] = const_cast<char*>(hdb_dev->attribute_stopped_list_str[i].c_str());
-            hdb_dev->attribute_stopped_list_str_size = hdb_dev->attribute_stopped_list_str.size();
-            
-            for (size_t i=0 ; i<hdb_dev->attribute_context_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-                hdb_dev->attr_AttributeContextList_read[i] = const_cast<char*>(hdb_dev->attribute_context_list_str[i].c_str());
-            hdb_dev->attribute_context_list_str_size = hdb_dev->attribute_context_list_str.size();
+            update_array(hdb_dev->attr_AttributeContextList_read, hdb_dev->attribute_context_list_str_size, hdb_dev->attribute_context_list_str);
         }
 
 
@@ -127,26 +117,20 @@ namespace HdbEventSubscriber_ns
         hdb_dev->push_events("AttributeTTLList", &hdb_dev->attr_AttributeTTLList_read[0], hdb_dev->attribute_list_str_size, true);
 
         hdb_dev->get_sig_not_on_error_list(hdb_dev->attribute_ok_list_str);
-        
-        for (size_t i=0 ; i<hdb_dev->attribute_ok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-            hdb_dev->attr_AttributeOkList_read[i] = const_cast<char*>(hdb_dev->attribute_ok_list_str[i].c_str());
-        hdb_dev->attribute_ok_list_str_size = hdb_dev->attribute_ok_list_str.size();
+
+        update_array(hdb_dev->attr_AttributeOkList_read, hdb_dev->attribute_ok_list_str_size, hdb_dev->attribute_ok_list_str);
         
         hdb_dev->push_events("AttributeOkList", &hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size, true);
 
         hdb_dev->get_sig_on_error_list(hdb_dev->attribute_nok_list_str);
-        
-        for (size_t i=0 ; i<hdb_dev->attribute_nok_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-            hdb_dev->attr_AttributeNokList_read[i] = const_cast<char*>(hdb_dev->attribute_nok_list_str[i].c_str());
-        hdb_dev->attribute_nok_list_str_size = hdb_dev->attribute_nok_list_str.size();
+       
+        update_array(hdb_dev->attr_AttributeNokList_read, hdb_dev->attribute_nok_list_str_size, hdb_dev->attribute_nok_list_str);
         
         hdb_dev->push_events("AttributeNokList", &hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size, true);
 
         hdb_dev->get_sig_list_waiting(hdb_dev->attribute_pending_list_str);
         
-        for (size_t i=0 ; i<hdb_dev->attribute_pending_list_str.size() && i < MAX_ATTRIBUTES; i++)
-            hdb_dev->attr_AttributePendingList_read[i] = const_cast<char*>(hdb_dev->attribute_pending_list_str[i].c_str());
-        hdb_dev->attribute_pending_list_str_size = hdb_dev->attribute_pending_list_str.size();
+        update_array(hdb_dev->attr_AttributePendingList_read, hdb_dev->attribute_pending_list_str_size, hdb_dev->attribute_pending_list_str);
         
         hdb_dev->push_events("AttributePendingList", &hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size, true);
 
@@ -154,9 +138,7 @@ namespace HdbEventSubscriber_ns
         
         if(changed)
         {
-            for (size_t i=0 ; i<hdb_dev->attribute_error_list_str.size() && i < MAX_ATTRIBUTES ; i++)
-                hdb_dev->attr_AttributeErrorList_read[i] = const_cast<char*>(hdb_dev->attribute_error_list_str[i].c_str());
-            hdb_dev->attribute_error_list_str_size = hdb_dev->attribute_error_list_str.size();
+            update_array(hdb_dev->attr_AttributeErrorList_read, hdb_dev->attribute_error_list_str_size, hdb_dev->attribute_error_list_str);
         }
         
         hdb_dev->push_events("AttributeErrorList", &hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size, true);
@@ -200,5 +182,12 @@ namespace HdbEventSubscriber_ns
 
         }
         return ret;
+    }
+
+    void PollerThread::update_array(Tango::DevString (&out)[MAX_ATTRIBUTES], size_t& out_size, const vector<string>& in)
+    {
+        for (size_t i=0 ; i < in.size() && i < MAX_ATTRIBUTES; i++)
+            out[i] = const_cast<char*>(in[i].c_str());
+        out_size = in.size();
     }
 }	//	namespace

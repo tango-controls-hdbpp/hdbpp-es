@@ -22,6 +22,8 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 #include "StatsThread.h"
 #include <HdbDevice.h>
+#include "SubscribeThread.h"
+#include "PushThread.h"
 
 
 namespace HdbEventSubscriber_ns
@@ -51,7 +53,7 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    void StatsThread::run_abort_loop()
+    void StatsThread::run_thread_loop()
     {
         long ok_ev=0;
         long nok_ev=0;
@@ -90,7 +92,7 @@ namespace HdbEventSubscriber_ns
             ok_ev += ok_ev_t;
             nok_ev_t = hdb_dev->shared->get_nok_event_freq(signame);
             nok_ev += nok_ev_t;
-            nok_db_t = hdb_dev->push_shared->get_nok_db_freq(signame);
+            nok_db_t = hdb_dev->push_thread->get_nok_db_freq(signame);
             nok_db += nok_db_t;
             hdb_dev->AttributeRecordFreqList[i] = ok_ev_t - nok_db_t;
             hdb_dev->AttributeFailureFreqList[i] = nok_ev_t + nok_db_t;

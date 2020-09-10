@@ -27,7 +27,7 @@
 #include <eventconsumer.h>
 #include <stdint.h>
 #include "AbortableThread.h"
-
+#include "Consts.h"
 
 /**
  * @author	$Author: graziano $
@@ -55,11 +55,12 @@ namespace HdbEventSubscriber_ns
              */
             HdbDevice	*hdb_dev;
             static auto is_list_changed(const vector<string> & newlist, vector<string> &oldlist) -> bool;
+            static void update_array(Tango::DevString (&out)[MAX_ATTRIBUTES], size_t& out_size, const vector<string>& in);
 
         protected:
 
             void init_abort_loop() override;
-            void run_abort_loop() override;
+            void run_thread_loop() override;
             void finalize_abort_loop() override;
             auto get_abort_loop_period_ms() -> unsigned int override;
 

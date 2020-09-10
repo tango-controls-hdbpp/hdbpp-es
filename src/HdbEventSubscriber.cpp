@@ -63,6 +63,8 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 #include <HdbEventSubscriber.h>
 #include <HdbEventSubscriberClass.h>
 #include "StatsThread.h"
+#include "SubscribeThread.h"
+#include "PushThread.h"
 
 /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber.cpp
 
@@ -1335,7 +1337,7 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
 	if(is_running || is_paused)
 	{
 		hdb_dev->shared->stop(signame);
-		hdb_dev->push_shared->stop_attr(signame);
+		hdb_dev->push_thread->stop_attr(signame);
 	}
 	hdb_dev->remove(signame);
 
@@ -1426,10 +1428,10 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	attr_status << "Event NOK counter  : "<<nok_ev<<" - "<<buf;
 	attr_status << endl;
 
-	tv = hdb_dev->push_shared->get_last_nokdb(signame);
+	tv = hdb_dev->push_thread->get_last_nokdb(signame);
 	nowtime = tv.tv_sec;
 	nowtm = localtime(&nowtime);
-	uint32_t nok_db = hdb_dev->push_shared->get_nok_db(signame);
+	uint32_t nok_db = hdb_dev->push_thread->get_nok_db(signame);
 	if(nok_db != 0)
 	{
 		memset(buf, 0,  sizeof(buf));
@@ -1443,9 +1445,9 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	attr_status << "DB ERRORS counter  : "<<nok_db<<" - "<<buf;
 	attr_status << endl;
 
-	attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->push_shared->get_avg_store_time(signame)<<"s";
+	attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->push_thread->get_avg_store_time(signame)<<"s";
 	attr_status << endl;
-	attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_shared->get_avg_process_time(signame)<<"s";
+	attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_thread->get_avg_process_time(signame)<<"s";
 	argout  = new char[attr_status.str().length()+1];
 	strcpy(argout, attr_status.str().c_str());
 
@@ -1519,7 +1521,7 @@ void HdbEventSubscriber::stop()
 	//	Add your own code
 #if 0
 	hdb_dev->shared->stop_all();
-	hdb_dev->push_shared->stop_all();
+	hdb_dev->push_thread->stop_all();
 #else
 	vector<string> att_list_tmp;
 	hdb_dev->get_sig_list(att_list_tmp);
@@ -1565,7 +1567,7 @@ void HdbEventSubscriber::attribute_start(Tango::DevString argin)
 	}
 	if(is_paused || is_stopped)
 	{
-		hdb_dev->push_shared->start_attr(signame);
+		hdb_dev->push_thread->start_attr(signame);
 		hdb_dev->shared->start(signame);
 	}
 
@@ -1609,7 +1611,7 @@ void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
 	if(is_running || is_paused)
 	{
 		hdb_dev->shared->stop(signame);
-		hdb_dev->push_shared->stop_attr(signame);
+		hdb_dev->push_thread->stop_attr(signame);
 	}
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_stop
@@ -1649,7 +1651,7 @@ void HdbEventSubscriber::pause()
 	//	Add your own code
 #if 0
 	hdb_dev->shared->pause_all();
-	hdb_dev->push_shared->pause_all();
+	hdb_dev->push_thread->pause_all();
 #else
 	vector<string> att_list_tmp;
 	hdb_dev->get_sig_list(att_list_tmp);
@@ -1715,7 +1717,7 @@ void HdbEventSubscriber::attribute_pause(Tango::DevString argin)
 	if(is_running)
 	{
 		hdb_dev->shared->pause(signame);
-		hdb_dev->push_shared->pause_attr(signame);
+		hdb_dev->push_thread->pause_attr(signame);
 	}
 	else
 	{

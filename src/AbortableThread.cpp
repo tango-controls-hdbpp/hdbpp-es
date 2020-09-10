@@ -22,7 +22,7 @@
 
 #include <AbortableThread.h>
 #include <cmath>
-
+#include "Consts.h"
 
 namespace HdbEventSubscriber_ns
 {
@@ -50,7 +50,7 @@ auto AbortableThread::run_undetached(void * /*ptr*/) -> void *
         if(aborted)
             break;
 
-        run_abort_loop();
+        run_thread_loop();
     }
     
     finalize_abort_loop();
@@ -83,7 +83,7 @@ auto AbortableThread::timed_wait() -> int
     double dec_time = std::modf(time, &int_time);
     
     rel_sec = static_cast<unsigned long>(int_time);
-    rel_nsec = static_cast<unsigned long>(dec_time * 1000000000);
+    rel_nsec = static_cast<unsigned long>(dec_time * s_to_ns_factor);
 
     omni_thread::get_time(&abs_sec, &abs_nsec, rel_sec, rel_nsec);
     return abort_condition.timedwait(abs_sec, abs_nsec);

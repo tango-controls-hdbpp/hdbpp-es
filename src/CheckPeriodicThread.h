@@ -57,12 +57,12 @@ private:
 protected:
 
         void init_abort_loop() override;
-        void run_abort_loop() override;
+        void run_thread_loop() override;
         void finalize_abort_loop() override;
         auto get_abort_loop_period_ms() -> unsigned int override;
 
 public:
-	int			delay_tolerance_ms;
+	unsigned int			delay_tolerance_ms;
 	CheckPeriodicThread(HdbDevice *dev);
 };
 

@@ -39,7 +39,7 @@
 #ifndef _HDBDEVICE_H
 #define _HDBDEVICE_H
 
-#define MAX_ATTRIBUTES		10000
+//#define MAX_ATTRIBUTES		10000
 #define CONTEXT_KEY		"strategy"
 #define TTL_KEY			"ttl"
 #define DEFAULT_TTL		0	//0 -> infinite, >0 -> time to live in hours
@@ -47,8 +47,6 @@
 #define ALWAYS_CONTEXT_DESC	"Always stored"
 
 #include <tango.h>
-#include <SubscribeThread.h>
-#include <PushThread.h>
 #include "Consts.h"
 
 /**
@@ -87,6 +85,9 @@ namespace HdbEventSubscriber_ns
 class PollerThread;
 class StatsThread;
 class CheckPeriodicThread;
+class PushThread;
+class SubscribeThread;
+class SharedData;
 
 //==========================================================
 /**
@@ -114,7 +115,6 @@ public:
 	 *	Shared data
 	 */
 	std::shared_ptr<SharedData> shared;
-	std::shared_ptr<PushThreadShared> push_shared;
 	Tango::DeviceImpl *_device;
         std::map<std::string, std::string> domain_map;
 
@@ -280,15 +280,15 @@ public:
 	/**
 	 *	Returns how many signals are waiting to be stored
 	 */
-	 int get_max_waiting();
+	 auto get_max_waiting() const -> int;
 	/**
 	 *	Returns how many signals are waiting to be stored
 	 */
-	 int nb_cmd_waiting();
+	 auto nb_cmd_waiting() const -> int;
 	/**
 	 *	Returns the list of signals waiting to be stored
 	 */
-	void get_sig_list_waiting(vector<string> &);
+	void get_sig_list_waiting(vector<string> &) const;
 	/**
 	 *	Reset statistic counters
 	 */
@@ -302,14 +302,6 @@ public:
 	 */
 	bool  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list, Tango::DevULong *ttl_list);
 	/**
-	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
-	 */
-	auto	get_only_signal_name(const string &signame) -> string;
-	/**
-	 *	Returns the tango host (tango host has been added sinse tango 7.1.1)
-	 */
-	auto	get_only_tango_host(const string &signame) -> string;
-	/**
 	 *	Check if fqdn, otherwise fix it
 	 */
 	void fix_tango_host(string &attr);
@@ -317,15 +309,11 @@ public:
 	 *	Check if full domain name, otherwise fix it
 	 */
 	void add_domain(string &attr);
-	/**
-	 *	Remove domain
-	 */
-	auto remove_domain(const string &str) -> string;
 #ifndef _MULTI_TANGO_HOST
 	/**
 	 *	Compare without domain
 	 */
-	bool compare_without_domain(const string &str1, const string &str2);
+	static auto compare_without_domain(const string &str1, const string &str2) -> bool;
 #else
 	/**
 	 *	compare 2 tango names considering fqdn, domain, multi tango host
@@ -336,7 +324,7 @@ public:
 	/**
 	 *	explode a string in multiple strings using separator
 	 */
-	void string_explode(const string &str, const string &separator, vector<string>& results);
+	static void string_explode(const string &str, const string &separator, vector<string>& results);
 
         template<typename T>
         void push_events(const std::string& att_name, T* data, bool sleep = false);
@@ -367,7 +355,16 @@ protected :
 	 *	Store string (vector) in HDB
 	 */
 	void store_string(string &name, vector<string> values, int time);
-	
+
+private:	
+	/**
+	 *	Returns the tango host and signal name (tango host has been added since tango 7.1.1)
+	 */
+	static void get_tango_host_and_signal_name(const string &signame, string& tango_host, string& name);
+	/**
+	 *	Remove domain
+	 */
+	static auto remove_domain(const string &str) -> string;
 };
 
 
@@ -416,7 +413,7 @@ void HdbDevice::push_events(const std::string& attr_name, T* data, long size, bo
 
     // TODO is this needed ?
     if(sleep)
-        usleep(1 * s_to_ms_factor);
+        usleep(1 * ms_to_us_factor);
 }
 }	// namespace_ns
 

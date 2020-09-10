@@ -61,7 +61,7 @@ private:
 protected:
 
     virtual void init_abort_loop() = 0;
-    virtual void run_abort_loop() = 0;
+    virtual void run_thread_loop() = 0;
     virtual void finalize_abort_loop() = 0;
     virtual auto get_abort_loop_period_ms() -> unsigned int = 0;
 

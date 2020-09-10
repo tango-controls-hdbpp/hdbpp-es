@@ -23,6 +23,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 #include "CheckPeriodicThread.h"
 #include "HdbDevice.h"
+#include "SubscribeThread.h"
 
 
 namespace HdbEventSubscriber_ns
@@ -74,7 +75,7 @@ auto CheckPeriodicThread::finalize_abort_loop() -> void
 
 //=============================================================================
 //=============================================================================
-auto CheckPeriodicThread::run_abort_loop() -> void
+auto CheckPeriodicThread::run_thread_loop() -> void
 {
 }
 
