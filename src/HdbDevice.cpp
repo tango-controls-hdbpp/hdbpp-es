@@ -287,35 +287,39 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     //=============================================================================
-    void HdbDevice::add(string &signame, vector<string>& contexts, int data_type, int data_format, int write_type)
+    void HdbDevice::add(const string &signame, vector<string>& contexts, int data_type, int data_format, int write_type)
     {
-        fix_tango_host(signame);
-        push_thread->add_attr(signame, data_type, data_format, write_type);
-        shared->add(signame, contexts, UPDATE_PROP, false);
+        std::string attr_name;
+        fix_tango_host(signame, attr_name);
+        push_thread->add_attr(attr_name, data_type, data_format, write_type);
+        shared->add(attr_name, contexts, UPDATE_PROP, false);
     }
     //=============================================================================
     //=============================================================================
-    void HdbDevice::remove(string &signame)
+    void HdbDevice::remove(const string &signame)
     {
-        fix_tango_host(signame);
-        shared->remove(signame, false);
-        push_thread->remove(signame);
-        push_thread->remove_attr(signame);
+        std::string attr_name;
+        fix_tango_host(signame, attr_name);
+        shared->remove(attr_name, false);
+        push_thread->remove(attr_name);
+        push_thread->remove_attr(attr_name);
     }
     //=============================================================================
     //=============================================================================
-    void HdbDevice::update(string &signame, vector<string>& contexts)
+    void HdbDevice::update(const string &signame, vector<string>& contexts)
     {
-        fix_tango_host(signame);
-        shared->update(signame, contexts);
+        std::string attr_name;
+        fix_tango_host(signame, attr_name);
+        shared->update(attr_name, contexts);
     }
     //=============================================================================
     //=============================================================================
-    void HdbDevice::updatettl(string &signame, Tango::DevULong ttl)
+    void HdbDevice::updatettl(const string &signame, long ttl)
     {
-        fix_tango_host(signame);
-        shared->updatettl(signame, ttl);
-        push_thread->updatettl(signame, ttl);
+        std::string attr_name;
+        fix_tango_host(signame, attr_name);
+        shared->updatettl(attr_name, ttl);
+        push_thread->updatettl(attr_name, ttl);
     }
     //=============================================================================
     //=============================================================================
@@ -393,11 +397,12 @@ namespace HdbEventSubscriber_ns
                     tmplist_conf += string(";") + string(TTL_KEY) + "=" + ssttl.str();
                 }
 
-                fix_tango_host(tmplist_name);
-                tmplist_name += ";";
-                tmplist_name += tmplist_conf;
-                list.push_back(tmplist_name);
-                INFO_STREAM << "HdbDevice::" << __func__ << ": " << i << ": " << tmplist_name << endl;
+                std::string fixed_name;
+                fix_tango_host(tmplist_name, fixed_name);
+                fixed_name += ";";
+                fixed_name += tmplist_conf;
+                list.push_back(fixed_name);
+                INFO_STREAM << "HdbDevice::" << __func__ << ": " << i << ": " << fixed_name << endl;
             }
         }
     }
@@ -637,7 +642,7 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     //=============================================================================
-    auto HdbDevice::get_sig_status(string &signame) -> string
+    auto HdbDevice::get_sig_status(const string &signame) -> string
     {
         string ev_status = shared->get_sig_status(signame);
 
@@ -705,7 +710,9 @@ namespace HdbEventSubscriber_ns
 
         //time_t	t = time(NULL);
         //DEBUG_STREAM << __func__<<": Event '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
-        hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
+        string fixed_name;
+        hdb_dev->fix_tango_host(data->attr_name, fixed_name);	//TODO: why sometimes event arrive without fqdn ??
+        data->attr_name = fixed_name;
 
         hdb_dev->shared->veclock.readerIn();
         try
@@ -896,7 +903,9 @@ namespace HdbEventSubscriber_ns
     void ArchiveCB::push_event(Tango::AttrConfEventData *data)
     {
         //DEBUG_STREAM << __func__<<": AttrConfEvent '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
-        hdb_dev->fix_tango_host(data->attr_name);	//TODO: why sometimes event arrive without fqdn ??
+        string fixed_name;
+        hdb_dev->fix_tango_host(data->attr_name, fixed_name);	//TODO: why sometimes event arrive without fqdn ??
+        data->attr_name = fixed_name;
 
         //	Check if event is an error event.
         if (data->err)
@@ -976,15 +985,16 @@ namespace HdbEventSubscriber_ns
     
     //=============================================================================
     //=============================================================================
-    void HdbDevice::fix_tango_host(string &attr)
+    void HdbDevice::fix_tango_host(const string &attr, string& fixed)
     {
-        std::transform(attr.begin(), attr.end(), attr.begin(), (int(*)(int))tolower);		//transform to lowercase
+        fixed = attr;
+        std::transform(fixed.begin(), fixed.end(), fixed.begin(), (int(*)(int))tolower);		//transform to lowercase
         
         bool modify = false;
         string facility;
         string attr_name;
         
-        string::size_type start = attr.find("tango://");
+        string::size_type start = fixed.find("tango://");
         //if not fqdn, add TANGO_HOST
         if (start == string::npos)
         {
@@ -993,7 +1003,7 @@ namespace HdbEventSubscriber_ns
             if (env != nullptr)
             {
                 facility = env;
-                attr_name = attr;
+                attr_name = fixed;
                 modify = true;
             }
         }
@@ -1004,20 +1014,22 @@ namespace HdbEventSubscriber_ns
         }
         if(modify)
         {
-            add_domain(facility);
-            attr = string("tango://") + facility + string("/") + attr_name;
+            std::string facility_with_domain;
+            add_domain(facility, facility_with_domain);
+            fixed = string("tango://") + facility_with_domain + string("/") + attr_name;
         }
     }
     //=============================================================================
     //=============================================================================
 #ifndef _MULTI_TANGO_HOST
-    void HdbDevice::add_domain(string &attr)
+    void HdbDevice::add_domain(const string &attr, string& with_domain)
     {
-        string::size_type	end1 = attr.find('.');
+        with_domain = attr;
+        string::size_type end1 = attr.find('.');
         if (end1 == string::npos)
         {
             //get host name without tango://
-            string::size_type	start = attr.find("tango://");
+            string::size_type start = attr.find("tango://");
             if (start == string::npos)
             {
                 start = 0;
@@ -1026,17 +1038,15 @@ namespace HdbEventSubscriber_ns
             {
                 start = tango_prefix_length;	//tango:// len
             }
-            string::size_type	end2 = attr.find(':', start);
+            string::size_type end2 = attr.find(':', start);
 
             string th = attr.substr(start, end2);
-            string with_domain = attr;
 
             auto it_domain = domain_map.find(th);
             if(it_domain != domain_map.end())
             {
                 with_domain = it_domain->second;
                 DEBUG_STREAM << __func__ <<": found domain in map -> " << with_domain<<endl;
-                attr = with_domain;
                 return;
             }
 
@@ -1063,7 +1073,6 @@ namespace HdbEventSubscriber_ns
                 domain_map.insert(make_pair(th, with_domain));
             }
             freeaddrinfo(result); // all done with this structure
-            attr = with_domain;
         }
     }
     //=============================================================================
@@ -1249,7 +1258,7 @@ namespace HdbEventSubscriber_ns
      *	compare 2 tango names considering fqdn, domain, multi tango host
      *	returns 0 if equal
      */
-    int HdbDevice::compare_tango_names(string str1, string str2)
+    auto HdbDevice::compare_tango_names(const string& str1, const string& str2) -> int
     {
         //DEBUG_STREAM << __func__<< ": entering with '" << str1<<"' - '" << str2<<"'" << endl;
         if(str1 == str2)
@@ -1257,8 +1266,10 @@ namespace HdbEventSubscriber_ns
             //DEBUG_STREAM << __func__<< ": EQUAL 1 -> '" << str1<<"'=='" << str2<<"'" << endl;
             return 0;
         }
-        fix_tango_host(str1);
-        fix_tango_host(str2);
+        string fixed1;
+        string fixed2;
+        fix_tango_host(str1, fixed1);
+        fix_tango_host(str2, fixed2);
         if(str1 == str2)
         {
             //DEBUG_STREAM << __func__<< ": EQUAL 2 -> '" << str1<<"'=='" << str2<<"'" << endl;

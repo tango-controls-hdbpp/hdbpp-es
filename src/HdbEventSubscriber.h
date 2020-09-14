@@ -77,7 +77,7 @@ class HdbEventSubscriber : public TANGO_BASE_CLASS
 
 	//		Add your own data members
 public:
-	HdbDevice	*hdb_dev;
+    std::shared_ptr<HdbDevice> hdb_dev;
 	bool		initialized;
 	//vector<string>	contextsList_upper;
 	string	defaultStrategy_upper;
@@ -88,6 +88,11 @@ public:
 
 private:
 
+        void stop_attribute(const std::string& attribute);
+        void start_attribute(const std::string& attribute);
+        void pause_attribute(const std::string& attribute);
+
+        auto format_date(const timeval& tv, size_t ev) -> std::string;
 	double last_statistics_reset_time;
 
 #ifdef _USE_FERMI_DB_RW

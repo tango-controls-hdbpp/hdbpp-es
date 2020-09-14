@@ -49,6 +49,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     PushThread::PushThread(
             HdbDevice *dev, const string &ds_name, const vector<string>& configuration): AbortableThread(dev->_device)
+                                                                                         , new_data(&new_data_mutex)
                                                                                          , max_waiting(0)
     {
         try
@@ -60,60 +61,70 @@ namespace HdbEventSubscriber_ns
             FATAL_STREAM << __func__ << ": error connecting DB: " << err.errors[0].desc << endl;
             exit();
         }
+        batch_insert = mdb->supported(hdbpp::HdbppFeatures::BATCH_INSERTS);
+
         hdb_dev = dev;
     }
-    
+
     //=============================================================================
     //=============================================================================
     void PushThread::push_back_cmd(const std::shared_ptr<HdbCmdData>& argin)
     {
 
-        omni_mutex_lock sync(class_mutex);
+        //omni_mutex_lock sync(new_data_mutex);
         //	Add data at end of vector
+        if(!is_aborted())
+        {
+            size_t events_size = 0; 
+            {
+                omni_mutex_lock lock(new_data_mutex);
+                events.push_back(argin);
+                events_size = events.size();
+                //	Check if nb waiting more the stored one.
+                if (events_size > max_waiting)
+                    max_waiting = events_size;
+                
+                hdb_dev->AttributePendingNumber = events_size;
+                hdb_dev->AttributeMaxPendingNumber = max_waiting;
+            }
 
-        events.push_back(argin);
-        size_t events_size = events.size();
-
-        //	Check if nb waiting more the stored one.
-        if (events_size > max_waiting)
-            max_waiting = events_size;
-
-        hdb_dev->AttributePendingNumber = events_size;
-        hdb_dev->AttributeMaxPendingNumber = max_waiting;
 #if 0	//TODO: sometimes deadlock: Not able to acquire serialization (dev, class or process) monitor
-        try
-        {
-            (hdb_dev->_device)->push_change_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
-            (hdb_dev->_device)->push_archive_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
-            (hdb_dev->_device)->push_change_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
-            (hdb_dev->_device)->push_archive_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
-        }
-        catch(Tango::DevFailed &e)
-        {
-            INFO_STREAM <<"PushThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
-        }
+            try
+            {
+                (hdb_dev->_device)->push_change_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
+                (hdb_dev->_device)->push_archive_event("AttributePendingNumber",&hdb_dev->AttributePendingNumber);
+                (hdb_dev->_device)->push_change_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
+                (hdb_dev->_device)->push_archive_event("AttributeMaxPendingNumber",&hdb_dev->AttributeMaxPendingNumber);
+            }
+            catch(Tango::DevFailed &e)
+            {
+                INFO_STREAM <<"PushThread::"<< __func__<<": error pushing events="<<e.errors[0].desc<<endl;
+            }
 #endif
+        }
+        // Signal only if there was no data
+        new_data.signal();
     }
-    
+
     //=============================================================================
     //=============================================================================
     auto PushThread::nb_cmd_waiting() -> size_t
     {
-        omni_mutex_lock sync(class_mutex);
+        omni_mutex_lock sync(new_data_mutex);
         return events.size();
     }
     //=============================================================================
     //=============================================================================
     auto PushThread::get_max_waiting() -> size_t
     {
-        omni_mutex_lock sync(class_mutex);
+        omni_mutex_lock sync(new_data_mutex);
         return max_waiting;
     }
     //=============================================================================
     //=============================================================================
     void PushThread::get_sig_list_waiting(vector<string>& list)
     {
-        omni_mutex_lock sync(class_mutex);
+        omni_mutex_lock sync(new_data_mutex);
         list.clear();
         for (auto& ev : events)
         {
@@ -127,12 +138,12 @@ namespace HdbEventSubscriber_ns
             list.push_back(signame);
         }
     }
-    
+
     //=============================================================================
     //=============================================================================
     void PushThread::reset_statistics()
     {
-        sig_lock.lock();
+        omni_mutex_lock sync(sig_lock);
         for (auto& signal : signals)
         {
             signal.second.nokdb_counter = 0;
@@ -148,26 +159,35 @@ namespace HdbEventSubscriber_ns
         hdb_dev->attr_AttributeMaxStoreTime_read = -1;
         hdb_dev->attr_AttributeMinProcessingTime_read = -1;
         hdb_dev->attr_AttributeMaxProcessingTime_read = -1;
-        sig_lock.unlock();
     }
     //=============================================================================
     //=============================================================================
     void PushThread::reset_freq_statistics()
     {
-        sig_lock.lock();
+        omni_mutex_lock sync(sig_lock);
         for(auto& signal : signals)
         {
             signal.second.nokdb_counter_freq = 0;
         }
-        sig_lock.unlock();
     }
     //=============================================================================
     //=============================================================================
-    auto PushThread::get_next_cmd() -> std::shared_ptr<HdbCmdData>
+    auto PushThread::get_next_cmds() -> std::vector<std::shared_ptr<HdbCmdData>>
     {
-        omni_mutex_lock sync(class_mutex);
-        size_t events_size = events.size();
-        hdb_dev->AttributePendingNumber = events_size;
+        size_t events_size = 0; 
+        {
+            omni_mutex_lock sync(new_data_mutex);
+            
+            events_size = events.size();
+
+            while(events_size == 0 && !is_aborted())
+            {
+                new_data.wait();
+                events_size = events.size();
+            }
+
+            hdb_dev->AttributePendingNumber = events_size;
+        }
 #if 0	//TODO: disabled because of problems with: Not able to acquire serialization (dev, class or process) monitor
         try
         {
@@ -179,13 +199,14 @@ namespace HdbEventSubscriber_ns
 
         }
 #endif
-        if(events_size>0)
+        std::vector<std::shared_ptr<HdbCmdData>> cmds;
+        for(size_t i = 0; i < events_size; ++i)
         {
-            auto cmd = events.front();
+            cmds.push_back(events.front());
             events.pop_front();
-            return cmd;
         }
-        return nullptr;
+
+        return cmds;
     }
     //=============================================================================
     /**
@@ -202,12 +223,12 @@ namespace HdbEventSubscriber_ns
 #ifndef _MULTI_TANGO_HOST
                 if (HdbDevice::compare_without_domain(signal.second.name,signame))
 #else
-                if (!hdb_dev->compare_tango_names(signal.second.name,signame))
+                    if (!hdb_dev->compare_tango_names(signal.second.name,signame))
 #endif
-                {
-                    signals.erase(signal.first);
-                    break;
-                }
+                    {
+                        signals.erase(signal.first);
+                        break;
+                    }
             }
         }
         sig_lock.unlock();
@@ -302,7 +323,7 @@ namespace HdbEventSubscriber_ns
         Tango::DevState state = get_signal(signame).dbstate;
 
         sig_lock.unlock();
-//        return Tango::ON;
+        //        return Tango::ON;
         return state;
     }
     //=============================================================================
@@ -317,7 +338,7 @@ namespace HdbEventSubscriber_ns
         string status = get_signal(signame).dberror;
 
         sig_lock.unlock();
-//        return STATUS_DB_ERROR;
+        //        return STATUS_DB_ERROR;
         return status;
     }
     //=============================================================================
@@ -373,9 +394,9 @@ namespace HdbEventSubscriber_ns
         sig_lock.lock();
 
         uint32_t nok_db = get_signal(signame).nokdb_counter;
-        
+
         sig_lock.unlock();
-//        return 0;
+        //        return 0;
         return nok_db;
         //	if not found
         /*Tango::Except::throw_exception(
@@ -393,9 +414,9 @@ namespace HdbEventSubscriber_ns
         sig_lock.lock();
 
         uint32_t nok_db_freq = get_signal(signame).nokdb_counter_freq;
-        
+
         sig_lock.unlock();
-//        return 0;
+        //        return 0;
         return nok_db_freq;
         //	if not found
         /*Tango::Except::throw_exception(
@@ -413,10 +434,10 @@ namespace HdbEventSubscriber_ns
         sig_lock.lock();
 
         double avg_store_time = get_signal(signame).store_time_avg;
-        
+
         sig_lock.unlock();
 
-//        return -1;
+        //        return -1;
         return avg_store_time;
     }
     //=============================================================================
@@ -429,7 +450,7 @@ namespace HdbEventSubscriber_ns
         sig_lock.lock();
 
         double min_store_time = get_signal(signame).store_time_min;
-        
+
         sig_lock.unlock();
 
         //        return -1;
@@ -445,10 +466,10 @@ namespace HdbEventSubscriber_ns
         sig_lock.lock();
 
         double max_store_time = get_signal(signame).store_time_max;
-        
+
         sig_lock.unlock();
 
-//        return -1;
+        //        return -1;
         return max_store_time;
     }
     //=============================================================================
@@ -461,10 +482,10 @@ namespace HdbEventSubscriber_ns
         sig_lock.lock();
 
         double avg_process_time = get_signal(signame).process_time_avg;
-        
+
         sig_lock.unlock();
 
-//        return -1;
+        //        return -1;
         return avg_process_time;
     }
     //=============================================================================
@@ -480,7 +501,7 @@ namespace HdbEventSubscriber_ns
 
         sig_lock.unlock();
 
-//        return -1;
+        //        return -1;
         return min_process_time;
     }
     //=============================================================================
@@ -496,7 +517,7 @@ namespace HdbEventSubscriber_ns
 
         sig_lock.unlock();
 
-//        return -1;
+        //        return -1;
         return max_process_time;
     }
     //=============================================================================
@@ -511,9 +532,9 @@ namespace HdbEventSubscriber_ns
         timeval last_nokdb = get_signal(signame).last_nokdb;
 
         sig_lock.unlock();
-//        timeval ret;
-//        ret.tv_sec=0;
-//        ret.tv_usec=0;
+        //        timeval ret;
+        //        ret.tv_sec=0;
+        //        ret.tv_usec=0;
         return last_nokdb;
     }
     //=============================================================================
@@ -702,99 +723,129 @@ namespace HdbEventSubscriber_ns
     void PushThread::run_thread_loop()
     {
         //	Check if command ready
-        std::shared_ptr<HdbCmdData> cmd;
-        while ((cmd=get_next_cmd()) != nullptr)
+        std::vector<std::shared_ptr<HdbCmdData>> cmds;
+        while (!(cmds = get_next_cmds()).empty())
         {
-            switch(cmd->op_code)
+            std::vector<std::tuple<Tango::EventData *, hdbpp::HdbEventDataType>> events;
+            for(const auto& cmd : cmds)
             {
-                case DB_INSERT:
-                    {
-                        timeval now{};
-                        gettimeofday(&now, nullptr);
-                        double	dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
-                        try
+                switch(cmd->op_code)
+                {
+                    case DB_INSERT:
                         {
-                            mdb->insert_event(cmd->ev_data, cmd->ev_data_type);
-
+                            timeval now{};
                             gettimeofday(&now, nullptr);
-                            double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
-                            double  rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
-                            set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
-                        }
-                        catch(Tango::DevFailed  &e)
-                        {
-                            set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
-                            Tango::Except::print_exception(e);
-                        }
-                        break;
-                    }
-                case DB_INSERT_PARAM:
-                    {
-                        try
-                        {
-                            //	Send it to DB
-                            mdb->insert_param_event(cmd->ev_data_param, cmd->ev_data_type);
-                        }
-                        catch(Tango::DevFailed  &e)
-                        {
-                            ERROR_STREAM << "PushThread::run_undetached: An error was detected when inserting attribute parameter for: "
-                                << cmd->ev_data_param->attr_name << endl;
+                            double	dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                            if(batch_insert)
+                            {
+                                events.emplace_back(std::make_tuple(cmd->ev_data, cmd->ev_data_type));
+                                gettimeofday(&now, nullptr);
+                                double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                                double  rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
+                                // TODO what should we d in case of batch insert ?
+                                // set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    mdb->insert_event(cmd->ev_data, cmd->ev_data_type);
 
-                            Tango::Except::print_exception(e);
+                                    gettimeofday(&now, nullptr);
+                                    double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                                    double  rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
+                                    set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+                                }
+                                catch(Tango::DevFailed  &e)
+                                {
+                                    set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
+                                    Tango::Except::print_exception(e);
+                                }
+                            }
+                            break;
                         }
-                        break;
-                    }
-                case DB_START:
-                case DB_STOP:
-                case DB_PAUSE:
-                case DB_REMOVE:
-                    {
-                        try
+                    case DB_INSERT_PARAM:
                         {
-                            //	Send it to DB
-                            mdb->insert_history_event(cmd->attr_name, cmd->op_code);
-                        }
-                        catch(Tango::DevFailed  &e)
-                        {
-                            ERROR_STREAM << "PushThread::run_undetached: An was error detected when recording a start, stop, pause or remove event for attribute: "
-                                << cmd->attr_name << endl;
+                            try
+                            {
+                                //	Send it to DB
+                                mdb->insert_param_event(cmd->ev_data_param, cmd->ev_data_type);
+                            }
+                            catch(Tango::DevFailed  &e)
+                            {
+                                ERROR_STREAM << "PushThread::run_undetached: An error was detected when inserting attribute parameter for: "
+                                    << cmd->ev_data_param->attr_name << endl;
 
-                            Tango::Except::print_exception(e);
+                                Tango::Except::print_exception(e);
+                            }
+                            break;
                         }
-                        break;
-                    }
-                case DB_UPDATETTL:
-                    {
-                        try
+                    case DB_START:
+                    case DB_STOP:
+                    case DB_PAUSE:
+                    case DB_REMOVE:
                         {
-                            //	Send it to DB
-                            mdb->update_ttl(cmd->attr_name, cmd->ttl);
-                        }
-                        catch(Tango::DevFailed  &e)
-                        {
-                            ERROR_STREAM << "PushThread::run_undetached: An was error detected when updating the TTL on attribute: "
-                                << cmd->attr_name << endl;
+                            try
+                            {
+                                //	Send it to DB
+                                mdb->insert_history_event(cmd->attr_name, cmd->op_code);
+                            }
+                            catch(Tango::DevFailed  &e)
+                            {
+                                ERROR_STREAM << "PushThread::run_undetached: An was error detected when recording a start, stop, pause or remove event for attribute: "
+                                    << cmd->attr_name << endl;
 
-                            Tango::Except::print_exception(e);
+                                Tango::Except::print_exception(e);
+                            }
+                            break;
                         }
-                        break;
-                    }
-                case DB_ADD:
-                    {
-                        try
+                    case DB_UPDATETTL:
                         {
-                            //	add it to DB
-                            mdb->add_attribute(cmd->attr_name, cmd->data_type, cmd->data_format, cmd->write_type);
-                        }
-                        catch(Tango::DevFailed  &e)
-                        {
-                            ERROR_STREAM << "PushThread::run_undetached: An error was detected when adding the attribute: "
-                                << cmd->attr_name << endl;
+                            try
+                            {
+                                //	Send it to DB
+                                mdb->update_ttl(cmd->attr_name, cmd->ttl);
+                            }
+                            catch(Tango::DevFailed  &e)
+                            {
+                                ERROR_STREAM << "PushThread::run_undetached: An was error detected when updating the TTL on attribute: "
+                                    << cmd->attr_name << endl;
 
-                            Tango::Except::print_exception(e);
+                                Tango::Except::print_exception(e);
+                            }
+                            break;
                         }
-                        break;
-                    }
+                    case DB_ADD:
+                        {
+                            try
+                            {
+                                //	add it to DB
+                                mdb->add_attribute(cmd->attr_name, cmd->data_type, cmd->data_format, cmd->write_type);
+                            }
+                            catch(Tango::DevFailed  &e)
+                            {
+                                ERROR_STREAM << "PushThread::run_undetached: An error was detected when adding the attribute: "
+                                    << cmd->attr_name << endl;
+
+                                Tango::Except::print_exception(e);
+                            }
+                            break;
+                        }
+                }
+            }
+            if(!events.empty())
+            {
+                try
+                {
+                    mdb->insert_events(events);
+
+                }
+                catch(Tango::DevFailed  &e)
+                {
+                    // TODO retrieve which attribute failed ?
+                    //    set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
+                    Tango::Except::print_exception(e);
+                }
             }
         }
 
@@ -809,7 +860,7 @@ namespace HdbEventSubscriber_ns
     {
         return default_period;
     }
-    
+
     auto PushThread::get_signal(const std::string& signame) -> HdbStat&
     {
         if(signals.find(signame) != signals.end())
@@ -822,13 +873,18 @@ namespace HdbEventSubscriber_ns
 #ifndef _MULTI_TANGO_HOST
             if (HdbDevice::compare_without_domain(signal.second.name,signame))
 #else
-            if (!hdb_dev->compare_tango_names(signal->second.name,signame))
+                if (!hdb_dev->compare_tango_names(signal->second.name,signame))
 #endif
-            {
-                return signal.second;
-            }
+                {
+                    return signal.second;
+                }
         }
         return NO_SIGNAL;
     }
 
+    void PushThread::do_abort()
+    {
+        // if waiting for new cmd, signal.
+        new_data.signal();
+    }
 }//	namespace

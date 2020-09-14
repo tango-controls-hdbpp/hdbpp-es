@@ -25,6 +25,7 @@
 #define _ABORTABLE_THREAD_H
 
 #include <memory>
+#include <atomic>
 #include <tango.h>
 
 /**
@@ -50,7 +51,7 @@ class AbortableThread: public omni_thread, public Tango::LogAdapter
 {
 private:
 
-    bool abort_flag = false;
+    std::atomic_bool abort_flag;
     double period = -1;
 
     omni_mutex abort_mutex;
@@ -64,8 +65,11 @@ protected:
     virtual void run_thread_loop() = 0;
     virtual void finalize_abort_loop() = 0;
     virtual auto get_abort_loop_period_ms() -> unsigned int = 0;
+    
+    virtual void do_abort() {};
 
     auto get_period() const -> double {return period;}
+    auto is_aborted() const -> bool {return abort_flag.load();}
 
 public:
     AbortableThread(Tango::DeviceImpl *dev);

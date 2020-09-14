@@ -103,7 +103,8 @@ namespace HdbEventSubscriber_ns
             vector<Tango::DevFailed>	except;
 
             omni_mutex sig_lock;
-            omni_mutex class_mutex;
+            omni_mutex new_data_mutex;
+            omni_condition new_data;
             std::map<const std::string, HdbStat> signals;
 
             std::unique_ptr<hdbpp::AbstractDB> mdb;
@@ -114,12 +115,16 @@ namespace HdbEventSubscriber_ns
 
             auto get_signal(const std::string& signame) -> HdbStat&;
 
+            bool batch_insert = false;
+
         protected:
 
             void init_abort_loop() override;
             void run_thread_loop() override;
             void finalize_abort_loop() override;
             auto get_abort_loop_period_ms() -> unsigned int override;
+            
+            void do_abort() override;
 
         public:
             /**
@@ -131,7 +136,7 @@ namespace HdbEventSubscriber_ns
             //void push_back_cmd(Tango::EventData argin);
             //	void remove_cmd();
             auto nb_cmd_waiting() -> size_t;
-            auto get_next_cmd() -> std::shared_ptr<HdbCmdData>;
+            auto get_next_cmds() -> std::vector<std::shared_ptr<HdbCmdData>>;
 
             auto get_max_waiting() -> size_t;
             void get_sig_list_waiting(vector<string> &);

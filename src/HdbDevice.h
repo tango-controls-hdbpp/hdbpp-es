@@ -199,19 +199,19 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, vector<string>& contexts, int data_type, int data_format, int write_type);
+	void add(const string &signame, vector<string>& contexts, int data_type, int data_format, int write_type);
 	/**
 	 * AddRemove a signal in the list.
 	 */
-	void remove(string &signame);
+	void remove(const string &signame);
 	/**
 	 * Update contexts for a signal.
 	 */
-	void update(string &signame, vector<string>& contexts);
+	void update(const string &signame, vector<string>& contexts);
 	/**
 	 * Update ttl for a signal.
 	 */
-	void updatettl(string &signame, Tango::DevULong ttl);
+	void updatettl(const string &signame, long ttl);
 	/**
 	 *	Update SignalList property
 	 */
@@ -264,7 +264,7 @@ public:
 	/**
 	 *	Return the status of specified signal
 	 */
-	string  get_sig_status(string &signame);
+	auto get_sig_status(const string &signame) -> string;
 	/**
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */
@@ -304,11 +304,11 @@ public:
 	/**
 	 *	Check if fqdn, otherwise fix it
 	 */
-	void fix_tango_host(string &attr);
+	void fix_tango_host(const string &attr, string& fixed);
 	/**
 	 *	Check if full domain name, otherwise fix it
 	 */
-	void add_domain(string &attr);
+	void add_domain(const string &attr, string& with_domain);
 #ifndef _MULTI_TANGO_HOST
 	/**
 	 *	Compare without domain
@@ -319,7 +319,7 @@ public:
 	 *	compare 2 tango names considering fqdn, domain, multi tango host
 	 *	returns 0 if equal
 	 */
-	int compare_tango_names(string str1, string str2);
+	static auto compare_tango_names(const string& str1, const string& str2) -> int;
 #endif
 	/**
 	 *	explode a string in multiple strings using separator
