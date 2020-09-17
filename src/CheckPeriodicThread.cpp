@@ -25,7 +25,6 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include "HdbDevice.h"
 #include "SubscribeThread.h"
 
-
 namespace HdbEventSubscriber_ns
 {
 

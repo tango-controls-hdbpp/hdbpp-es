@@ -116,12 +116,15 @@ private:
 	HdbDevice	*hdb_dev;
 
 	bool	stop_it;
-	bool	initialized;
+        bool initialized;
+        omni_mutex init_mutex;
+        omni_condition init_condition;
 
+        auto is_same_signal_name(const std::string& name1, const std::string& name2) -> bool;
 public:
 	int		action;
 	//omni_condition condition;
-	vector<HdbSignal>	signals;
+	vector<std::shared_ptr<HdbSignal>>	signals;
 	ReadersWritersLock      veclock;
 
 
@@ -130,6 +133,7 @@ public:
 	 */
 	//SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
 	SharedData(HdbDevice *dev);
+	~SharedData();
 	/**
 	 * Add a new signal.
 	 */
@@ -206,7 +210,7 @@ public:
 	/**
 	 *	get signal by name.
 	 */
-	auto get_signal(const string &name) -> HdbSignal&;
+	auto get_signal(const string &name) -> std::shared_ptr<HdbSignal>;
 	/**
 	 * Subscribe achive event for each signal
 	 */
@@ -355,7 +359,7 @@ public:
 	auto is_initialized() -> bool;
 	auto get_if_stop() -> bool;
 	void stop_thread();
-	
+	void wait_initialized();
 };
 
 

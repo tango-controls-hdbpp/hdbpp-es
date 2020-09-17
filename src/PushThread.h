@@ -61,9 +61,8 @@ namespace HdbEventSubscriber_ns
 {
 
 
-    typedef struct
+    struct HdbStat
     {
-        std::string	name;
         uint32_t nokdb_counter;
         uint32_t nokdb_counter_freq;
         uint32_t okdb_counter;
@@ -76,9 +75,29 @@ namespace HdbEventSubscriber_ns
         double store_time_min;
         double store_time_max;
         timeval last_nokdb;
-    }
-    HdbStat;
 
+        public:
+            HdbStat();
+            HdbStat& operator=(const HdbStat& stat)
+            {
+                nokdb_counter = stat.nokdb_counter;
+                nokdb_counter_freq = stat.nokdb_counter_freq;
+                okdb_counter = stat.okdb_counter;
+                dbstate = stat.dbstate;
+                dberror = stat.dberror;
+                process_time_avg = stat.process_time_avg;
+                process_time_min = stat.process_time_min;
+                process_time_max = stat.process_time_max;
+                store_time_avg = stat.store_time_avg;
+                store_time_min = stat.store_time_min;
+                store_time_max = stat.store_time_max;
+                last_nokdb = stat.last_nokdb;
+                return *this;
+            };
+        private:
+            HdbStat(const HdbStat&) = delete;
+    };
+    
     class HdbDevice;
 
     //=========================================================

@@ -33,57 +33,62 @@
  * @version	$Revision: 1.5 $
  */
 
- //	constants definitions here.
- //-----------------------------------------------
+//	constants definitions here.
+//-----------------------------------------------
 
 namespace HdbEventSubscriber_ns
 {
 
-//=========================================================
-/**
- *	Thread with abort capability.
- *	Basically a loop will check on .
- */
-//=========================================================
+    //=========================================================
+    /**
+     *	Thread with abort capability.
+     *	Basically a loop will check on .
+     */
+    //=========================================================
 
 
-class AbortableThread: public omni_thread, public Tango::LogAdapter
-{
-private:
+    class AbortableThread: public omni_thread, public Tango::LogAdapter
+    {
+        private:
 
-    std::atomic_bool abort_flag;
-    double period = -1;
+            std::atomic_bool abort_flag;
+            double period = -1;
 
-    omni_mutex abort_mutex;
-    omni_condition abort_condition;
+            omni_mutex abort_mutex;
+            omni_condition abort_condition;
 
-    auto timed_wait() -> int;
+            auto timed_wait() -> int;
 
-protected:
+        protected:
 
-    virtual void init_abort_loop() = 0;
-    virtual void run_thread_loop() = 0;
-    virtual void finalize_abort_loop() = 0;
-    virtual auto get_abort_loop_period_ms() -> unsigned int = 0;
-    
-    virtual void do_abort() {};
+            virtual void init_abort_loop() = 0;
+            virtual void run_thread_loop() = 0;
+            virtual void finalize_abort_loop() = 0;
+            virtual auto get_abort_loop_period_ms() -> unsigned int = 0;
 
-    auto get_period() const -> double {return period;}
-    auto is_aborted() const -> bool {return abort_flag.load();}
+            virtual void do_abort() {};
 
-public:
-    AbortableThread(Tango::DeviceImpl *dev);
+            auto get_period() const -> double {return period;}
+            auto is_aborted() const -> bool {return abort_flag.load();}
 
-    //inherited from amni_thread
-    auto run_undetached(void *) -> void*;
-    void start() {start_undetached();}
+        public:
+            AbortableThread(Tango::DeviceImpl *dev);
+            ~AbortableThread();
 
-    void set_period(double period_s) {period = period_s;}
+            //inherited from amni_thread
+            auto run_undetached(void *) -> void* override;
+            void start() {start_undetached();}
 
-    //abort logic
-    void abort();
-};
+            void set_period(double period_s) {period = period_s;}
 
+            //abort logic
+            void abort();
+    };
+
+    struct AbortableThreadDeleter {
+        void operator()(AbortableThread* ptr) const {
+        }
+    };
 
 }	// namespace_ns
 

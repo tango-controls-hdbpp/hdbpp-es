@@ -37,7 +37,14 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    auto AbortableThread::run_undetached(void * /*ptr*/) -> void *
+    AbortableThread::~AbortableThread()
+    {
+       // join(nullptr);
+    }
+
+    //=============================================================================
+    //=============================================================================
+    auto AbortableThread::run_undetached(void *) -> void *
     {
         init_abort_loop();
 
@@ -93,9 +100,9 @@ namespace HdbEventSubscriber_ns
                 return abort_condition.timedwait(abs_sec, abs_nsec);
             }
             // if not waiting return the abort_flag in case it was aborted
-            return 1;
+            return 0;
         }
-        return 0;
+        return 1;
     }
 
     //=============================================================================

@@ -43,8 +43,21 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 namespace HdbEventSubscriber_ns
 {
-    const unsigned int default_period = 2000;
-
+    const unsigned int default_period = -1;
+    HdbStat::HdbStat(): nokdb_counter(0)
+        , nokdb_counter_freq(0)
+        , okdb_counter(0)
+        , dbstate()
+        , dberror()
+        , process_time_avg(0)
+        , process_time_min(0)
+        , process_time_max(0)
+        , store_time_avg(0)
+        , store_time_min(0)
+        , store_time_max(0)
+    {
+    }
+    
     //=============================================================================
     //=============================================================================
     PushThread::PushThread(
@@ -70,7 +83,6 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void PushThread::push_back_cmd(const std::shared_ptr<HdbCmdData>& argin)
     {
-
         //omni_mutex_lock sync(new_data_mutex);
         //	Add data at end of vector
         if(!is_aborted())
@@ -79,6 +91,8 @@ namespace HdbEventSubscriber_ns
             {
                 omni_mutex_lock lock(new_data_mutex);
                 events.push_back(argin);
+                for(size_t i=0;i<10;++i)
+                    events.push_back(argin);
                 events_size = events.size();
                 //	Check if nb waiting more the stored one.
                 if (events_size > max_waiting)
@@ -221,14 +235,14 @@ namespace HdbEventSubscriber_ns
             for (auto& signal : signals)
             {
 #ifndef _MULTI_TANGO_HOST
-                if (HdbDevice::compare_without_domain(signal.second.name,signame))
+                if (HdbDevice::compare_without_domain(signal.first,signame))
 #else
-                    if (!hdb_dev->compare_tango_names(signal.second.name,signame))
+                if (!hdb_dev->compare_tango_names(signal.first,signame))
 #endif
-                    {
-                        signals.erase(signal.first);
-                        break;
-                    }
+                {
+                    signals.erase(signal.first);
+                    break;
+                }
             }
         }
         sig_lock.unlock();
@@ -365,7 +379,6 @@ namespace HdbEventSubscriber_ns
         else
         {
             HdbStat sig;
-            sig.name = signame;
             sig.nokdb_counter = 1;
             sig.nokdb_counter_freq = 1;
             sig.okdb_counter = 0;
@@ -380,7 +393,7 @@ namespace HdbEventSubscriber_ns
             if(error.length() > 0)
                 sig.dberror += ": " + error;
             gettimeofday(&sig.last_nokdb, nullptr);
-            signals.insert({signame, sig});
+            signals[signame] = sig;
         }
         sig_lock.unlock();
     }
@@ -412,6 +425,7 @@ namespace HdbEventSubscriber_ns
     auto PushThread::get_nok_db_freq(const string &signame) -> uint32_t
     {
         sig_lock.lock();
+
 
         uint32_t nok_db_freq = get_signal(signame).nokdb_counter_freq;
 
@@ -580,7 +594,6 @@ namespace HdbEventSubscriber_ns
         else
         {
             HdbStat sig;
-            sig.name = signame;
             sig.nokdb_counter = 0;
             sig.nokdb_counter_freq = 0;
             sig.okdb_counter = 1;
@@ -592,7 +605,7 @@ namespace HdbEventSubscriber_ns
             sig.process_time_max = process_time;
             sig.dbstate = Tango::ON;
             sig.dberror = "";
-            signals.insert({signame, sig});
+            signals[signame] = sig;
         }
         //global store min
         if(hdb_dev->attr_AttributeMinStoreTime_read == -1)
@@ -727,33 +740,33 @@ namespace HdbEventSubscriber_ns
         while (!(cmds = get_next_cmds()).empty())
         {
             std::vector<std::tuple<Tango::EventData *, hdbpp::HdbEventDataType>> events;
+            std::vector<std::tuple<std::string, double>> signals;
+            bool batch = batch_insert && cmds.size() > 1;
             for(const auto& cmd : cmds)
             {
                 switch(cmd->op_code)
                 {
                     case DB_INSERT:
                         {
-                            timeval now{};
-                            gettimeofday(&now, nullptr);
-                            double	dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
-                            if(batch_insert)
+                            double rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
+                            if(batch)
                             {
                                 events.emplace_back(std::make_tuple(cmd->ev_data, cmd->ev_data_type));
-                                gettimeofday(&now, nullptr);
-                                double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
-                                double  rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
-                                // TODO what should we d in case of batch insert ?
-                                // set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+                                
+                                signals.push_back(std::make_tuple(cmd->ev_data->attr_name, rcv_time));
                             }
                             else
                             {
+                                timeval now{};
+                                gettimeofday(&now, nullptr);
+                                double dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
                                 try
                                 {
                                     mdb->insert_event(cmd->ev_data, cmd->ev_data_type);
 
                                     gettimeofday(&now, nullptr);
                                     double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
-                                    double  rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
+                                    
                                     set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
                                 }
                                 catch(Tango::DevFailed  &e)
@@ -835,10 +848,22 @@ namespace HdbEventSubscriber_ns
             }
             if(!events.empty())
             {
+                timeval now{};
+                gettimeofday(&now, nullptr);
+                double dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
                 try
                 {
                     mdb->insert_events(events);
 
+                    gettimeofday(&now, nullptr);
+                    double dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                    size_t n_signals = signals.size();
+
+                    // We can't get the individual speed for each signal
+                    for(const auto& sig : signals)
+                    {
+                        set_ok_db(std::get<0>(sig), (dnow-dstart)/n_signals, (dnow-std::get<1>(sig))/n_signals);
+                    }
                 }
                 catch(Tango::DevFailed  &e)
                 {
@@ -848,7 +873,6 @@ namespace HdbEventSubscriber_ns
                 }
             }
         }
-
     }
 
     void PushThread::finalize_abort_loop()
@@ -871,13 +895,13 @@ namespace HdbEventSubscriber_ns
         for(auto& signal : signals)
         {
 #ifndef _MULTI_TANGO_HOST
-            if (HdbDevice::compare_without_domain(signal.second.name,signame))
+            if (HdbDevice::compare_without_domain(signal.first,signame))
 #else
-                if (!hdb_dev->compare_tango_names(signal->second.name,signame))
+            if (!hdb_dev->compare_tango_names(signal.first,signame))
 #endif
-                {
-                    return signal.second;
-                }
+            {
+                return signal.second;
+            }
         }
         return NO_SIGNAL;
     }

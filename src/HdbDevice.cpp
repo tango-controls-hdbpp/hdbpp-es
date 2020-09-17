@@ -61,6 +61,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include "SubscribeThread.h"
 #include "Consts.h"
 
+
 namespace HdbEventSubscriber_ns
 {
     const unsigned int long_storage_time_threshold = 50;
@@ -75,22 +76,22 @@ namespace HdbEventSubscriber_ns
         check_periodic_thread->abort();
         poller_thread->abort();
         check_periodic_thread->join(nullptr);
-        DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
+        //DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
         stats_thread->join(nullptr);
-        DEBUG_STREAM << "	Stats thread Joined " << endl;
+        //DEBUG_STREAM << "	Stats thread Joined " << endl;
         poller_thread->join(nullptr);
-        DEBUG_STREAM << "	Polling thread Joined " << endl;
+        //DEBUG_STREAM << "	Polling thread Joined " << endl;
         DEBUG_STREAM << "	Stopping subscribe thread" << endl;
         shared->stop_thread();
         DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
         thread->join(nullptr);
-        DEBUG_STREAM << "	Subscribe thread Joined " << endl;
-        usleep(hundred_s_in_ms);
+        //DEBUG_STREAM << "	Subscribe thread Joined " << endl;
+        //usleep(hundred_s_in_ms);
         DEBUG_STREAM << "	Stopping push thread" << endl;
         push_thread->abort();
         DEBUG_STREAM << "	Push thread Stopped " << endl;
         push_thread->join(nullptr);
-        DEBUG_STREAM << "	Push thread Joined " << endl;
+        //DEBUG_STREAM << "	Push thread Joined " << endl;
     }
     //=============================================================================
     //=============================================================================
@@ -143,27 +144,35 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void HdbDevice::initialize()
     {
+        // Retrieve the signals from the configuration
         vector<string>	list;
         get_hdb_signal_list(list);
+
         attr_AttributeNumber_read = 0;
         attr_AttributeStartedNumber_read = 0;
         attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
         attr_AttributePausedNumber_read = attr_AttributeNumber_read;
 
         //	Create a thread to subscribe events
-        shared = std::make_shared<SharedData>(this);	
-        thread = std::make_unique<SubscribeThread>(this);
+        shared = std::make_shared<SharedData>(this);
+        thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
+                , [](SubscribeThread*){});
 
         attr_AttributeMinStoreTime_read = -1;
         attr_AttributeMaxStoreTime_read = -1;
         attr_AttributeMinProcessingTime_read = -1;
         attr_AttributeMaxProcessingTime_read = -1;
-        push_thread = std::make_unique<PushThread>(this, Tango::Util::instance()->get_ds_inst_name(),
-                (dynamic_cast<HdbEventSubscriber *>(_device))->libConfiguration);
-        stats_thread = std::make_unique<StatsThread>(this);
+        push_thread = std::unique_ptr<PushThread, std::function<void(PushThread*)>>(
+                new PushThread(this
+                        , Tango::Util::instance()->get_ds_inst_name()
+                        , (dynamic_cast<HdbEventSubscriber *>(_device))->libConfiguration)
+                , [](PushThread*){});
+        stats_thread = std::unique_ptr<StatsThread, std::function<void(StatsThread*)>>(new StatsThread(this)
+                , [](StatsThread*){});
         stats_thread->set_period(stats_window);
-        poller_thread = std::make_unique<PollerThread>(this);
-        check_periodic_thread = std::make_unique<CheckPeriodicThread>(this);
+        poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
+                , [](PollerThread*){});
+        check_periodic_thread = std::unique_ptr<CheckPeriodicThread, AbortableThreadDeleter>(new CheckPeriodicThread(this));
         check_periodic_thread->delay_tolerance_ms = check_periodic_delay * s_to_ms_factor;
 
         build_signal_vector(list, defaultStrategy);
@@ -175,12 +184,9 @@ namespace HdbEventSubscriber_ns
         check_periodic_thread->start();
 
         //	Wait end of first subscribing loop
-        do
-        {
-            sleep(1);
-        }
-        while( !shared->is_initialized() );
+        shared->wait_initialized();
     }
+
     //=============================================================================
     //=============================================================================
     //#define TEST
@@ -195,7 +201,7 @@ namespace HdbEventSubscriber_ns
                     vector<string> list_exploded;
                     string_explode(val, string(";"), list_exploded);
                     vector<string> contexts;
-                    Tango::DevULong ttl=DEFAULT_TTL;
+                    Tango::DevULong ttl = DEFAULT_TTL;
 
                     if(list_exploded.size() > 1)
                     {
@@ -274,6 +280,7 @@ namespace HdbEventSubscriber_ns
                             INFO_STREAM << "HdbDevice::" << __func__<< " attr="<<list_exploded[0]<<" IGNORING context '"<< context <<"'";
                         }
                     }
+
                     shared->add(list_exploded[0], adjusted_contexts);
                     push_thread->updatettl(list_exploded[0], ttl);
                 }
@@ -353,18 +360,18 @@ namespace HdbEventSubscriber_ns
         if (!dev_prop[0].is_empty())
             dev_prop[0]  >>  tmplist;
 
-        for (unsigned int i=0 ; i<tmplist.size() ; i++)
+        for (const auto signal : tmplist)
         {
-            if(tmplist[i].length() > -1 && tmplist[i][0] != '#')
+            if(!signal.empty() && signal.front() != '#')
             {
-                string::size_type found = string::npos;
+                string::size_type found = 0;
                 string tmplist_name;
                 string tmplist_conf;
-                found = tmplist[i].find_first_of(';');
+                found = signal.find_first_of(';');
                 if(found != string::npos && found > 0)
                 {
-                    tmplist_name = tmplist[i].substr(0,found);
-                    tmplist_conf = tmplist[i].substr(found+1);
+                    tmplist_name = signal.substr(0,found);
+                    tmplist_conf = signal.substr(found+1);
                     size_t pos_strat = tmplist_conf.find(string(CONTEXT_KEY)+"=");
                     size_t pos_ttl = tmplist_conf.find(string(TTL_KEY)+"=");
                     if(tmplist_conf.length() == 0 || (pos_strat == string::npos && pos_ttl == string::npos))
@@ -390,7 +397,7 @@ namespace HdbEventSubscriber_ns
                 }
                 else	//if present only the attribute name
                 {
-                    tmplist_name = tmplist[i];
+                    tmplist_name = signal;
                     tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;
                     stringstream ssttl;
                     ssttl << DEFAULT_TTL;
@@ -402,7 +409,7 @@ namespace HdbEventSubscriber_ns
                 fixed_name += ";";
                 fixed_name += tmplist_conf;
                 list.push_back(fixed_name);
-                INFO_STREAM << "HdbDevice::" << __func__ << ": " << i << ": " << fixed_name << endl;
+                INFO_STREAM << "HdbDevice::" << __func__ << ": " << fixed_name << endl;
             }
         }
     }
@@ -723,17 +730,17 @@ namespace HdbEventSubscriber_ns
             ev_data_type.attr_name = data->attr_name;
             if(!hdb_dev->shared->is_first(data->attr_name))
             {
-                ev_data_type.max_dim_x = signal.max_dim_x;
-                ev_data_type.max_dim_y = signal.max_dim_y;
-                ev_data_type.data_type = signal.data_type;
-                ev_data_type.data_format = signal.data_format;
-                ev_data_type.write_type	= signal.write_type;
+                ev_data_type.max_dim_x = signal->max_dim_x;
+                ev_data_type.max_dim_y = signal->max_dim_y;
+                ev_data_type.data_type = signal->data_type;
+                ev_data_type.data_format = signal->data_format;
+                ev_data_type.write_type	= signal->write_type;
             }
             else
             {
                 try
                 {
-                    Tango::AttributeInfo	info = signal.attr->get_config();
+                    Tango::AttributeInfo	info = signal->attr->get_config();
                     ev_data_type.data_type = info.data_type;
                     ev_data_type.data_format = info.data_format;
                     ev_data_type.write_type = info.writable;
@@ -751,10 +758,10 @@ namespace HdbEventSubscriber_ns
             //	Check if event is an error event.
             if (data->err)
             {
-                signal.evstate  = Tango::ALARM;
-                signal.siglock->writerIn();
-                signal.status = data->errors[0].desc;
-                signal.siglock->writerOut();
+                signal->evstate  = Tango::ALARM;
+                signal->siglock->writerIn();
+                signal->status = data->errors[0].desc;
+                signal->siglock->writerOut();
 
                 INFO_STREAM<< __func__ << ": Exception on " << data->attr_name << endl;
                 INFO_STREAM << data->errors[0].desc  << endl;
@@ -840,12 +847,12 @@ namespace HdbEventSubscriber_ns
                     WARN_STREAM << __func__ << " Unable to set_ok_event: " << e.errors[0].desc << "'"<<endl;
                 }
                 //	Check if already OK
-                if (signal.evstate!=Tango::ON)
+                if (signal->evstate!=Tango::ON)
                 {
-                    signal.siglock->writerIn();
-                    signal.evstate  = Tango::ON;
-                    signal.status = "Subscribed";
-                    signal.siglock->writerOut();
+                    signal->siglock->writerIn();
+                    signal->evstate  = Tango::ON;
+                    signal->status = "Subscribed";
+                    signal->siglock->writerOut();
                 }
 
                 //if attribute stopped, just return

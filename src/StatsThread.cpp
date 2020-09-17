@@ -85,6 +85,7 @@ namespace HdbEventSubscriber_ns
               {
               continue;
               }*/
+
             long ok_ev_t=0;
             long nok_ev_t=0;
             long nok_db_t=0;

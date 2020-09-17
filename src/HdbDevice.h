@@ -101,11 +101,11 @@ public:
 	//	Data members here
 	//-----------------------------------------
         std::string				status;
-	std::unique_ptr<SubscribeThread> thread;
-	std::unique_ptr<PushThread> push_thread;
-	std::unique_ptr<StatsThread> stats_thread;
-	std::unique_ptr<CheckPeriodicThread> check_periodic_thread;
-	std::unique_ptr<PollerThread> poller_thread;
+	std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>> thread;
+	std::unique_ptr<PushThread, std::function<void(PushThread*)>> push_thread;
+	std::unique_ptr<StatsThread, std::function<void(StatsThread*)>> stats_thread;
+	std::unique_ptr<CheckPeriodicThread, std::function<void(CheckPeriodicThread*)>> check_periodic_thread;
+	std::unique_ptr<PollerThread, std::function<void(PollerThread*)>> poller_thread;
 	int					period;
 	int					poller_period;
 	int					stats_window;

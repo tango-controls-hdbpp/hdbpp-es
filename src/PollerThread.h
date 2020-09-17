@@ -65,7 +65,6 @@ namespace HdbEventSubscriber_ns
             auto get_abort_loop_period_ms() -> unsigned int override;
 
         public:
-            timeval		last_stat;
             PollerThread(HdbDevice *dev);
     };
 
