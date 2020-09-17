@@ -37,14 +37,16 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    AbortableThread::~AbortableThread()
+    AbortableThread::~AbortableThread() = default;
+    /*
     {
        // join(nullptr);
     }
+    */
 
     //=============================================================================
     //=============================================================================
-    auto AbortableThread::run_undetached(void *) -> void *
+    auto AbortableThread::run_undetached(void */*unused*/) -> void *
     {
         init_abort_loop();
 

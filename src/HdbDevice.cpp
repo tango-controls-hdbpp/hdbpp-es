@@ -156,7 +156,7 @@ namespace HdbEventSubscriber_ns
         //	Create a thread to subscribe events
         shared = std::make_shared<SharedData>(this);
         thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
-                , [](SubscribeThread*){});
+                , [](SubscribeThread*/*unused*/){});
 
         attr_AttributeMinStoreTime_read = -1;
         attr_AttributeMaxStoreTime_read = -1;
@@ -166,12 +166,12 @@ namespace HdbEventSubscriber_ns
                 new PushThread(this
                         , Tango::Util::instance()->get_ds_inst_name()
                         , (dynamic_cast<HdbEventSubscriber *>(_device))->libConfiguration)
-                , [](PushThread*){});
+                , [](PushThread*/*unused*/){});
         stats_thread = std::unique_ptr<StatsThread, std::function<void(StatsThread*)>>(new StatsThread(this)
-                , [](StatsThread*){});
+                , [](StatsThread*/*unused*/){});
         stats_thread->set_period(stats_window);
         poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
-                , [](PollerThread*){});
+                , [](PollerThread*/*unused*/){});
         check_periodic_thread = std::unique_ptr<CheckPeriodicThread, AbortableThreadDeleter>(new CheckPeriodicThread(this));
         check_periodic_thread->delay_tolerance_ms = check_periodic_delay * s_to_ms_factor;
 
@@ -360,7 +360,7 @@ namespace HdbEventSubscriber_ns
         if (!dev_prop[0].is_empty())
             dev_prop[0]  >>  tmplist;
 
-        for (const auto signal : tmplist)
+        for (const auto& signal : tmplist)
         {
             if(!signal.empty() && signal.front() != '#')
             {

@@ -850,9 +850,8 @@ namespace HdbEventSubscriber_ns
           }*/
         //omni_mutex_lock sync(*this);
         veclock.readerIn();
-        for (unsigned int i=0 ; i<signals.size() ; i++)
+        for (auto sig : signals)
         {
-            std::shared_ptr<HdbSignal> sig = signals[i];
             sig->siglock->writerIn();
             if (sig->event_id==ERR && !sig->stopped)
             {
@@ -1354,7 +1353,7 @@ namespace HdbEventSubscriber_ns
         vector<string> tmp_pause_list;
         vector<string> tmp_stop_list;
         //update list and context
-        size_t i;
+        size_t i = 0;
         for (i=0 ; i<signals.size() && i< old_s_list_size; i++)
         {
             string	signame(signals[i]->name);
@@ -1777,7 +1776,7 @@ namespace HdbEventSubscriber_ns
         ReaderLock lock(veclock);
         timespec now{};
         clock_gettime(CLOCK_MONOTONIC, &now);
-        double min_time_to_timeout_ms = 10000;
+        double min_time_to_timeout_ms = ten_s_in_ms;
         for (auto &signal : signals)
         {
             signal->siglock->readerIn();

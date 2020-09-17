@@ -47,8 +47,8 @@ namespace HdbEventSubscriber_ns
     HdbStat::HdbStat(): nokdb_counter(0)
         , nokdb_counter_freq(0)
         , okdb_counter(0)
+        , last_nokdb()
         , dbstate()
-        , dberror()
         , process_time_avg(0)
         , process_time_min(0)
         , process_time_max(0)
@@ -91,8 +91,6 @@ namespace HdbEventSubscriber_ns
             {
                 omni_mutex_lock lock(new_data_mutex);
                 events.push_back(argin);
-                for(size_t i=0;i<10;++i)
-                    events.push_back(argin);
                 events_size = events.size();
                 //	Check if nb waiting more the stored one.
                 if (events_size > max_waiting)
@@ -753,7 +751,7 @@ namespace HdbEventSubscriber_ns
                             {
                                 events.emplace_back(std::make_tuple(cmd->ev_data, cmd->ev_data_type));
                                 
-                                signals.push_back(std::make_tuple(cmd->ev_data->attr_name, rcv_time));
+                                signals.emplace_back(std::make_tuple(cmd->ev_data->attr_name, rcv_time));
                             }
                             else
                             {
