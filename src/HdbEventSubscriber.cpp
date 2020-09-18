@@ -863,32 +863,7 @@ namespace HdbEventSubscriber_ns
         context_read = itmap->second;
         *attr_Context_read = const_cast<char*>(context_read.c_str());
 
-        vector<string> att_list_tmp;
-        hdb_dev->get_sig_list(att_list_tmp);
-        for (auto& att : att_list_tmp)
-        {
-            bool is_current_context = false;
-            try
-            {
-                hdb_dev->shared->veclock.readerIn();
-                is_current_context = hdb_dev->shared->is_current_context(att, context_set);
-                DEBUG_STREAM << "HdbEventSubscriber::write_Context="<<context_set<<" : " << att << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
-                hdb_dev->shared->veclock.readerOut();
-            }
-            catch(Tango::DevFailed &e)
-            {
-                hdb_dev->shared->veclock.readerOut();
-                INFO_STREAM << __func__ << ": Failed to check is_current_context for " << att;
-                Tango::Except::re_throw_exception(e,
-                        (const char *)"BadSignalName",
-                        "Signal " + att + " NOT subscribed",
-                        (const char *)__func__);
-            }
-            if(is_current_context)
-                start_attribute(att);
-            else
-                stop_attribute(att);
-        }
+        hdb_dev->set_context_and_start_attributes(context_set);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_Context
     }
@@ -1855,95 +1830,17 @@ namespace HdbEventSubscriber_ns
 
     void HdbEventSubscriber::stop_attribute(const std::string& attribute)
     {
-        string attr_name;
-        hdb_dev->fix_tango_host(attribute, attr_name);
-        bool is_running = false;
-        bool is_paused = false;
-        try
-        {
-            hdb_dev->shared->veclock.readerIn();
-            is_running = hdb_dev->shared->is_running(attr_name);
-            is_paused = hdb_dev->shared->is_paused(attr_name);
-            hdb_dev->shared->veclock.readerOut();
-        }
-        catch(Tango::DevFailed &e)
-        {
-            hdb_dev->shared->veclock.readerOut();
-            INFO_STREAM << __func__ << ": Failed to check is_running or is_paused for " << attr_name;
-            Tango::Except::re_throw_exception(e,
-                    (const char *)"BadSignalName",
-                    "Signal " + attr_name + " NOT subscribed",
-                    (const char *)__func__);
-        }
-        if(is_running || is_paused)
-        {
-            hdb_dev->shared->stop(attr_name);
-            hdb_dev->push_thread->stop_attr(attr_name);
-        }
-
+        hdb_dev->stop_attribute(attribute);
     }
 
     void HdbEventSubscriber::start_attribute(const std::string& attribute)
     {
-        string signame;
-        hdb_dev->fix_tango_host(attribute, signame);
-        bool is_paused = false;
-        bool is_stopped = false;
-        try
-        {
-            hdb_dev->shared->veclock.readerIn();
-            is_paused = hdb_dev->shared->is_paused(signame);
-            is_stopped = hdb_dev->shared->is_stopped(signame);
-            hdb_dev->shared->veclock.readerOut();
-        }
-        catch(Tango::DevFailed &e)
-        {
-            hdb_dev->shared->veclock.readerOut();
-            INFO_STREAM << __func__ << ": Failed to check is_stopped or is_paused for " << signame;
-            Tango::Except::re_throw_exception(e,
-                    (const char *)"BadSignalName",
-                    "Signal " + signame + " NOT subscribed",
-                    (const char *)__func__);
-        }
-        if(is_paused || is_stopped)
-        {
-            hdb_dev->push_thread->start_attr(signame);
-            hdb_dev->shared->start(signame);
-        }
+        hdb_dev->start_attribute(attribute);
     }
 
     void HdbEventSubscriber::pause_attribute(const std::string& attribute)
     {
-        string signame;
-        hdb_dev->fix_tango_host(attribute, signame);
-        bool is_running = false;
-        try
-        {
-            hdb_dev->shared->veclock.readerIn();
-            is_running = hdb_dev->shared->is_running(signame);
-            hdb_dev->shared->veclock.readerOut();
-        }
-        catch(Tango::DevFailed &e)
-        {
-            hdb_dev->shared->veclock.readerOut();
-            INFO_STREAM << __func__ << ": Failed to check is_running for " << signame;
-            Tango::Except::re_throw_exception(e,
-                    (const char *)"BadSignalName",
-                    "Signal " + signame + " NOT subscribed",
-                    (const char *)__func__);
-        }
-        if(is_running)
-        {
-            hdb_dev->shared->pause(signame);
-            hdb_dev->push_thread->pause_attr(signame);
-        }
-        else
-        {
-            Tango::Except::throw_exception(
-                    (const char *)"Not started",
-                    "Signal " + signame + " NOT started",
-                    (const char *)"attribute_pause");
-        }
+        hdb_dev->pause_attribute(attribute);
     }
     
     auto HdbEventSubscriber::format_date(const timeval& tv, size_t ev) -> std::string

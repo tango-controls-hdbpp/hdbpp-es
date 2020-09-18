@@ -97,6 +97,8 @@ class SharedData;
 //==========================================================
 class HdbDevice: public Tango::LogAdapter
 {
+    private:
+        std::string current_context;
 public:
 	//	Data members here
 	//-----------------------------------------
@@ -309,6 +311,22 @@ public:
 	 *	Check if full domain name, otherwise fix it
 	 */
 	void add_domain(const string &attr, string& with_domain);
+	/**
+	 *	Set current context and start the attributes that should start.
+	 */
+	void set_context_and_start_attributes(const string& context);
+	/**
+	 *	Start an attribute.
+	 */
+	void start_attribute(const string& attribute);
+	/**
+	 *	Stop an attribute.
+	 */
+	void stop_attribute(const string& attribute);
+	/**
+	 *	Pause an attribute.
+	 */
+	void pause_attribute(const string& attribute);
 #ifndef _MULTI_TANGO_HOST
 	/**
 	 *	Compare without domain
