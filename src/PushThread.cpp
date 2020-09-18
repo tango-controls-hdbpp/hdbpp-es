@@ -865,9 +865,28 @@ namespace HdbEventSubscriber_ns
                 }
                 catch(Tango::DevFailed  &e)
                 {
-                    // TODO retrieve which attribute failed ?
-                    //    set_nok_db(cmd->ev_data->attr_name, string(e.errors[0].desc));
-                    Tango::Except::print_exception(e);
+                    for(size_t i = 0; i < events.size(); ++i)
+                    {
+                        timeval now{};
+                        gettimeofday(&now, nullptr);
+                        double dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                        std::string& attr_name = std::get<0>(signals[i]);
+                        double rcv_time = std::get<1>(signals[i]);
+                        try
+                        {
+                            mdb->insert_event(std::get<0>(events[i]), std::get<1>(events[i]));
+
+                            gettimeofday(&now, nullptr);
+                            double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+
+                            set_ok_db(attr_name, dnow-dstart, dnow-rcv_time);
+                        }
+                        catch(Tango::DevFailed  &e)
+                        {
+                            set_nok_db(attr_name, string(e.errors[0].desc));
+                            Tango::Except::print_exception(e);
+                        }
+                    }
                 }
             }
         }
