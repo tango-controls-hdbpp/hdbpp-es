@@ -225,7 +225,6 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void SharedData::start(const string& signame)
     {
-        std::cout << "WTF " << signame << std::endl;
         ReaderLock lock(veclock);
         vector<string> contexts;	//TODO: not used in add(..., true)!!!
         for (auto &signal : signals)
@@ -480,7 +479,6 @@ namespace HdbEventSubscriber_ns
     auto SharedData::is_current_context(const string& signame, string context) -> bool
     {
         bool retval=false;
-        std::cout << "WTF " << signame << " " << context << std::endl;
         std::transform(context.begin(), context.end(), context.begin(), ::toupper);
         if(context == string(ALWAYS_CONTEXT))
         {
@@ -852,7 +850,7 @@ namespace HdbEventSubscriber_ns
           }*/
         //omni_mutex_lock sync(*this);
         veclock.readerIn();
-        for (auto sig : signals)
+        for (const auto& sig : signals)
         {
             sig->siglock->writerIn();
             if (sig->event_id==ERR && !sig->stopped)
