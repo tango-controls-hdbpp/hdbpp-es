@@ -43,11 +43,10 @@
 #define CONTEXT_KEY		"strategy"
 #define TTL_KEY			"ttl"
 #define DEFAULT_TTL		0	//0 -> infinite, >0 -> time to live in hours
-#define ALWAYS_CONTEXT	"ALWAYS"
-#define ALWAYS_CONTEXT_DESC	"Always stored"
 
 #include <tango.h>
 #include "Consts.h"
+#include "HdbContext.h"
 
 /**
  * @author	$Author: graziano $
@@ -174,8 +173,7 @@ public:
 	vector<string> attribute_context_list_str;
 	size_t attribute_context_list_str_size;
 
-	map<string,string> contexts_map;
-	map<string,string> contexts_map_upper;
+        ContextMap contexts;
 	string defaultStrategy;
 
 #ifdef _USE_FERMI_DB_RW

@@ -44,7 +44,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <string>
-
+#include "HdbContext.h"
 
 /**
  * @author	$Author: graziano $
@@ -92,8 +92,7 @@ typedef struct
 	bool running;
 	bool paused;
 	bool stopped;
-	vector<string> contexts;
-	vector<string> contexts_upper;
+	ContextMap contexts;
 	unsigned int ttl;
         std::shared_ptr<ReadersWritersLock> siglock;
 }
@@ -192,7 +191,7 @@ public:
 	/**
 	 * Is a signal to be archived with current context?
 	 */
-	auto is_current_context(const string &signame, string context) -> bool;
+	auto is_current_context(const string &signame, const string& context) -> bool;
 	/**
 	 * Is a signal first event arrived?
 	 */

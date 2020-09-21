@@ -52,7 +52,7 @@
 
 #include <tango.h>
 #include <HdbDevice.h>
-
+#include <HdbContext.h>
 
 
 /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber.h
@@ -79,15 +79,15 @@ class HdbEventSubscriber : public TANGO_BASE_CLASS
 public:
     std::shared_ptr<HdbDevice> hdb_dev;
 	bool		initialized;
-	//vector<string>	contextsList_upper;
-	string	defaultStrategy_upper;
-	string context_set;
-	string context_read;
-	string ContextsList_str[1000];
 
 
 private:
 
+//	ContextMap contexts;
+//	string	defaultStrategy_upper;
+//	string context_set;
+        std::string current_context;
+        
         void stop_attribute(const std::string& attribute);
         void start_attribute(const std::string& attribute);
         void pause_attribute(const std::string& attribute);

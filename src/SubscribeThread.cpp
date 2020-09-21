@@ -476,31 +476,27 @@ namespace HdbEventSubscriber_ns
      * Is a signal to be archived with current context?
      */
     //=============================================================================
-    auto SharedData::is_current_context(const string& signame, string context) -> bool
+    auto SharedData::is_current_context(const string& signame, const string& context) -> bool
     {
-        bool retval=false;
-        std::transform(context.begin(), context.end(), context.begin(), ::toupper);
-        if(context == string(ALWAYS_CONTEXT))
+        bool retval = false;
+
+        // Trivial case always
+        std::string upper(context);
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+        if(upper == ALWAYS_CONTEXT)
         {
-            retval = true;
-            return retval;
+            return true;
         }
         //to be locked if called outside lock
         
         std::shared_ptr<HdbSignal> signal = get_signal(signame);
 
         signal->siglock->readerIn();
-        auto it = find(signal->contexts_upper.begin(), signal->contexts_upper.end(), context);
-        if(it != signal->contexts_upper.end())
-        {
-            retval = true;
-        }
-        it = find(signal->contexts_upper.begin(), signal->contexts_upper.end(), ALWAYS_CONTEXT);
-        if(it != signal->contexts_upper.end())
-        {
-            retval = true;
-        }
+        
+        retval = signal->contexts.contains(context);
+        
         signal->siglock->readerOut();
+        
         return retval;
     }
     //=============================================================================
@@ -681,10 +677,7 @@ namespace HdbEventSubscriber_ns
                 signal->running = false;
                 signal->stopped = true;
                 signal->paused = false;
-                signal->contexts = contexts;
-                signal->contexts_upper = contexts;
-                for(auto &it : signal->contexts_upper)
-                    std::transform(it.begin(), it.end(), it.begin(), ::toupper);
+                signal->contexts.populate(contexts);
                 //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
             }
             if(start)
@@ -782,12 +775,7 @@ namespace HdbEventSubscriber_ns
         //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << endl;
 
         signal->siglock->writerIn();
-        signal->contexts.clear();
-        signal->contexts = contexts;
-        signal->contexts_upper = contexts;
-        
-        for(auto& context : signal->contexts_upper)
-            std::transform(context.begin(), context.end(), context.begin(), ::toupper);
+        signal->contexts.populate(contexts);
         
         signal->siglock->writerOut();
         
@@ -1023,20 +1011,7 @@ namespace HdbEventSubscriber_ns
             veclock.readerIn();
             for (unsigned int i=0 ; i<signals.size() ; i++)
             {
-                string context;
-                for(auto it = signals[i]->contexts.begin(); it != signals[i]->contexts.end(); it++)
-                {
-                    try
-                    {
-                        context += *it;
-                        if(it != signals[i]->contexts.end() -1)
-                            context += "|";
-                    }
-                    catch(std::out_of_range &e)
-                    {
-
-                    }
-                }
+                string context = signals[i]->contexts.get_as_string();
                 stringstream conf_string;
                 conf_string << signals[i]->name << ";" << CONTEXT_KEY << "=" << context << ";" << TTL_KEY << "=" << signals[i]->ttl;
                 DEBUG_STREAM << "SharedData::"<<__func__<<": "<<i<<": " << conf_string.str() << endl;
@@ -1360,20 +1335,7 @@ namespace HdbEventSubscriber_ns
                 changed = true;
             }
             signals[i]->siglock->readerIn();
-            string context;
-            for(auto it = signals[i]->contexts.begin(); it != signals[i]->contexts.end(); it++)
-            {
-                try
-                {
-                    context += *it;
-                    if(it != signals[i]->contexts.end() -1)
-                        context += "|";
-                }
-                catch(std::out_of_range &e)
-                {
-
-                }
-            }
+            string context = signals[i]->contexts.get_as_string();
             if(ttl_list[i] != signals[i]->ttl)
             {
                 ttl_list[i] = signals[i]->ttl;
@@ -1400,20 +1362,7 @@ namespace HdbEventSubscriber_ns
                 string	signame(signals[i]->name);
                 s_list.push_back(signame);
                 signals[i]->siglock->readerIn();
-                string context;
-                for(auto it = signals[i]->contexts.begin(); it != signals[i]->contexts.end(); it++)
-                {
-                    try
-                    {
-                        context += *it;
-                        if(it != signals[i]->contexts.end() -1)
-                            context += "|";
-                    }
-                    catch(std::out_of_range &e)
-                    {
-
-                    }
-                }
+                string context = signals[i]->contexts.get_as_string();
                 signals[i]->siglock->readerOut();
                 s_context_list.push_back(context);
             }
@@ -1715,19 +1664,9 @@ namespace HdbEventSubscriber_ns
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        for(auto it = signal->contexts.cbegin(); it != signal->contexts.cend(); it++)
-        {
-            try
-            {
-                retval += *it;
-                if(it != signal->contexts.end() - 1)
-                    retval += "|";
-            }
-            catch(std::out_of_range &e)
-            {
 
-            }
-        }
+        retval = signal->contexts.get_as_string();
+        
         signal->siglock->readerOut();
         return retval;
     }

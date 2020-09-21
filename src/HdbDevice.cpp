@@ -206,7 +206,7 @@ namespace HdbEventSubscriber_ns
                 {
                     vector<string> list_exploded;
                     string_explode(val, string(";"), list_exploded);
-                    vector<string> contexts;
+                    vector<string> sig_contexts;
                     Tango::DevULong ttl = DEFAULT_TTL;
 
                     if(list_exploded.size() > 1)
@@ -233,7 +233,7 @@ namespace HdbEventSubscriber_ns
                         try
                         {
                             s_contexts = db_conf.at(CONTEXT_KEY);
-                            string_explode(s_contexts, string("|"), contexts);
+                            string_explode(s_contexts, string("|"), sig_contexts);
                         }
                         catch(const std::out_of_range& e)
                         {
@@ -244,7 +244,7 @@ namespace HdbEventSubscriber_ns
                             size_t pos = defaultStrategy.find(context_key);
                             if(pos != string::npos)
                             {
-                                string_explode(defaultStrategy.substr(pos+context_key.length()), string("|"), contexts);
+                                string_explode(defaultStrategy.substr(pos+context_key.length()), string("|"), sig_contexts);
                             }
                         }
                         catch(...)
@@ -272,14 +272,11 @@ namespace HdbEventSubscriber_ns
                     }
 
                     vector<string> adjusted_contexts;
-                    for(const auto &context : contexts) //vector<string>::iterator it = contexts.begin(); it != contexts.end(); it++)
+                    for(const auto &context : sig_contexts) //vector<string>::iterator it = contexts.begin(); it != contexts.end(); it++)
                     {
-                        string context_upper(context);
-                        std::transform(context_upper.begin(), context_upper.end(), context_upper.begin(), ::toupper);
-                        auto itmap = contexts_map_upper.find(context_upper);
-                        if(itmap != contexts_map_upper.end())
+                        if(contexts.contains(context))
                         {
-                            adjusted_contexts.push_back(itmap->second);
+                            adjusted_contexts.push_back(contexts[context].get_decl_name());
                         }
                         else
                         {
