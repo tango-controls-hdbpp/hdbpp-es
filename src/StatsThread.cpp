@@ -34,12 +34,9 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     //=============================================================================
     StatsThread::StatsThread(HdbDevice *dev): AbortableThread(dev->_device)
-                                              , last_stat()
     {
         hdb_dev = dev;
         set_period(dev->period);
-        last_stat.tv_sec = 0;
-        last_stat.tv_usec = 0;
     }
 
     //=============================================================================
@@ -106,7 +103,6 @@ namespace HdbEventSubscriber_ns
         hdb_dev->push_events("AttributeRecordFreqList", &hdb_dev->AttributeRecordFreqList[0], attribute_list_tmp.size(), true);
         hdb_dev->push_events("AttributeFailureFreqList", &hdb_dev->AttributeFailureFreqList[0], attribute_list_tmp.size(), false);
 
-        gettimeofday(&last_stat, nullptr);
         hdb_dev->reset_freq_statistics();
     }
 

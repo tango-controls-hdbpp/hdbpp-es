@@ -99,6 +99,7 @@ class HdbDevice: public Tango::LogAdapter
 {
     private:
         std::string current_context;
+        timeval last_stat;
 public:
 	//	Data members here
 	//-----------------------------------------
@@ -327,6 +328,11 @@ public:
 	 *	Pause an attribute.
 	 */
 	void pause_attribute(const string& attribute);
+
+        auto get_last_stat() -> timeval&
+        {
+            return last_stat;
+        };
 #ifndef _MULTI_TANGO_HOST
 	/**
 	 *	Compare without domain

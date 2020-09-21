@@ -61,7 +61,6 @@ protected:
         auto get_abort_loop_period_ms() -> unsigned int override;
 
 public:
-	timeval		last_stat;
 	StatsThread(HdbDevice *dev);
 };
 

@@ -33,13 +33,9 @@ const unsigned int default_period = 1000;
 //=============================================================================
 //=============================================================================
 CheckPeriodicThread::CheckPeriodicThread(HdbDevice *dev): AbortableThread(dev->_device)
-                                                          , last_check()
                                                           , delay_tolerance_ms(0)
 {
 	hdb_dev = dev;
-	last_check.tv_sec = 0;
-	last_check.tv_nsec = 0;
-	clock_gettime(CLOCK_MONOTONIC, &last_check);
 }
 
 //=============================================================================

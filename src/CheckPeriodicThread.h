@@ -52,8 +52,6 @@ private:
 	 */
 	HdbDevice	*hdb_dev;
 
-	timespec	last_check;
-
 protected:
 
         void init_abort_loop() override;
