@@ -42,6 +42,8 @@
 #include <tango.h>
 #include <eventconsumer.h>
 #include <stdint.h>
+#include <sys/time.h>
+#include <string>
 
 
 /**
