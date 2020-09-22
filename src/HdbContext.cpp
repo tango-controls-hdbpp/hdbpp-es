@@ -20,27 +20,32 @@
 #include "HdbContext.h"
 #include "HdbDevice.h"
 #include <algorithm>
+#include <exception>
 
 namespace HdbEventSubscriber_ns
 {
 
     std::vector<Context> ContextMap::contexts;
+    std::map<std::string, const Context&> ContextMap::contexts_map;
 
-    Context::Context(const std::string& name, const std::string& desc):decl_name(name)
-                                                                             , description(desc)
+    Context::Context(std::string name, std::string upper, std::string desc):decl_name(std::move(name))
+                                                        , upper_name(std::move(upper))
+                                                        , description(std::move(desc))
     {
-        upper_name = name;
-        std::transform(upper_name.begin(), upper_name.end(), upper_name.begin(), ::toupper); //transform to uppercase
     }
 
     auto ContextMap::create_context(const std::string& name, const std::string& desc) -> Context&
     {
-        Context context(name, desc);
+        std::string upper = name;
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper); //transform to uppercase
+        Context context(name, upper, desc);
         contexts.push_back(std::move(context)); 
 
-        return contexts.back();
-//        context_map.insert({name, inserted});
-//        context_map.insert({inserted.get_name(), inserted});
+        Context& inserted = contexts.back();
+        contexts_map.insert({name, inserted});
+        contexts_map.insert({inserted.get_name(), inserted});
+
+        return inserted;
     }
 
     void ContextMap::init(const std::vector<std::string>& init_contexts, std::vector<std::string>& out_rep)
@@ -74,14 +79,36 @@ namespace HdbEventSubscriber_ns
     {
         for(const auto& context : sub_contexts)
         {
-            find(context);
+            add(context);
         }
     }
 
-    auto ContextMap::find(const std::string& key) -> std::map<std::string, const Context&>::iterator
+    void ContextMap::add(const std::string& key)
     {
-        auto res = context_map.find(key);
-        if(res == context_map.end())
+        std::string upper(key);
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+        
+        for(size_t i = 0; i != local_contexts.size(); ++i)
+        {
+            if(contexts[i].get_name() == upper)
+            {
+                local_contexts.push_back(i);
+                string_rep.clear();
+                
+                // Just in case but could be there already
+                contexts_map.insert({upper, contexts[i]});
+                contexts_map.insert({key, contexts[i]});
+                
+                break;
+            }
+        }
+    }
+    
+    auto ContextMap::contains(const std::string& key) -> bool
+    {
+        bool found = false;
+        auto res = contexts_map.find(key);
+        if(res == contexts_map.end())
         {
             std::string upper(key);
             std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
@@ -90,38 +117,34 @@ namespace HdbEventSubscriber_ns
             {
                 if(context.get_name() == upper)
                 {
-                    context_map.insert({upper, context});
-                    context_map.insert({key, context});
-                    bool found = false;
-                    for(const auto& lc : local_contexts)
-                    {
-                        if(lc == upper)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if(!found)
-                    {
-                        local_contexts.push_back(upper);
-                        string_rep.clear();
-                    }
-                    res = context_map.find(key);
+                    contexts_map.insert({upper, context});
+                    contexts_map.insert({key, context});
+                    res = contexts_map.find(key);
                     break;
                 }
             }
         }
-        return res;
-    }
-
-    auto ContextMap::contains(const std::string& key) -> bool
-    {
-        return find(key) != context_map.end();
+        if(res != contexts_map.end())
+        {
+            for(size_t i = 0; i != local_contexts.size(); ++i)
+            {
+                if(contexts[i].get_name() == res->second.get_name())
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        return found;
     }
 
     auto ContextMap::operator[](const std::string& key) -> const Context&
     {
-        return find(key)->second;
+        if(contains(key))
+        {
+            return contexts_map.at(key);
+        }
+        throw std::exception();
     }
     
     auto ContextMap::get_as_string() -> std::string
