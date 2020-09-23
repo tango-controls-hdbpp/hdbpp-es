@@ -62,7 +62,12 @@ namespace HdbEventSubscriber_ns
 
 class ArchiveCB;
 
-typedef struct 
+enum class SignalState
+{
+    RUNNING, STOPPED, PAUSED
+};
+
+struct HdbSignal
 {
 	string	name;
 	string	devname;
@@ -89,14 +94,21 @@ typedef struct
 	timeval last_nokev;
 	timespec last_ev;
 	int periodic_ev;
+        SignalState state;
 	bool running;
 	bool paused;
 	bool stopped;
 	ContextMap contexts;
 	unsigned int ttl;
         std::shared_ptr<ReadersWritersLock> siglock;
-}
-HdbSignal;
+
+    public:
+        auto is_running() -> bool
+        {
+            ReaderLock lock(*siglock);
+            return state == SignalState::RUNNING; 
+        }
+};
 
 class HdbDevice;
 class SubscribeThread;

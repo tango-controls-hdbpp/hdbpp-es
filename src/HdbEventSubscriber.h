@@ -83,16 +83,11 @@ public:
 
 private:
 
-//	ContextMap contexts;
-//	string	defaultStrategy_upper;
-//	string context_set;
-        std::string current_context;
-        
         void stop_attribute(const std::string& attribute);
         void start_attribute(const std::string& attribute);
         void pause_attribute(const std::string& attribute);
 
-        auto format_date(const timeval& tv, size_t ev) -> std::string;
+        static auto format_date(const timeval& tv, size_t ev) -> std::string;
 	double last_statistics_reset_time;
 
 #ifdef _USE_FERMI_DB_RW

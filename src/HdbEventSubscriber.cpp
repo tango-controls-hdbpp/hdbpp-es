@@ -237,12 +237,12 @@ namespace HdbEventSubscriber_ns
 
         //	Create one event handler by HDB access device
         INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
-        string status;
-        hdb_dev = std::make_shared<HdbDevice>(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, attributeListFile, this);
-
+        
         std::vector<std::string> contexts_representation;
         ContextMap::init(contextsList, contexts_representation);
-        hdb_dev->contexts.populate(contextsList);
+        
+        string	status;
+        hdb_dev = std::make_shared<HdbDevice>(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, attributeListFile, this);
 
         for(size_t i = 0; i < contexts_representation.size(); ++i)
         {
@@ -251,7 +251,7 @@ namespace HdbEventSubscriber_ns
         
         hdb_dev->defaultStrategy = defaultStrategy;
         
-        if(hdb_dev->contexts.contains(defaultStrategy))
+        if(ContextMap::defined(defaultStrategy))
         {
             std::strncpy(attr_Context_read[0], defaultStrategy.c_str(), defaultStrategy.size() + 1);
         }
@@ -838,18 +838,15 @@ namespace HdbEventSubscriber_ns
         attr.get_write_value(w_val);
         /*----- PROTECTED REGION ID(HdbEventSubscriber::write_Context) ENABLED START -----*/
         string argin(w_val);
-        if(!hdb_dev->contexts.contains(argin))
-        {
-            Tango::Except::throw_exception(
-                    (const char *)"BadContext",
-                    "Context " + argin + " NOT DEFINED",
-                    (const char *)__func__);
-        }
-        
-        current_context = hdb_dev->contexts[argin].get_decl_name();
-        std::strncpy(attr_Context_read[0], current_context.c_str(), current_context.size() + 1);
 
-        hdb_dev->set_context_and_start_attributes(current_context);
+        // Might throw if the context does not exists
+        hdb_dev->set_context(argin);
+
+        std::string context_name = hdb_dev->get_context().get_decl_name();
+        
+        std::strncpy(attr_Context_read[0], context_name.c_str(), context_name.size() + 1);
+
+        hdb_dev->start_attributes();
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_Context
     }
@@ -1164,13 +1161,13 @@ namespace HdbEventSubscriber_ns
 
                 for(const auto& context : res)
                 {
-                    if(!hdb_dev->contexts.contains(context))
+                    if(!ContextMap::defined(context))
                     {
                         context_error = true;
                     }
                     else
                     {
-                        contexts.push_back(hdb_dev->contexts[context].get_decl_name());
+                        contexts.push_back(context);
                     }
                 }
             }
@@ -1242,31 +1239,6 @@ namespace HdbEventSubscriber_ns
         }
 
         hdb_dev->add(signame, contexts, data_type, data_format, write_type);
-
-        // since ttl is a parameter to this function, we should also
-        // update this value inside the subscriber and database
-        //	hdb_dev->updatettl(signame, ttl);
-
-        bool is_current_context = false;
-        try
-        {
-            hdb_dev->shared->veclock.readerIn();
-            is_current_context = hdb_dev->shared->is_current_context(signame, current_context);
-            hdb_dev->shared->veclock.readerOut();
-        }
-        catch(Tango::DevFailed &e)
-        {
-            hdb_dev->shared->veclock.readerOut();
-            INFO_STREAM << __func__ << ": Failed to check is_current_context for " << signame;
-            Tango::Except::re_throw_exception(e,
-                    (const char *)"BadSignalName",
-                    "Signal " + signame + " NOT subscribed",
-                    (const char *)__func__);
-        }
-        if(is_current_context)
-            start_attribute(signame);
-        else
-            stop_attribute(signame);
 
         if(context_error)
         {
@@ -1435,30 +1407,8 @@ namespace HdbEventSubscriber_ns
         /*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
 
         //	Add your own code
-        vector<string> att_list_tmp;
-        hdb_dev->get_sig_list(att_list_tmp);
-        for (const auto& attr : att_list_tmp)
-        {
-            bool is_current_context = false;
-            try
-            {
-                hdb_dev->shared->veclock.readerIn();
-                is_current_context = hdb_dev->shared->is_current_context(attr, current_context);
-                DEBUG_STREAM << "HdbEventSubscriber::start="<<current_context<<" : " << attr << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
-                hdb_dev->shared->veclock.readerOut();
-            }
-            catch(Tango::DevFailed &e)
-            {
-                hdb_dev->shared->veclock.readerOut();
-                INFO_STREAM << __func__ << ": Failed to check is_current_context for " << attr;
-                Tango::Except::re_throw_exception(e,
-                        (const char *)"BadSignalName",
-                        "Signal " + attr + " NOT subscribed",
-                        (const char *)__func__);
-            }
-            if(is_current_context)
-                start_attribute(attr);
-        }
+        
+        hdb_dev->start_attributes();
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::start
     }
     //--------------------------------------------------------
@@ -1643,13 +1593,13 @@ namespace HdbEventSubscriber_ns
 
                 for(const auto& context : res)
                 {
-                    if(!hdb_dev->contexts.contains(context))
+                    if(!ContextMap::defined(context))
                     {
                         context_error = true;
                     }
                     else
                     {
-                        contexts.push_back(hdb_dev->contexts[context].get_decl_name());
+                        contexts.push_back(context);
                     }
                 }
             }
@@ -1657,27 +1607,6 @@ namespace HdbEventSubscriber_ns
         if(contexts.empty())
             contexts.push_back(defaultStrategy);
         hdb_dev->update(signame, contexts);
-
-        bool is_current_context = false;
-        try
-        {
-            hdb_dev->shared->veclock.readerIn();
-            is_current_context = hdb_dev->shared->is_current_context(signame, current_context);
-            hdb_dev->shared->veclock.readerOut();
-        }
-        catch(Tango::DevFailed &e)
-        {
-            hdb_dev->shared->veclock.readerOut();
-            INFO_STREAM << __func__ << ": Failed to check is_current_context for " << signame;
-            Tango::Except::re_throw_exception(e,
-                    (const char *)"BadSignalName",
-                    "Signal " + signame + " NOT subscribed",
-                    (const char *)__func__);
-        }
-        if(is_current_context)
-            start_attribute(signame);
-        else
-            stop_attribute(signame);
 
         if(context_error)
         {

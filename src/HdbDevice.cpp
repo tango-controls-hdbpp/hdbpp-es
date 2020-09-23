@@ -97,6 +97,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, Tango::DeviceImpl *device)
         :Tango::LogAdapter(device)
+         , current_context_idx(ContextMap::index(Context::no_context()))
     {
         this->period = p;
         this->poller_period = pp;
@@ -190,7 +191,7 @@ namespace HdbEventSubscriber_ns
 
         //	Wait end of first subscribing loop
         shared->wait_initialized();
-        set_context_and_start_attributes(current_context);
+        start_attributes();
     }
 
     //=============================================================================
@@ -274,9 +275,9 @@ namespace HdbEventSubscriber_ns
                     vector<string> adjusted_contexts;
                     for(const auto &context : sig_contexts) //vector<string>::iterator it = contexts.begin(); it != contexts.end(); it++)
                     {
-                        if(contexts.contains(context))
+                        if(ContextMap::defined(context))
                         {
-                            adjusted_contexts.push_back(contexts[context].get_decl_name());
+                            adjusted_contexts.push_back(context);
                         }
                         else
                         {
@@ -303,6 +304,7 @@ namespace HdbEventSubscriber_ns
         fix_tango_host(signame, attr_name);
         push_thread->add_attr(attr_name, data_type, data_format, write_type);
         shared->add(attr_name, contexts, UPDATE_PROP, false);
+        apply_attribute_context(attr_name);
     }
     //=============================================================================
     //=============================================================================
@@ -321,6 +323,7 @@ namespace HdbEventSubscriber_ns
         std::string attr_name;
         fix_tango_host(signame, attr_name);
         shared->update(attr_name, contexts);
+        apply_attribute_context(attr_name);
     }
     //=============================================================================
     //=============================================================================
@@ -1107,9 +1110,30 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    void HdbDevice::set_context_and_start_attributes(const std::string& context)
+    void HdbDevice::set_context(const std::string& context)
     {
-        current_context = context;
+        if(!ContextMap::defined(context))
+        {
+            Tango::Except::throw_exception(
+                    (const char *)"BadContext",
+                    "Context " + context + " NOT DEFINED",
+                    (const char *)__func__);
+        }
+
+        current_context_idx = ContextMap::index(context);
+    }
+    
+    //=============================================================================
+    //=============================================================================
+    auto HdbDevice::get_context() -> const Context&
+    {
+        return ContextMap::at(current_context_idx);
+    }
+
+    //=============================================================================
+    //=============================================================================
+    void HdbDevice::start_attributes()
+    {
         vector<string> att_list_tmp;
         get_sig_list(att_list_tmp);
         for (auto& att : att_list_tmp)
@@ -1118,7 +1142,7 @@ namespace HdbEventSubscriber_ns
             try
             {
                 shared->veclock.readerIn();
-                is_current_context = shared->is_current_context(att, context);
+                is_current_context = shared->is_current_context(att, get_context().get_name());
                 shared->veclock.readerOut();
             }
             catch(Tango::DevFailed &e)
@@ -1135,6 +1159,31 @@ namespace HdbEventSubscriber_ns
             else
                 stop_attribute(att);
         }
+    }
+
+    //=============================================================================
+    //=============================================================================
+    void HdbDevice::apply_attribute_context(const std::string& attribute)
+    {
+        bool is_current_context = false;
+        try
+        {
+            ReaderLock l(shared->veclock);
+
+            is_current_context = shared->is_current_context(attribute, get_context().get_name());
+        }
+        catch(Tango::DevFailed &e)
+        {
+            INFO_STREAM << __func__ << ": Failed to check is_current_context for " << attribute;
+            Tango::Except::re_throw_exception(e,
+                    (const char *)"BadSignalName",
+                    "Signal " + attribute + " NOT subscribed",
+                    (const char *)__func__);
+        }
+        if(is_current_context)
+            start_attribute(attribute);
+        else
+            stop_attribute(attribute);
     }
 
     //=============================================================================

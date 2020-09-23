@@ -47,6 +47,7 @@
 #include <tango.h>
 #include "Consts.h"
 #include "HdbContext.h"
+#include <functional>
 
 /**
  * @author	$Author: graziano $
@@ -97,8 +98,13 @@ class SharedData;
 class HdbDevice: public Tango::LogAdapter
 {
     private:
-        std::string current_context;
         timeval last_stat;
+        size_t current_context_idx;
+	
+        /**
+	 *	Start or stop an attribute according to current context.
+	 */
+	void apply_attribute_context(const string& attribute);
 public:
 	//	Data members here
 	//-----------------------------------------
@@ -173,7 +179,6 @@ public:
 	vector<string> attribute_context_list_str;
 	size_t attribute_context_list_str_size;
 
-        ContextMap contexts;
 	string defaultStrategy;
 
 #ifdef _USE_FERMI_DB_RW
@@ -313,9 +318,18 @@ public:
 	 */
 	void add_domain(const string &attr, string& with_domain);
 	/**
-	 *	Set current context and start the attributes that should start.
+	 *	Set current context.
+         *	Throw an exception if the context is not defined.
 	 */
-	void set_context_and_start_attributes(const string& context);
+	void set_context(const std::string& context);
+	/**
+	 *	Get current context.
+	 */
+	auto get_context() -> const Context&;
+	/**
+	 *	Start the attributes that should start depending on current_context.
+	 */
+	void start_attributes();
 	/**
 	 *	Start an attribute.
 	 */

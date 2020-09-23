@@ -28,20 +28,39 @@ namespace HdbEventSubscriber_ns
     std::vector<Context> ContextMap::contexts;
     std::map<std::string, const Context&> ContextMap::contexts_map;
 
+    const Context Context::NO_CONTEXT("", "", "");
+    const Context Context::ALWAYS_CONTEXT("ALWAYS", "ALWAYS", "Always stored");
+
     Context::Context(std::string name, std::string upper, std::string desc):decl_name(std::move(name))
                                                         , upper_name(std::move(upper))
                                                         , description(std::move(desc))
     {
     }
 
-    auto ContextMap::create_context(const std::string& name, const std::string& desc) -> Context&
+    auto Context::to_string() const -> std::string
+    {
+        std::string res(decl_name);
+        res.append(": ");
+        res.append(description);
+        return std::move(res);
+    }
+
+    auto ContextMap::create_context(const std::string& name, const std::string& desc) -> const Context&
     {
         std::string upper = name;
         std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper); //transform to uppercase
+
+        // Do not create a new one if already existing.
+        if(contexts_map.find(upper) != contexts_map.end())
+        {
+            return contexts_map.at(upper);
+        }
+       
+        // Create new unique context.
         Context context(name, upper, desc);
         contexts.push_back(std::move(context)); 
 
-        Context& inserted = contexts.back();
+        const Context& inserted = contexts.back();
         contexts_map.insert({name, inserted});
         contexts_map.insert({inserted.get_name(), inserted});
 
@@ -50,6 +69,8 @@ namespace HdbEventSubscriber_ns
 
     void ContextMap::init(const std::vector<std::string>& init_contexts, std::vector<std::string>& out_rep)
     {
+        // Insert always context, as it is always defined.
+        contexts_map.insert({Context::always_context().get_name(), Context::always_context()});
         bool always_init = false;
         for(const auto& context : init_contexts)
         {
@@ -57,9 +78,9 @@ namespace HdbEventSubscriber_ns
             HdbDevice::string_explode(context, ":", res);
             if(res.size() == 2)
             {
-                Context& c = create_context(res[0], res[1]);
+                const Context& c = create_context(res[0], res[1]);
 
-                if(c.get_name() == ALWAYS_CONTEXT)
+                if(&c == &Context::always_context())
                 {
                     always_init = true;
                 }
@@ -69,10 +90,84 @@ namespace HdbEventSubscriber_ns
         
         if(!always_init)
         {
-            create_context(ALWAYS_CONTEXT, ALWAYS_CONTEXT_DESC);
-            out_rep.push_back(ALWAYS_CONTEXT + ": " + ALWAYS_CONTEXT_DESC);
+            out_rep.push_back(Context::always_context().to_string());
         }
         
+    }
+
+    auto ContextMap::index(const Context& context) -> size_t
+    {
+        // Trivial cases
+        if(&context == &Context::always_context())
+        {
+            return always_context_idx;
+        }
+        size_t i = 0;
+        for(; i != contexts.size(); ++i)
+        {
+            if(&contexts[i] == &context)
+                break;
+        }
+        
+        // Not found return out of bounds idx
+        return i + 1;
+    }
+    
+    auto ContextMap::index(const std::string& context) -> size_t
+    {
+        if(defined(context))
+        {
+            return index(contexts_map.at(context));
+        }
+        
+        // Not found return out of bounds idx
+        return contexts.size() + 1;
+    }
+    
+    auto ContextMap::at(size_t idx) -> const Context&
+    {
+        // Trivial case
+        if(idx == always_context_idx)
+        {
+            return Context::always_context();
+        }
+
+        if(idx < 1 || idx > contexts.size())
+        {
+            return Context::no_context();
+        }
+
+        return contexts[idx - 1];
+    }
+
+    auto ContextMap::defined(const std::string& context) -> bool
+    {
+        bool found = false;
+        auto res = contexts_map.find(context);
+        if(res == contexts_map.end())
+        {
+            std::string upper(context);
+            std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+
+            if(Context::always_context().get_name() == upper)
+            {
+                contexts_map.insert({context, Context::always_context()});
+                found = true;
+            }
+            else
+            {
+                for(const auto& c : contexts)
+                {
+                    if(c.get_name() == upper)
+                    {
+                        contexts_map.insert({context, c});
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        return found;
     }
 
     void ContextMap::populate(const std::vector<std::string>& sub_contexts)
@@ -88,20 +183,44 @@ namespace HdbEventSubscriber_ns
         std::string upper(key);
         std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
         
-        for(size_t i = 0; i != local_contexts.size(); ++i)
+        if(Context::always_context().get_name() == upper)
         {
-            if(contexts[i].get_name() == upper)
+            local_contexts.insert(always_context_idx);
+            string_rep.clear();
+        }
+        else
+        {
+            for(size_t i = 0; i != contexts.size(); ++i)
             {
-                local_contexts.push_back(i);
-                string_rep.clear();
-                
-                // Just in case but could be there already
-                contexts_map.insert({upper, contexts[i]});
-                contexts_map.insert({key, contexts[i]});
-                
+                if(contexts[i].get_name() == upper)
+                {
+                    local_contexts.insert(i + 1);
+                    string_rep.clear();
+
+                    // Just in case but could be there already
+                    contexts_map.insert({upper, contexts[i]});
+                    contexts_map.insert({key, contexts[i]});
+
+                    break;
+                }
+            }
+        }
+    }
+
+    auto ContextMap::contains(const Context& context) -> bool
+    {
+        bool found = false;
+        
+        for(auto lc : local_contexts)
+        {
+            if(&(*this)[lc] == &context)
+            {
+                found = true;
                 break;
             }
         }
+        
+        return found;
     }
     
     auto ContextMap::contains(const std::string& key) -> bool
@@ -113,22 +232,30 @@ namespace HdbEventSubscriber_ns
             std::string upper(key);
             std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
 
-            for(const auto& context : contexts)
+            if(Context::always_context().get_name() == upper)
             {
-                if(context.get_name() == upper)
+                contexts_map.insert({key, Context::always_context()});
+                res = contexts_map.find(key);
+            }
+            else
+            {
+                for(const auto& context : contexts)
                 {
-                    contexts_map.insert({upper, context});
-                    contexts_map.insert({key, context});
-                    res = contexts_map.find(key);
-                    break;
+                    if(context.get_name() == upper)
+                    {
+                        contexts_map.insert({upper, context});
+                        contexts_map.insert({key, context});
+                        res = contexts_map.find(key);
+                        break;
+                    }
                 }
             }
         }
         if(res != contexts_map.end())
         {
-            for(size_t i = 0; i != local_contexts.size(); ++i)
+            for(auto lc : local_contexts)
             {
-                if(contexts[i].get_name() == res->second.get_name())
+                if((*this)[lc].get_name() == res->second.get_name())
                 {
                     found = true;
                     break;
@@ -136,6 +263,16 @@ namespace HdbEventSubscriber_ns
             }
         }
         return found;
+    }
+
+    auto ContextMap::operator[](size_t pos) -> const Context&
+    {
+        if(pos == 0)
+        {
+            return Context::always_context();
+        }
+
+        return contexts[pos - 1];
     }
 
     auto ContextMap::operator[](const std::string& key) -> const Context&
@@ -146,7 +283,7 @@ namespace HdbEventSubscriber_ns
         }
         throw std::exception();
     }
-    
+
     auto ContextMap::get_as_string() -> std::string
     {
         if(string_rep.empty())
@@ -155,7 +292,7 @@ namespace HdbEventSubscriber_ns
             size_t max_size = size();
             for(const auto& lc : local_contexts)
             {
-                string_rep += (*this)[lc].get_decl_name();
+                string_rep += contexts[lc].get_decl_name();
                 
                 if(++idx != max_size)
                     string_rep += "|";

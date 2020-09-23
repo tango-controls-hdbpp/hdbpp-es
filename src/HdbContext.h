@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <set>
 
 namespace HdbEventSubscriber_ns
 {
@@ -48,11 +49,19 @@ namespace HdbEventSubscriber_ns
             static std::vector<Context> contexts;
             static std::map<std::string, const Context&> contexts_map;
             
-            static auto create_context(const std::string& name, const std::string& desc) -> Context&;
-            
+            static auto create_context(const std::string& name, const std::string& desc) -> const Context&;
+            static const int always_context_idx = 0;
+
             void add(const std::string& key);
             
-            std::vector<size_t> local_contexts;
+            auto operator[](size_t pos) -> const Context&;
+            
+            /**
+             * Set of the local contextes indexes.
+             * Note that 0 being reserved for always context,
+             * the indexes in there start at 1.
+             */
+            std::set<size_t> local_contexts;
 
             std::string string_rep;
         
@@ -64,6 +73,27 @@ namespace HdbEventSubscriber_ns
              */
             static void init(const std::vector<std::string>& contexts, std::vector<std::string>& out_rep);
 
+            /**
+             * Return the index of the context in the global contexts array.
+             * The 'ALWAYS' context has a special index.
+             * The 'NO_CONTEXT' will return an undefined out of bound value.
+             */
+            static auto index(const Context& context) -> size_t;
+            
+            static auto index(const std::string& context) -> size_t;
+            
+            /**
+             * Return the context at the global idx.
+             * return no context if the idx is out of bounds.
+             */
+            static auto at(size_t idx) -> const Context&;
+           
+            /**
+             * Return true if a context with this name exists
+             * in the global context list.
+             */
+            static auto defined(const std::string& context) -> bool;
+            
             /**
              * List of contexts to be used as local contexts.
              * Note that if a context was not defined at startup,
@@ -78,6 +108,12 @@ namespace HdbEventSubscriber_ns
             auto contains(const std::string& key) -> bool;
             
             /**
+             * Return true a context with name 'key', case insensitive,
+             * is present in the list of local contexts.
+             */
+            auto contains(const Context& context) -> bool;
+            
+            /**
              * Return the number of local contexts.
              */
             auto size() const -> size_t
@@ -85,14 +121,6 @@ namespace HdbEventSubscriber_ns
                 return local_contexts.size();
             };
 
-            /**
-             * Return the context at the index pos.
-             */
-            auto operator[](size_t pos) -> const Context&
-            {
-                return contexts.at(local_contexts[pos]);
-            };
-            
             /**
              * Return the context with the name 'key', case insensitive.
              * If the key is not present throw an exception.
@@ -116,9 +144,12 @@ namespace HdbEventSubscriber_ns
      */
     class Context
     {
-        friend Context& ContextMap::create_context(const std::string& name, const std::string& desc);
+        friend const Context& ContextMap::create_context(const std::string& name, const std::string& desc);
         
         private:
+            static const Context NO_CONTEXT;
+            static const Context ALWAYS_CONTEXT;
+            
             const std::string upper_name;
             const std::string decl_name;
             const std::string description;
@@ -128,6 +159,16 @@ namespace HdbEventSubscriber_ns
             auto operator=(const Context&) -> Context& = delete;
 
         public:
+            static auto no_context() -> const Context&
+            {
+                return NO_CONTEXT;
+            }
+            
+            static auto always_context() -> const Context&
+            {
+                return ALWAYS_CONTEXT;
+            }
+
             /**
              * Return this context name in upper case.
              */
@@ -143,6 +184,11 @@ namespace HdbEventSubscriber_ns
             {
                 return decl_name;
             };
+    
+            /**
+             * Return a string with this context name and description.
+             */
+            auto to_string() const -> std::string;
     };
 
 
