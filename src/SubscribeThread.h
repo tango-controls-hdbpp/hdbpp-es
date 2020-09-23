@@ -95,10 +95,10 @@ struct HdbSignal
 	timespec last_ev;
 	int periodic_ev;
         SignalState state;
-	bool running;
+/*	bool running;
 	bool paused;
 	bool stopped;
-	ContextMap contexts;
+*/	ContextMap contexts;
 	unsigned int ttl;
         std::shared_ptr<ReadersWritersLock> siglock;
 
@@ -107,6 +107,18 @@ struct HdbSignal
         {
             ReaderLock lock(*siglock);
             return state == SignalState::RUNNING; 
+        }
+        
+        auto is_paused() -> bool
+        {
+            ReaderLock lock(*siglock);
+            return state == SignalState::PAUSED; 
+        }
+        
+        auto is_stopped() -> bool
+        {
+            ReaderLock lock(*siglock);
+            return state == SignalState::STOPPED; 
         }
 };
 
@@ -133,7 +145,10 @@ private:
         omni_mutex init_mutex;
         omni_condition init_condition;
 
-        auto is_same_signal_name(const std::string& name1, const std::string& name2) -> bool;
+        static auto is_same_signal_name(const std::string& name1, const std::string& name2) -> bool;
+
+        void update_signal_state(const std::shared_ptr<HdbSignal>& signal, const SignalState new_state);
+
 public:
 	int		action;
 	//omni_condition condition;

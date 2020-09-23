@@ -325,7 +325,7 @@ public:
 	/**
 	 *	Get current context.
 	 */
-	auto get_context() -> const Context&;
+	auto get_context() const -> const Context&;
 	/**
 	 *	Start the attributes that should start depending on current_context.
 	 */

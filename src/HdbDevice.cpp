@@ -1125,7 +1125,7 @@ namespace HdbEventSubscriber_ns
     
     //=============================================================================
     //=============================================================================
-    auto HdbDevice::get_context() -> const Context&
+    auto HdbDevice::get_context() const -> const Context&
     {
         return ContextMap::at(current_context_idx);
     }

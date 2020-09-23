@@ -187,12 +187,25 @@ namespace HdbEventSubscriber_ns
                     }
                     if(!stop)
                     {
-                        if(sig->running)
-                            hdb_dev->attr_AttributeStartedNumber_read--;
-                        if(sig->paused)
-                            hdb_dev->attr_AttributePausedNumber_read--;
-                        if(sig->stopped)
-                            hdb_dev->attr_AttributeStoppedNumber_read--;
+                        switch(sig->state)
+                        {
+                            case SignalState::RUNNING:
+                                {
+                                    hdb_dev->attr_AttributeStartedNumber_read--;
+                                    break;
+                                }
+                            case SignalState::PAUSED:
+                                {
+                                    hdb_dev->attr_AttributePausedNumber_read--;
+                                    break;
+                                }
+                            case SignalState::STOPPED:
+                                {
+                                    hdb_dev->attr_AttributeStoppedNumber_read--;
+                                    break;
+                                }
+                        }
+                        
                         hdb_dev->attr_AttributeNumber_read--;
                         signals.erase(pos);
                         DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
@@ -220,6 +233,105 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     /**
+     * Change, or not, the state of a signal.
+     */
+    //=============================================================================
+    void SharedData::update_signal_state(const std::shared_ptr<HdbSignal>& signal, const SignalState new_state)
+    {
+        WriterLock l(*(signal->siglock));
+        
+        // Trivial case, nothing to do.
+        if(new_state == signal->state)
+            return;
+        
+        const SignalState old_state = signal->state;
+
+        switch(new_state)
+        {
+            case SignalState::RUNNING:
+                {
+                    switch(old_state)
+                    {
+                        case SignalState::STOPPED:
+
+                            {
+                                try
+                                {
+                                    vector<string> contexts;
+                                    add(signal->name, contexts, NOTHING, true);
+                                }
+                                catch (Tango::DevFailed &e)
+                                {
+                                    INFO_STREAM << "SharedData::start: error adding  " << signal->name <<" err="<< e.errors[0].desc << endl;
+                                    signal->status = e.errors[0].desc;
+                                }
+                                
+                                hdb_dev->attr_AttributeStoppedNumber_read--;
+                                break;
+                            }
+
+                        case SignalState::PAUSED:
+                            {
+                                hdb_dev->attr_AttributePausedNumber_read--;
+                                break;
+                            }
+                    }
+                    
+                    hdb_dev->attr_AttributeStartedNumber_read++;
+                    break;
+                }
+            case SignalState::PAUSED:
+                {
+                    switch(old_state)
+                    {
+                        case SignalState::RUNNING:
+                            {
+                                hdb_dev->attr_AttributeStartedNumber_read--;
+                                break;
+                            }
+                        case SignalState::STOPPED:
+                            {
+                                hdb_dev->attr_AttributeStoppedNumber_read--;
+                                break;
+                            }
+                    }
+                    
+                    hdb_dev->attr_AttributePausedNumber_read++;
+                    break;
+
+                }
+            case SignalState::STOPPED:
+                {
+                    switch(old_state)
+                    {
+                        try
+                        {
+                            remove(signal->name, true);
+                        }
+                        catch (Tango::DevFailed &e)
+                        {
+                            //Tango::Except::print_exception(e);
+                            INFO_STREAM << "SharedData::stop: error removing  " << signal->name << endl;
+                        }
+                        case SignalState::RUNNING:
+                        {
+                            hdb_dev->attr_AttributeStartedNumber_read--;
+                            break;
+                        }
+                        case SignalState::PAUSED:
+                        {
+                            hdb_dev->attr_AttributePausedNumber_read--;
+                            break;
+                        }
+                    }
+                } 
+        }
+
+        signal->state = new_state;
+    }
+
+    //=============================================================================
+    /**
      * Start saving on DB a signal.
      */
     //=============================================================================
@@ -231,33 +343,7 @@ namespace HdbEventSubscriber_ns
         {
             if(is_same_signal_name(signal->name, signame))
             {
-                signal->siglock->writerIn();
-                if(!signal->running)
-                {
-                    if(signal->stopped)
-                    {
-                        hdb_dev->attr_AttributeStoppedNumber_read--;
-                        try
-                        {
-                            add(signame, contexts, NOTHING, true);
-                        }
-                        catch (Tango::DevFailed &e)
-                        {
-                            //Tango::Except::print_exception(e);
-                            INFO_STREAM << "SharedData::start: error adding  " << signame <<" err="<< e.errors[0].desc << endl;
-                            signal->status = e.errors[0].desc;
-                            /*signal.siglock->writerOut();
-                              return;*/
-                        }
-                    }
-                    signal->running=true;
-                    if(signal->paused)
-                        hdb_dev->attr_AttributePausedNumber_read--;
-                    hdb_dev->attr_AttributeStartedNumber_read++;
-                    signal->paused=false;
-                    signal->stopped=false;
-                }
-                signal->siglock->writerOut();
+                update_signal_state(signal, SignalState::RUNNING);
                 return;
             }
         }
@@ -280,19 +366,7 @@ namespace HdbEventSubscriber_ns
         {
             if(is_same_signal_name(signal->name, signame))
             {
-                signal->siglock->writerIn();
-                if(!signal->paused)
-                {
-                    signal->paused=true;
-                    hdb_dev->attr_AttributePausedNumber_read++;
-                    if(signal->running)
-                        hdb_dev->attr_AttributeStartedNumber_read--;
-                    if(signal->stopped)
-                        hdb_dev->attr_AttributeStoppedNumber_read--;
-                    signal->running=false;
-                    signal->stopped=false;
-                }
-                signal->siglock->writerOut();
+                update_signal_state(signal, SignalState::PAUSED);
                 return;
             }
         }
@@ -315,41 +389,7 @@ namespace HdbEventSubscriber_ns
         {
             if(is_same_signal_name(signal->name, signame))
             {
-                signal->siglock->writerIn();
-                if(!signal->stopped)
-                {
-                    signal->stopped=true;
-                    hdb_dev->attr_AttributeStoppedNumber_read++;
-                    if(signal->running)
-                    {
-                        hdb_dev->attr_AttributeStartedNumber_read--;
-                        try
-                        {
-                            remove(signame, true);
-                        }
-                        catch (Tango::DevFailed &e)
-                        {
-                            //Tango::Except::print_exception(e);
-                            INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
-                        }
-                    }
-                    if(signal->paused)
-                    {
-                        hdb_dev->attr_AttributePausedNumber_read--;
-                        try
-                        {
-                            remove(signame, true);
-                        }
-                        catch (Tango::DevFailed &e)
-                        {
-                            //Tango::Except::print_exception(e);
-                            INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
-                        }
-                    }
-                    signal->running=false;
-                    signal->paused=false;
-                }
-                signal->siglock->writerOut();
+                update_signal_state(signal, SignalState::STOPPED);
                 return;
             }
         }
@@ -371,9 +411,7 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->siglock->writerIn();
-            signal->running=true;
-            signal->paused=false;
-            signal->stopped=false;
+            signal->state = SignalState::RUNNING;
             signal->siglock->writerOut();
         }
         hdb_dev->attr_AttributeStoppedNumber_read=0;
@@ -391,9 +429,7 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->siglock->writerIn();
-            signal->running=false;
-            signal->paused=true;
-            signal->stopped=false;
+            signal->state = SignalState::PAUSED;
             signal->siglock->writerOut();
         }
         hdb_dev->attr_AttributeStoppedNumber_read=0;
@@ -411,9 +447,7 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->siglock->writerIn();
-            signal->running=false;
-            signal->paused=false;
-            signal->stopped=true;
+            signal->state = SignalState::STOPPED;
             signal->siglock->writerOut();
         }
         hdb_dev->attr_AttributeStoppedNumber_read=signals.size();
@@ -432,9 +466,7 @@ namespace HdbEventSubscriber_ns
         
         std::shared_ptr<HdbSignal> signal = get_signal(signame);
 
-        signal->siglock->readerIn();
-        retval = signal->running;
-        signal->siglock->readerOut();
+        retval = signal->is_running();
         return retval;
     }
     //=============================================================================
@@ -449,9 +481,7 @@ namespace HdbEventSubscriber_ns
         
         std::shared_ptr<HdbSignal> signal = get_signal(signame);
 
-        signal->siglock->readerIn();
-        retval = signal->paused;
-        signal->siglock->readerOut();
+        retval = signal->is_paused();
         return retval;
     }
     //=============================================================================
@@ -466,9 +496,7 @@ namespace HdbEventSubscriber_ns
         
         std::shared_ptr<HdbSignal> signal = get_signal(signame);
 
-        signal->siglock->readerIn();
-        retval = signal->stopped;
-        signal->siglock->readerOut();
+        retval = signal->is_stopped();
         return retval;
     }
     //=============================================================================
@@ -674,9 +702,7 @@ namespace HdbEventSubscriber_ns
                 signal->attname = signal->name.substr(idx+1);
                 signal->status = "NOT connected";
                 signal->attr = nullptr;
-                signal->running = false;
-                signal->stopped = true;
-                signal->paused = false;
+                signal->state = SignalState::STOPPED;
                 signal->contexts.populate(contexts);
                 //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
             }
@@ -841,7 +867,7 @@ namespace HdbEventSubscriber_ns
         for (const auto& sig : signals)
         {
             sig->siglock->writerIn();
-            if (sig->event_id==ERR && !sig->stopped)
+            if (sig->event_id==ERR && sig->state != SignalState::STOPPED)
             {
                 if(!sig->attr)
                 {
@@ -988,7 +1014,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->event_id == ERR && !signal->stopped)
+            if (signal->event_id == ERR && !signal->is_stopped())
             {
                 nb++;
             }
@@ -1086,7 +1112,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->evstate==Tango::ALARM && signal->running)
+            if (signal->evstate==Tango::ALARM && signal->is_running())
             {
                 string signame(signal->name);
                 list.push_back(signame);
@@ -1106,7 +1132,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->evstate==Tango::ALARM && signal->running)
+            if (signal->evstate==Tango::ALARM && signal->is_running())
             {
                 num++;
             }
@@ -1126,7 +1152,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->evstate==Tango::ON || (signal->evstate==Tango::ALARM && !signal->running))
+            if (signal->evstate==Tango::ON || (signal->evstate==Tango::ALARM && !signal->is_running()))
             {
                 string signame(signal->name);
                 list.push_back(signame);
@@ -1146,7 +1172,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->evstate==Tango::ON || (signal->evstate==Tango::ALARM && !signal->running))
+            if (signal->evstate==Tango::ON || (signal->evstate==Tango::ALARM && !signal->is_running()))
             {
                 num++;
             }
@@ -1166,7 +1192,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->running)
+            if (signal->is_running())
             {
                 string signame(signal->name);
                 list.push_back(signame);
@@ -1186,7 +1212,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (signal->running)
+            if (signal->is_running())
             {
                 num++;
             }
@@ -1206,7 +1232,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (!signal->running)
+            if (!signal->is_running())
             {
                 string signame(signal->name);
                 list.push_back(signame);
@@ -1230,7 +1256,7 @@ namespace HdbEventSubscriber_ns
             signals[i]->siglock->readerIn();
             string err;
             //if (signals[i].status != STATUS_SUBSCRIBED)
-            if ((signals[i]->evstate != Tango::ON) && (signals[i]->running))
+            if ((signals[i]->evstate != Tango::ON) && (signals[i]->is_running()))
             {
                 err = signals[i]->status;
             }
@@ -1257,7 +1283,7 @@ namespace HdbEventSubscriber_ns
                 signals[i]->siglock->readerIn();
                 string err;
                 //if (signals[i].status != STATUS_SUBSCRIBED)
-                if ((signals[i]->evstate != Tango::ON) && (signals[i]->running))
+                if ((signals[i]->evstate != Tango::ON) && (signals[i]->is_running()))
                 {
                     err = signals[i]->status;
                 }
@@ -1300,7 +1326,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            if (!signal->running)
+            if (!signal->is_running())
             {
                 num++;
             }
@@ -1372,17 +1398,23 @@ namespace HdbEventSubscriber_ns
         {
             string signame(signal->name);
             signal->siglock->readerIn();
-            if (signal->running)
+            switch(signal->state)
             {
-                tmp_start_list.push_back(signame);
-            }
-            else if(signal->paused)
-            {
-                tmp_pause_list.push_back(signame);
-            }
-            else if(signal->stopped)
-            {
-                tmp_stop_list.push_back(signame);
+                case SignalState::RUNNING:
+                    {
+                        tmp_start_list.push_back(signame);
+                        break;
+                    }
+                case SignalState::PAUSED:
+                    {
+                        tmp_pause_list.push_back(signame);
+                        break;
+                    }
+                case SignalState::STOPPED:
+                    {
+                        tmp_stop_list.push_back(signame);
+                        break;
+                    }
             }
             signal->siglock->readerOut();
         }
@@ -1716,7 +1748,7 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->siglock->readerIn();
-            if(!signal->running)
+            if(!signal->is_running())
             {
                 signal->siglock->readerOut();
                 continue;
@@ -1780,7 +1812,7 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     /**
-     *	Return ALARM if at list one signal is not subscribed.
+     *	Return ALARM if at least one signal is not subscribed.
      */
     //=============================================================================
     auto SharedData::state() -> Tango::DevState
@@ -1789,15 +1821,12 @@ namespace HdbEventSubscriber_ns
         Tango::DevState	state = Tango::ON;
         for (const auto &sig : signals)
         {
-            sig->siglock->readerIn();
-            if (sig->evstate==Tango::ALARM && sig->running)
+            ReaderLock l(*(sig->siglock));
+            if (sig->evstate==Tango::ALARM && sig->is_running())
             {
                 state = Tango::ALARM;
-
-            }
-            sig->siglock->readerOut();
-            if(state == Tango::ALARM)
                 break;
+            }
         }
         return state;
     }
