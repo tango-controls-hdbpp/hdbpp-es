@@ -87,7 +87,7 @@ HdbDevice::~HdbDevice()
 }
 //=============================================================================
 //=============================================================================
-HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, string fn, Tango::DeviceImpl *device)
+HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, Tango::DeviceImpl *device)
 				:Tango::LogAdapter(device)
 {
 	this->period = p;
@@ -348,8 +348,8 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 	if (!dev_prop[0].is_empty())
 		dev_prop[0]  >>  tmplist;
 
-	//use attribute list from file only if DeviceProperty not present, or present with one empty line
-	if((tmplist.size() == 0 || (tmplist.size() == 1 && tmplist[0].length() == 0)) && list_filename.length() > 0)
+	//use attribute list from file only if AttributeList property not present, or present with one empty line
+	if((tmplist.empty() || (tmplist.size() == 1 && tmplist[0].empty())) && !list_filename.empty())
 	{
 		string str;
 		std::ifstream in(list_filename);
@@ -357,11 +357,11 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 		{
 			while (std::getline(in, str))
 			{
-			    if(str.size() > 0)
+			    if(!str.empty())
 				tmplist.push_back(str);
 			}
 			in.close();
-			if(tmplist.size() > 0)
+			if(!tmplist.empty())
 				list_from_file = true;
 		}
 		else
