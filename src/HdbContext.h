@@ -47,10 +47,11 @@ namespace HdbEventSubscriber_ns
 
         private:
             static std::vector<Context> contexts;
-            static std::map<std::string, const Context&> contexts_map;
+            static std::map<std::string, size_t> contexts_map;
+            
+            static const size_t always_context_idx = 0;
             
             static auto create_context(const std::string& name, const std::string& desc) -> const Context&;
-            static const int always_context_idx = 0;
 
             void add(const std::string& key);
             
@@ -157,6 +158,7 @@ namespace HdbEventSubscriber_ns
             Context(std::string name, std::string upper, std::string desc);
 
             auto operator=(const Context&) -> Context& = delete;
+//            Context(const Context&) = delete;
 
         public:
             static auto no_context() -> const Context&

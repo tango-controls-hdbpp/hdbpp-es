@@ -521,7 +521,7 @@ namespace HdbEventSubscriber_ns
 
         signal->siglock->readerIn();
         
-        retval = signal->contexts.contains(context);
+        retval = signal->contexts.contains(context) | signal->contexts.contains(Context::always_context());
         
         signal->siglock->readerOut();
         

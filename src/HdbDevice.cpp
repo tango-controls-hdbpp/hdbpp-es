@@ -146,6 +146,7 @@ namespace HdbEventSubscriber_ns
         attribute_context_list_str.reserve(MAX_ATTRIBUTES);
         last_stat.tv_sec = 0;
         last_stat.tv_usec = 0;
+
         set_context(default_context.get_name());
     }
     //=============================================================================
