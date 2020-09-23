@@ -101,6 +101,8 @@ class HdbDevice: public Tango::LogAdapter
         timeval last_stat;
         size_t current_context_idx;
 	
+        const Context& default_context;
+	
         /**
 	 *	Start or stop an attribute according to current context.
 	 */
@@ -179,7 +181,6 @@ public:
 	vector<string> attribute_context_list_str;
 	size_t attribute_context_list_str_size;
 
-	string defaultStrategy;
 
 #ifdef _USE_FERMI_DB_RW
 private:
@@ -196,8 +197,9 @@ public:
 	 *	@param s	 	Period to compute statistics
 	 *	@param c	 	Delay before timeout on periodic events
 	 *	@param ch	 	Subscribe to change event if archive event is not used
+	 *	@param context   	Default context to be used on startup
 	 */
-	HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, Tango::DeviceImpl *device);
+	HdbDevice(int p, int pp, int s, int c, bool ch, const Context& context, Tango::DeviceImpl *device);
 	~HdbDevice();
 	/**
 	 * initialize object
@@ -380,7 +382,7 @@ protected :
 	 *
 	 *	@param list 	signal names vector
 	 */
-	void build_signal_vector(const vector<string> &, const string &);
+	void build_signal_vector(const vector<string> &);
 	/**
 	 *	Store double (vector) in HDB
 	 */

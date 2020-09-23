@@ -95,9 +95,10 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     //=============================================================================
-    HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, Tango::DeviceImpl *device)
+    HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const Context& context, Tango::DeviceImpl *device)
         :Tango::LogAdapter(device)
          , current_context_idx(ContextMap::index(Context::no_context()))
+         , default_context(context)
     {
         this->period = p;
         this->poller_period = pp;
@@ -145,6 +146,7 @@ namespace HdbEventSubscriber_ns
         attribute_context_list_str.reserve(MAX_ATTRIBUTES);
         last_stat.tv_sec = 0;
         last_stat.tv_usec = 0;
+        set_context(default_context.get_name());
     }
     //=============================================================================
     //=============================================================================
@@ -181,7 +183,7 @@ namespace HdbEventSubscriber_ns
         check_periodic_thread = std::unique_ptr<CheckPeriodicThread, AbortableThreadDeleter>(new CheckPeriodicThread(this));
         check_periodic_thread->delay_tolerance_ms = check_periodic_delay * s_to_ms_factor;
 
-        build_signal_vector(list, defaultStrategy);
+        build_signal_vector(list);
 
         stats_thread->start();
         push_thread->start();
@@ -197,7 +199,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     //=============================================================================
     //#define TEST
-    void HdbDevice::build_signal_vector(const vector<string> &list, const string &defaultStrategy)
+    void HdbDevice::build_signal_vector(const vector<string> &list)
     {
         for (const auto &val : list)
         {
@@ -242,10 +244,10 @@ namespace HdbEventSubscriber_ns
                             tmp << ": Configuration parsing error looking for key '"<<CONTEXT_KEY<<"'";
                             DEBUG_STREAM << __func__ << tmp.str();
                             string context_key = string(CONTEXT_KEY)+string("=");
-                            size_t pos = defaultStrategy.find(context_key);
+                            size_t pos = default_context.get_decl_name().find(context_key);
                             if(pos != string::npos)
                             {
-                                string_explode(defaultStrategy.substr(pos+context_key.length()), string("|"), sig_contexts);
+                                string_explode(default_context.get_decl_name().substr(pos+context_key.length()), string("|"), sig_contexts);
                             }
                         }
                         catch(...)
@@ -407,7 +409,7 @@ namespace HdbEventSubscriber_ns
                     {
                         stringstream ssttl;
                         ssttl << DEFAULT_TTL;
-                        tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy + TTL_KEY + "=" + ssttl.str();//TODO: loosing all the other configurations if any
+                        tmplist_conf = string(CONTEXT_KEY) + "=" + default_context.get_decl_name() + TTL_KEY + "=" + ssttl.str();//TODO: loosing all the other configurations if any
                     }
                     else if(pos_strat != string::npos && pos_ttl == string::npos)
                     {
@@ -421,13 +423,13 @@ namespace HdbEventSubscriber_ns
                     {
                         if(tmplist_conf[tmplist_conf.length()-1] != ';')
                             tmplist_conf += string(";");
-                        tmplist_conf += string(CONTEXT_KEY) + "=" + defaultStrategy;
+                        tmplist_conf += string(CONTEXT_KEY) + "=" + default_context.get_decl_name();
                     }
                 }
                 else	//if present only the attribute name
                 {
                     tmplist_name = signal;
-                    tmplist_conf = string(CONTEXT_KEY) + "=" + defaultStrategy;
+                    tmplist_conf = string(CONTEXT_KEY) + "=" + default_context.get_decl_name();
                     stringstream ssttl;
                     ssttl << DEFAULT_TTL;
                     tmplist_conf += string(";") + string(TTL_KEY) + "=" + ssttl.str();

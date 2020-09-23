@@ -83,6 +83,8 @@ public:
 
 private:
 
+        std::vector<std::string> contexts;
+
         void stop_attribute(const std::string& attribute);
         void start_attribute(const std::string& attribute);
         void pause_attribute(const std::string& attribute);
