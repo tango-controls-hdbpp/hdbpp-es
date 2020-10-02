@@ -158,9 +158,14 @@ namespace HdbEventSubscriber_ns
             Context(std::string name, std::string upper, std::string desc);
 
             auto operator=(const Context&) -> Context& = delete;
-//            Context(const Context&) = delete;
+            Context(const Context&) = delete;
 
         public:
+            //Context(std::string name, std::string upper, std::string desc);
+            
+            auto operator=(Context&&) -> Context& = default;
+            Context(Context&&) = default;
+            
             static auto no_context() -> const Context&
             {
                 return NO_CONTEXT;

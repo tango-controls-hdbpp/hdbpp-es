@@ -507,6 +507,8 @@ namespace HdbEventSubscriber_ns
     auto SharedData::is_current_context(const string& signame, const string& context) -> bool
     {
         bool retval = false;
+/*
+// ALWAYS_CONTEXT should not start all signals
 
         // Trivial case always
         std::string upper(context);
@@ -515,6 +517,7 @@ namespace HdbEventSubscriber_ns
         {
             return true;
         }
+*/      
         //to be locked if called outside lock
         
         std::shared_ptr<HdbSignal> signal = get_signal(signame);

@@ -34,6 +34,9 @@ namespace HdbEventSubscriber_ns
     Context::Context(std::string name, std::string upper, std::string desc):decl_name(std::move(name))
                                                         , upper_name(std::move(upper))
                                                         , description(std::move(desc))
+//    Context::Context(const std::string& name, const std::string& upper, const std::string& desc):decl_name(name)
+//                                                        , upper_name(upper)
+//                                                        , description(desc)
     {
     }
 
@@ -58,7 +61,8 @@ namespace HdbEventSubscriber_ns
        
         // Create new unique context.
         Context context(name, upper, desc);
-        contexts.push_back(std::move(context)); 
+//        contexts.emplace_back(name, upper, desc); 
+        contexts.emplace_back(std::move(context)); 
 
         contexts_map.insert({name, contexts.size()});
         contexts_map.insert({upper, contexts.size()});

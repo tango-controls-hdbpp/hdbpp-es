@@ -92,6 +92,8 @@ private:
         static auto format_date(const timeval& tv, size_t ev) -> std::string;
 	double last_statistics_reset_time;
 
+        bool mono_context = false;
+
 #ifdef _USE_FERMI_DB_RW
 private:
 	string host_rw;

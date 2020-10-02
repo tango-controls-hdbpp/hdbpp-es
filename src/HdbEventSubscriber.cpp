@@ -249,12 +249,14 @@ namespace HdbEventSubscriber_ns
         {
             attr_ContextsList_read[i] = const_cast<char*>(contexts[i].c_str());
         }
-        
-        // If the default strategy is not defined, stop right away.
+     
+        mono_context = contexts.size() != 1;
+
+        // If the default strategy is not defined, set it to ALWAYS.
         if(!ContextMap::defined(defaultStrategy))
         {
-            ERROR_STREAM << "HdbEventSubscriber::init_device(): FAILED due to bad DefaultStrategy configuration: " << defaultStrategy << " is not present in ContextsList";
-            exit(-1);
+            INFO_STREAM << "HdbEventSubscriber::init_device(): Bad DefaultStrategy configuration: " << defaultStrategy << " is not present in ContextsList. Set it to ALWAYS";
+            defaultStrategy = Context::always_context().get_decl_name();
         }
         
         string	status;
@@ -267,9 +269,6 @@ namespace HdbEventSubscriber_ns
                 , attributeListFile
                 , ContextMap::at(ContextMap::index(defaultStrategy))
                 , this);
-
-        // Sets the context from the context object.
-        *attr_Context_read = const_cast<char*>(hdb_dev->get_context().get_decl_name().c_str());
 
         attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
         attr_AttributeFailureFreq_read = &hdb_dev->AttributeFailureFreq;
@@ -827,7 +826,21 @@ namespace HdbEventSubscriber_ns
         DEBUG_STREAM << "HdbEventSubscriber::read_Context(Tango::Attribute &attr) entering... " << endl;
         /*----- PROTECTED REGION ID(HdbEventSubscriber::read_Context) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(attr_Context_read);
+        // Sets the context from the context object.
+        *attr_Context_read = const_cast<char*>(hdb_dev->get_context().get_decl_name().c_str());
+        
+        if(&hdb_dev->get_context() != &Context::no_context() || mono_context)
+        {
+            attr.set_value(attr_Context_read);
+        }
+        else
+        {
+            attr.set_quality(Tango::ATTR_ALARM);
+            std::string status = get_status();
+            status += "\n";
+            status += "The context has never been set!";
+            set_status(status);
+        }
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_Context
     }
@@ -852,7 +865,7 @@ namespace HdbEventSubscriber_ns
         // Might throw if the context does not exists
         hdb_dev->set_context(argin);
 
-        *attr_Context_read = const_cast<char*>(hdb_dev->get_context().get_decl_name().c_str());
+//        *attr_Context_read = const_cast<char*>(hdb_dev->get_context().get_decl_name().c_str());
 
         hdb_dev->start_attributes();
 
@@ -1612,8 +1625,10 @@ namespace HdbEventSubscriber_ns
                 }
             }
         }
+        
         if(contexts.empty())
             contexts.push_back(defaultStrategy);
+        
         hdb_dev->update(signame, contexts);
 
         if(context_error)
