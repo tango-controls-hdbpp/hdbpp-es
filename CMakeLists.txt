@@ -61,6 +61,9 @@ elseif(LIBHDBPP_BACKEND STREQUAL "cassandra")
 elseif(LIBHDBPP_BACKEND STREQUAL "mysql")
     set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp-mysql.git")
     set(BACKEND_NAME "libhdbpp-mysql")
+elseif(LIBHDBPP_BACKEND STREQUAL "libhdbpp")
+    set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp.git")
+    set(BACKEND_NAME "libhdbpp")
 endif()
 
 # Find Dependencies  -----------------------------------
