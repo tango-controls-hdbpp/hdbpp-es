@@ -238,7 +238,7 @@ namespace HdbEventSubscriber_ns
         //	Create one event handler by HDB access device
         INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
         string	status;
-        hdb_dev = std::make_shared<HdbDevice>(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, this);
+        hdb_dev = std::make_shared<HdbDevice>(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, attributeListFile, this);
         uint8_t index=0;
         for(const auto& context : contextsList)
         {
@@ -351,6 +351,7 @@ namespace HdbEventSubscriber_ns
         dev_prop.push_back(Tango::DbDatum("ContextsList"));
         dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
         dev_prop.push_back(Tango::DbDatum("SubscribeChangeAsFallback"));
+		dev_prop.push_back(Tango::DbDatum("AttributeListFile"));
 
         //	is there at least one property to be read ?
         if (!dev_prop.empty())
@@ -463,6 +464,17 @@ namespace HdbEventSubscriber_ns
             }
             //	And try to extract SubscribeChangeAsFallback value from database
             if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeChangeAsFallback;
+			
+			//	Try to initialize AttributeListFile from class property
+			cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+			if (cl_prop.is_empty()==false)	cl_prop  >>  attributeListFile;
+			else {
+				//	Try to initialize AttributeListFile from default device value
+				def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+				if (def_prop.is_empty()==false)	def_prop  >>  attributeListFile;
+			}
+			//	And try to extract AttributeListFile value from database
+			if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeListFile;
 
         }
 
@@ -1471,6 +1483,7 @@ namespace HdbEventSubscriber_ns
         /*----- PROTECTED REGION ID(HdbEventSubscriber::stop) ENABLED START -----*/
 
         //	Add your own code
+
 #if 0
         hdb_dev->shared->stop_all();
         hdb_dev->push_thread->stop_all();

@@ -125,6 +125,8 @@ public:
 	//	SubscribeChangeAsFallback:	It will subscribe to change event 
 	//  if archive events are not configured
 	Tango::DevBoolean	subscribeChangeAsFallback;
+	//	AttributeListFile:	File with attribute list, alternative to AttributeList property
+	string	attributeListFile;
 
 //	Attribute data members
 public:
@@ -516,7 +518,7 @@ public:
 	 *	Command AttributeAdd related method
 	 *	Description: Add a new attribute to archive in HDB.
 	 *
-	 *	@param argin Attribute name, strategy, ttl
+	 *	@param argin Attribute name, strategy, data_type, data_format, write_type
 	 */
 	virtual void attribute_add(const Tango::DevVarStringArray *argin);
 	virtual bool is_AttributeAdd_allowed(const CORBA::Any &any);
