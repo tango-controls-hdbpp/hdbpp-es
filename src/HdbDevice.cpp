@@ -366,27 +366,27 @@ namespace HdbEventSubscriber_ns
         if (!dev_prop[0].is_empty())
             dev_prop[0]  >>  tmplist;
 		
-		//use attribute list from file only if AttributeList property not present, or present with one empty line
-		if((tmplist.empty() || (tmplist.size() == 1 && tmplist[0].empty())) && !list_filename.empty())
-		{
-			string str;
-			std::ifstream in(list_filename);
-			if(in.is_open())
-			{
-				while (std::getline(in, str))
-				{
-					if(!str.empty())
-					tmplist.push_back(str);
-				}
-				in.close();
-				if(!tmplist.empty())
-					list_from_file = true;
-			}
-			else
-			{
-				WARN_STREAM << __FUNCTION__<< ": cannot open Attribute List File '" << list_filename << "' error: '" << strerror(errno) << "'";
-			}
-		}
+        //use attribute list from file only if AttributeList property not present, or present with one empty line
+        if((tmplist.empty() || (tmplist.size() == 1 && tmplist[0].empty())) && !list_filename.empty())
+        {
+            string str;
+            std::ifstream in(list_filename);
+	    if(in.is_open())
+	    {
+                while (std::getline(in, str))
+                {
+                    if(!str.empty())
+                        tmplist.push_back(str);
+                }
+                in.close();
+                if(!tmplist.empty())
+                    list_from_file = true;
+            }
+            else
+            {
+                WARN_STREAM << __FUNCTION__<< ": cannot open Attribute List File '" << list_filename << "' error: '" << strerror(errno) << "'";
+            }
+        }
 
         for (const auto& signal : tmplist)
         {
@@ -445,17 +445,16 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void HdbDevice::put_signal_property(vector<string> &prop)
     {
-		if(list_from_file)
-		{
-			Tango::Except::print_exception(e);
-			std::ofstream out(list_filename, ios::trunc);
-			if(out.is_open())
-			{
-				for (const auto &e : prop) out << e << "\n";
-				out.close();
-			}
-			return;	
-		}
+        if(list_from_file)
+        {
+            std::ofstream out(list_filename, ios::trunc);
+            if(out.is_open())
+            {
+                for (const auto &e : prop) out << e << "\n";
+                out.close();
+            }
+            return;	
+        }
 
         Tango::DbData	data;
         data.push_back(Tango::DbDatum("AttributeList"));

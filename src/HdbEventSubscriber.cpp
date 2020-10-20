@@ -351,7 +351,7 @@ namespace HdbEventSubscriber_ns
         dev_prop.push_back(Tango::DbDatum("ContextsList"));
         dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
         dev_prop.push_back(Tango::DbDatum("SubscribeChangeAsFallback"));
-		dev_prop.push_back(Tango::DbDatum("AttributeListFile"));
+        dev_prop.push_back(Tango::DbDatum("AttributeListFile"));
 
         //	is there at least one property to be read ?
         if (!dev_prop.empty())
@@ -464,18 +464,17 @@ namespace HdbEventSubscriber_ns
             }
             //	And try to extract SubscribeChangeAsFallback value from database
             if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeChangeAsFallback;
-			
-			//	Try to initialize AttributeListFile from class property
-			cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-			if (cl_prop.is_empty()==false)	cl_prop  >>  attributeListFile;
-			else {
-				//	Try to initialize AttributeListFile from default device value
-				def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-				if (def_prop.is_empty()==false)	def_prop  >>  attributeListFile;
-			}
-			//	And try to extract AttributeListFile value from database
-			if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeListFile;
-
+		
+            //	Try to initialize AttributeListFile from class property
+            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+            if (cl_prop.is_empty()==false)	cl_prop  >>  attributeListFile;
+            else {
+                //	Try to initialize AttributeListFile from default device value
+                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+                if (def_prop.is_empty()==false)	def_prop  >>  attributeListFile;
+            }
+            //	And try to extract AttributeListFile value from database
+            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeListFile;
         }
 
         /*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_after) ENABLED START -----*/
