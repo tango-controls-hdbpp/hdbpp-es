@@ -151,7 +151,7 @@ set_target_properties(hdbpp_es
     PROPERTIES 
         OUTPUT_NAME ${HDBPP_ES_NAME}
         LINK_FLAGS "-Wl,--no-undefined"
-        CXX_STANDARD 11)
+        CXX_STANDARD 14)
 
 if(DO_CLANG_TIDY)
     set_target_properties(hdbpp_es 
