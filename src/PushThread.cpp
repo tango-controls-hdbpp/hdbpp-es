@@ -187,19 +187,18 @@ namespace HdbEventSubscriber_ns
     auto PushThread::get_next_cmds() -> std::vector<std::shared_ptr<HdbCmdData>>
     {
         size_t events_size = 0; 
-        {
-            omni_mutex_lock sync(new_data_mutex);
+        
+        omni_mutex_lock sync(new_data_mutex);
             
+        events_size = events.size();
+
+        while(events_size == 0 && !is_aborted())
+        {
+            new_data.wait();
             events_size = events.size();
-
-            while(events_size == 0 && !is_aborted())
-            {
-                new_data.wait();
-                events_size = events.size();
-            }
-
-            hdb_dev->AttributePendingNumber = events_size;
         }
+
+        hdb_dev->AttributePendingNumber = events_size;
 #if 0	//TODO: disabled because of problems with: Not able to acquire serialization (dev, class or process) monitor
         try
         {
