@@ -33,7 +33,7 @@ list(APPEND LIBRARY_PATHS ${CMAKE_LIBRARY_PATH})
 project(hdbpp_es VERSION ${VERSION_STRING} LANGUAGES CXX)
 
 set(FETCH_LIBHDBPP_TAG "master" CACHE STRING "Libhdbpp branch/tag to clone 'master'")
-set(LIBHDBPP_BACKEND "timescaledb" CACHE STRING "Backend to use.")
+set(LIBHDBPP_BACKEND "libhdbpp" CACHE STRING "Backend to use.")
 option(LIBHDBPP_BACKEND "Backend to be used for libhdb++" "timescaledb")
 option(FETCH_LIBHDBPP "Download and build using a local copy of libhdb++" OFF)
 option(FETCH_LIBHDBPP_TAG "When FETCH_LIBHDBPP is enabled, this is the tag fetch, default is 'master'" "master")
