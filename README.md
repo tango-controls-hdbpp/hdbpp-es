@@ -79,7 +79,7 @@ If wishing to build the project, ensure the following dependencies are met:
 |------|-----|-----|-----|
 | ENABLE_CLANG | ON/OFF | OFF | Clang code static analysis and cppcore guideline enforcement |
 | FETCH_LIBHDBPP | ON/OFF | OFF | Download and build against libhdbpp locally |
-| LIBHDBPP_BACKEND | "backend_name" | "libhdbpp" | Backend to use for this build. Supported values are libhdbpp, timescaledb, mysql, cassandra. |
+| LIBHDBPP_BACKEND | "backend_name" | "libhdbpp" | Backend to use for this build. Supported values are libhdbpp, timescale, mysql, cassandra. |
 | FETCH_LIBHDBPP_TAG | tag/branch | master | When FETCH_LIBHDBPP is enabled, this flag defines the tag/branch to download |
 
 ### Standard CMake Flags
@@ -109,10 +109,10 @@ make
 make install
 ```
 
-To fetch and build a specific backend you can use the LIBHDBPP_BACKEND flag to specify wich backend to use. The cmake command will look like (for timescaledb):
+To fetch and build a specific backend you can use the LIBHDBPP_BACKEND flag to specify wich backend to use. The cmake command will look like (for timescale):
 
 ```
-cmake -DFETCH_LIBHDBPP=ON -DLIBHDBPP_BACKEND=timescaledb ../
+cmake -DFETCH_LIBHDBPP=ON -DLIBHDBPP_BACKEND=timescale ../
 ```
 
 Finally, if you want to use a specific backend you already have installed, you don't need to fetch it. The cmake command will look like (for mysql):
