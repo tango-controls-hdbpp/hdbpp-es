@@ -83,6 +83,8 @@ namespace HdbEventSubscriber_ns
             
             static auto index(const std::string& context) -> size_t;
             
+            static auto at(const std::string& context) -> const Context&;
+            
             /**
              * Return the context at the global idx.
              * return no context if the idx is out of bounds.

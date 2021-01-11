@@ -128,6 +128,17 @@ namespace HdbEventSubscriber_ns
         return contexts.size() + 1;
     }
     
+    auto ContextMap::at(const std::string& context) -> const Context&
+    {
+        if(defined(context))
+        {
+            return contexts[contexts_map[context] - 1];
+        }
+        
+        // Not found return no context
+        return Context::no_context();
+    }
+    
     auto ContextMap::at(size_t idx) -> const Context&
     {
         // Trivial case
