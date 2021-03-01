@@ -36,8 +36,8 @@ project(hdbpp_es VERSION ${VERSION_STRING} LANGUAGES CXX)
 
 # Build options
 set(FETCH_LIBHDBPP_TAG "master" CACHE STRING "Libhdbpp branch/tag to clone 'master'")
-set(LIBHDBPP_BACKEND "timescaledb" CACHE STRING "Backend to use.")
-option(LIBHDBPP_BACKEND "Backend to be used for libhdb++" "timescaledb")
+set(LIBHDBPP_BACKEND "libhdbpp" CACHE STRING "Backend to use.")
+option(LIBHDBPP_BACKEND "Backend to be used for libhdb++" "libhdbpp")
 option(FETCH_LIBHDBPP "Download and build using a local copy of libhdb++" OFF)
 option(FETCH_LIBHDBPP_TAG "When FETCH_LIBHDBPP is enabled, this is the tag fetch, default is 'master'" "master")
 option(ENABLE_CLANG "Enable clang code and layout analysis" OFF)
@@ -55,7 +55,7 @@ set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
 list(APPEND CMAKE_PREFIX_PATH "/usr")
 
 # Set backends uri
-if(LIBHDBPP_BACKEND STREQUAL "timescaledb")
+if(LIBHDBPP_BACKEND STREQUAL "timescale")
     set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp-timescale.git")
     set(BACKEND_NAME "libhdbpp-timescale")
 elseif(LIBHDBPP_BACKEND STREQUAL "cassandra")
@@ -91,8 +91,6 @@ if(FETCH_LIBHDBPP)
         PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-    set(BACKEND_LIBRARY_TARGET "libhdbpp_shared_library")
-
 elseif(NOT LIBHDBPP_PROJECT_BUILD AND NOT FETCH_LIBHDBPP)
     find_package(${BACKEND_NAME})
 
@@ -100,7 +98,7 @@ elseif(NOT LIBHDBPP_PROJECT_BUILD AND NOT FETCH_LIBHDBPP)
     if(NOT DEFINED BACKEND_TARGET_SHARED)
         message(FATAL_ERROR "Backend ${BACKEND_NAME} does not define the
         BACKEND_TARGET variable needed to build.")
-endif(NOT DEFINED BACKEND_TARGET_SHARED)
+    endif(NOT DEFINED BACKEND_TARGET_SHARED)
 endif()
 
 # Find tango if it has not already been found. Returns an interface library

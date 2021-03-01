@@ -7,7 +7,7 @@ Tango device server for the HDB++ Event Subscriber
 ## Documentation
 
 * See the Tango documentation [here](http://tango-controls.readthedocs.io/en/latest/administration/services/hdbpp/index.html#hdb-an-archiving-historian-service) for broader information about the HB++ archiving system and its integration into Tango Controls
-* hdbpp-es [CHANGELOG.md](https://github.com/tango-controls-hdbpp/libhdbpp/blob/master/CHANGELOG.md) contains the latest changes both released and in development.
+* hdbpp-es [CHANGELOG.md](https://github.com/tango-controls-hdbpp/hdbpp-es/blob/master/CHANGELOG.md) contains the latest changes both released and in development.
 
 ## Bugs Reports
 
@@ -25,6 +25,8 @@ cmake ../
 make
 make install
 ```
+
+For more complex build, if you want cmake to fetch the dependencies, or to link against a specific backend, [see the examples](#custom-builds-examples)
 
 ### pkg-config Settings
 
@@ -54,7 +56,7 @@ Build dependencies:
 The build requires the libhdbpp project headers for building. There is two methods to include this dependency:
 
 * libhdbpp can be installed in either a standard or non-standard location and cmake flags used to locate it.
-* Enabled the custom cmake flag FETCH_LIBHDBPP (see below) and cmake will download the project at configuration time and integrate it directly into the build. This is ideal for testing the project in isolation from a deployed system.
+* Enabled the custom cmake flag FETCH_LIBHDBPP ([see below](#project-flags)) and cmake will download the project at configuration time and integrate it directly into the build. This is ideal for testing the project in isolation from a deployed system.
 
 Ensure the development version of the dependencies are installed. These are as follows:
 
@@ -69,7 +71,7 @@ If they have not been installed to a standard location, then use the pkg-config 
 If wishing to build the project, ensure the following dependencies are met:
 
 * CMake 3.6 or higher
-* C++11 compatible compiler (Tango dependency requires CX11)
+* C++14 compatible compiler
 
 ### Project Flags
 
@@ -77,7 +79,7 @@ If wishing to build the project, ensure the following dependencies are met:
 |------|-----|-----|-----|
 | ENABLE_CLANG | ON/OFF | OFF | Clang code static analysis and cppcore guideline enforcement |
 | FETCH_LIBHDBPP | ON/OFF | OFF | Download and build against libhdbpp locally |
-| LIBHDBPP_BACKEND | "backend_name" | "timescaledb" | Backend to use for this build. Supported values are timescaledb, mysql, cassandra. |
+| LIBHDBPP_BACKEND | "backend_name" | "libhdbpp" | Backend to use for this build. Supported values are libhdbpp, timescale, mysql, cassandra. |
 | FETCH_LIBHDBPP_TAG | tag/branch | master | When FETCH_LIBHDBPP is enabled, this flag defines the tag/branch to download |
 
 ### Standard CMake Flags
@@ -89,6 +91,35 @@ The build system is CMake therefore standard CMake flags can be used to influenc
 | CMAKE_INSTALL_PREFIX | Standard CMake flag to modify the install prefix. |
 | CMAKE_INCLUDE_PATH | Standard CMake flag to add include paths to the search path. |
 | CMAKE_LIBRARY_PATH | Standard CMake flag to add paths to the library search path |
+
+### Custom builds examples
+
+Here are some examples to demonstrate the use of the project flags.
+
+In all the examples, the backends need to implement libhbpp v2.x at least and set the proper cmake variable as explained in libhdbpp example.
+
+If you want to build and install your backend directly while building this project you can do:
+
+```
+cd hdbpp-es
+mkdir build
+cd build
+cmake -DFETCH_LIBHDBPP=ON ../
+make
+make install
+```
+
+To fetch and build a specific backend you can use the LIBHDBPP_BACKEND flag to specify wich backend to use. The cmake command will look like (for timescale):
+
+```
+cmake -DFETCH_LIBHDBPP=ON -DLIBHDBPP_BACKEND=timescale ../
+```
+
+Finally, if you want to use a specific backend you already have installed, you don't need to fetch it. The cmake command will look like (for mysql):
+
+```
+cmake -DLIBHDBPP_BACKEND=mysql ../
+```
 
 ## License
 
