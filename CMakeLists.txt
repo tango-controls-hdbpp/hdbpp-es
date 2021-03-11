@@ -33,6 +33,8 @@ list(APPEND LIBRARY_PATHS ${CMAKE_LIBRARY_PATH})
 project(hdbpp_es VERSION ${VERSION_STRING} LANGUAGES CXX)
 
 set(FETCH_LIBHDBPP_TAG "master" CACHE STRING "Libhdbpp branch/tag to clone 'master'")
+set(LIBHDBPP_BACKEND "libhdbpp" CACHE STRING "Backend to use.")
+option(LIBHDBPP_BACKEND "Backend to be used for libhdb++" "libhdbpp")
 option(FETCH_LIBHDBPP "Download and build using a local copy of libhdb++" OFF)
 option(FETCH_LIBHDBPP_TAG "When FETCH_LIBHDBPP is enabled, this is the tag fetch, default is 'master'" "master")
 option(ENABLE_CLANG "Enable clang code and layout analysis" OFF)
@@ -49,10 +51,25 @@ set(HDBPP_ES_LIBRARIES)
 set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH ON)
 list(APPEND CMAKE_PREFIX_PATH "/usr")
 
+# Set backends uri
+if(LIBHDBPP_BACKEND STREQUAL "timescale")
+    set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp-timescale.git")
+    set(BACKEND_NAME "libhdbpp-timescale")
+elseif(LIBHDBPP_BACKEND STREQUAL "cassandra")
+    set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp-cassandra.git")
+    set(BACKEND_NAME "libhdbpp-cassandra")
+elseif(LIBHDBPP_BACKEND STREQUAL "mysql")
+    set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp-mysql.git")
+    set(BACKEND_NAME "libhdbpp-mysql")
+elseif(LIBHDBPP_BACKEND STREQUAL "libhdbpp")
+    set(BACKEND_URI "https://github.com/tango-controls-hdbpp/libhdbpp.git")
+    set(BACKEND_NAME "libhdbpp")
+endif()
+
 # Find Dependencies  -----------------------------------
 if(FETCH_LIBHDBPP)
     set(FETCH_PROJECT_NAME "libhdb++")
-    set(FETCH_REPOSITORY_ADDRESS "https://github.com/tango-controls-hdbpp/libhdbpp.git")
+    set(FETCH_REPOSITORY_ADDRESS ${BACKEND_URI})
     set(FETCH_REPOSITORY_TAG ${FETCH_LIBHDBPP_TAG})
  
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FetchExternal.cmake.in ${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download/CMakeLists.txt)
@@ -67,27 +84,19 @@ if(FETCH_LIBHDBPP)
 
     # For ease of use, we set the libhdb++ output to our projects build directory,
     # making linking and running easy
-    set_target_properties(libhdbpp_shared_library
+    set_target_properties(${BACKEND_TARGET_SHARED}
         PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-    set(BACKEND_LIBRARY_TARGET "libhdbpp_shared_library")
-
 elseif(NOT LIBHDBPP_PROJECT_BUILD AND NOT FETCH_LIBHDBPP)
-    find_library(LIBHDBPP_LIB_SEARCH libhdb++.so.2 PATHS LIBRARY_PATHS)
-    message(STATUS "Found: ${LIBHDBPP_LIB_SEARCH}")
-endif()
+    find_package(${BACKEND_NAME})
 
-# split the generator expression out to here so we can make it more
-# readable
-string(CONCAT HDBPP_LIB 
-    "$<IF:"
-        "$<OR:"
-            "$<BOOL:${LIBHDBPP_PROJECT_BUILD}>,"
-            "$<BOOL:${FETCH_LIBHDBPP}>"
-        ">,"
-        "${BACKEND_LIBRARY_TARGET},${LIBHDBPP_LIB_SEARCH}"
-    ">")
+    # The find package must set the backend target variable to be valid
+    if(NOT DEFINED BACKEND_TARGET_SHARED)
+        message(FATAL_ERROR "Backend ${BACKEND_NAME} does not define the
+        BACKEND_TARGET variable needed to build.")
+    endif(NOT DEFINED BACKEND_TARGET_SHARED)
+endif()
 
 # Find tango if it has not already been found. Returns an interface library
 # called TangoInterfaceLibrary
@@ -125,7 +134,7 @@ add_executable(hdbpp_es ${SRC_FILES})
 target_link_libraries(hdbpp_es 
     PRIVATE 
         TangoInterfaceLibrary 
-        ${HDBPP_LIB})
+	${BACKEND_TARGET_SHARED})
 
 target_include_directories(hdbpp_es 
     PRIVATE 

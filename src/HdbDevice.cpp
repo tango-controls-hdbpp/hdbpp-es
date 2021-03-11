@@ -147,7 +147,8 @@ void HdbDevice::initialize()
 
 	//	Create a thread to subscribe events
 	shared = std::make_shared<SharedData>(this);	
-	thread = std::unique_ptr<SubscribeThread>(new SubscribeThread(this));
+        thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
+                                , [](SubscribeThread* /*unused*/){});
 
 	//	Create thread to send commands to HdbAccess device
 	push_shared = std::make_shared<PushThreadShared>(this,
@@ -158,11 +159,16 @@ void HdbDevice::initialize()
 	attr_AttributeMaxStoreTime_read = -1;
 	attr_AttributeMinProcessingTime_read = -1;
 	attr_AttributeMaxProcessingTime_read = -1;
-	push_thread = std::unique_ptr<PushThread>(new PushThread(push_shared, this));
-	stats_thread = std::unique_ptr<StatsThread>(new StatsThread(this));
-	stats_thread->period = stats_window;
-	poller_thread = std::unique_ptr<PollerThread>(new PollerThread(this));
-	check_periodic_thread = std::unique_ptr<CheckPeriodicThread>(new CheckPeriodicThread(this));
+        push_thread = std::unique_ptr<PushThread, std::function<void(PushThread*)>>(
+                new PushThread(push_shared, this)
+                , [](PushThread* /*unused*/){});
+        stats_thread = std::unique_ptr<StatsThread, std::function<void(StatsThread*)>>(new StatsThread(this)
+                , [](StatsThread* /*unused*/){});
+        stats_thread->period = stats_window;
+        poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
+                , [](PollerThread* /*unused*/){});
+	check_periodic_thread = std::unique_ptr<CheckPeriodicThread, std::function<void(CheckPeriodicThread*)>>(new CheckPeriodicThread(this)
+                , [](CheckPeriodicThread* /*unused*/){});
 	check_periodic_thread->delay_tolerance_ms = check_periodic_delay*1000;
 
 	build_signal_vector(list, defaultStrategy);

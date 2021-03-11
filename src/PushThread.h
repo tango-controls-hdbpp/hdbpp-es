@@ -49,7 +49,7 @@
 
 #include <tango.h>
 #include <stdint.h>
-#include "hdb++/HdbClient.h"
+#include "hdb++/AbstractDB.h"
 #include "HdbCmdData.h"
 
 
@@ -209,7 +209,7 @@ public:
 	omni_mutex *sig_lock;
 	vector<HdbStat>	signals;
 
-	hdbpp::HdbClient *mdb;
+	hdbpp::AbstractDB *mdb;
 
 
 };

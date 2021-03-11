@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+* Build flag to choose which backend to build against.
+* Update build mechanism to fetch libhdbpp implementation.
 * DB_ADD command support to register an attribute in the db from the AttributeAdd command.
 * New CMake build system that can download libhdbpp when requested
 * Moved HDBCmdData source from libhdbpp project
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+* Do not depend on HdbClient.h, but only AbstracDB.h
 * Small refactoring and code modernization to get rid of some clang warnings.
 * Updated README for new build system
 * Observe new namespace in libhdbpp
