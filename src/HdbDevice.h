@@ -108,6 +108,7 @@ public:
 	int					check_periodic_delay;
 	bool				subscribe_change;
 	bool				list_from_file;
+	bool				list_file_error;
 	string				list_filename;
 	/**
 	 *	Shared data

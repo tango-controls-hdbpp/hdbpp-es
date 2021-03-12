@@ -115,6 +115,7 @@ HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, Tan
 	}
 #endif
 	list_from_file = false;
+	list_file_error = false;
 	attribute_list_str_size = 0;
 	attribute_ok_list_str_size = 0;
 	attribute_nok_list_str_size = 0;
@@ -373,6 +374,7 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 		else
 		{
 			WARN_STREAM << __FUNCTION__<< ": cannot open Attribute List File '" << list_filename << "' error: '" << strerror(errno) << "'";
+			list_file_error = true;
 		}
 	}
 
@@ -486,6 +488,8 @@ auto HdbDevice::subcribing_state() -> Tango::DevState
 	if (state==Tango::ON)
 		state = shared->state();				//	If OK get signals state
 */
+	if(list_file_error)
+		return Tango::FAULT;
 	Tango::DevState	evstate =  shared->state();
 	Tango::DevState	dbstate =  push_shared->state();
 	if(evstate == Tango::ALARM || dbstate == Tango::ALARM)

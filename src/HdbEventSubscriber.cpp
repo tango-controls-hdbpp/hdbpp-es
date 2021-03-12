@@ -500,6 +500,8 @@ void HdbEventSubscriber::always_executed_hook()
 
 		if (state==Tango::ON)
 			set_status("Everything is OK");
+		else if(state==Tango::FAULT)
+			set_status("Error opening AttributeList file: " + attributeListFile);
 		else
 			set_status("At least, one signal is faulty");
 	}
