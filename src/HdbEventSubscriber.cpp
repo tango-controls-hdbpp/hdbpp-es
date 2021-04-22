@@ -292,14 +292,13 @@ void HdbEventSubscriber::init_device()
 		status += "PushThread:\n";
 		status += e.errors[0].desc;
 	}
-	//	Check if WARNING
-	if (hdb_dev->status.length()>0)
+
+	if (!hdb_dev->list_file_error.empty())
 	{
-		status += "PushThread:\n";
-		status += hdb_dev->status;
+		set_state(Tango::FAULT);
+		set_status(hdb_dev->list_file_error);
 	}
-	//	Set state and status if something wrong
-	if (status.length()>0)
+	else if (status.length()>0)
 	{
 		set_state(Tango::ALARM);
 		set_status(status);
@@ -500,9 +499,9 @@ void HdbEventSubscriber::always_executed_hook()
 
 		if (state==Tango::ON)
 			set_status("Everything is OK");
-		else if(state==Tango::FAULT)
-			set_status("Error opening AttributeList file: " + attributeListFile);
-		else
+		else if(!hdb_dev->list_file_error.empty())
+			set_status(hdb_dev->list_file_error);
+		else if (state==Tango::ALARM)
 			set_status("At least, one signal is faulty");
 	}
 
