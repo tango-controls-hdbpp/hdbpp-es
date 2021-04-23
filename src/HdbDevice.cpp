@@ -87,7 +87,7 @@ HdbDevice::~HdbDevice()
 }
 //=============================================================================
 //=============================================================================
-HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, Tango::DeviceImpl *device)
+HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, Tango::DeviceImpl *device)
 				:Tango::LogAdapter(device)
 {
 	this->period = p;
@@ -95,6 +95,7 @@ HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, Tango::DeviceImpl *de
 	this->stats_window = s;
 	this->check_periodic_delay = c;
 	this->subscribe_change = ch;
+	this->list_filename = fn;
 	_device = device;
 #ifdef _USE_FERMI_DB_RW
 	host_rw = "";
@@ -113,6 +114,7 @@ HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, Tango::DeviceImpl *de
 		ERROR_STREAM << __FUNCTION__ << " Error reading Database property='" << e.errors[0].desc << "'";
 	}
 #endif
+	list_from_file = false;
 	attribute_list_str_size = 0;
 	attribute_ok_list_str_size = 0;
 	attribute_nok_list_str_size = 0;
@@ -326,6 +328,7 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 {
 	list.clear();
 	vector<string>	tmplist;
+
 	//	Read device properties from database.
 	//-------------------------------------------------------------
 	Tango::DbData	dev_prop;
@@ -350,6 +353,29 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 	//	Extract value
 	if (!dev_prop[0].is_empty())
 		dev_prop[0]  >>  tmplist;
+
+	//use attribute list from file only if AttributeList property not present, or present with one empty line
+	if((tmplist.empty() || (tmplist.size() == 1 && tmplist[0].empty())) && !list_filename.empty())
+	{
+		string str;
+		std::ifstream in(list_filename);
+		if(in.is_open())
+		{
+			while (std::getline(in, str))
+			{
+			    if(!str.empty())
+				tmplist.push_back(str);
+			}
+			in.close();
+			if(!tmplist.empty())
+				list_from_file = true;
+		}
+		else
+		{
+			list_file_error="Error opening AttributeList file: " + list_filename + " Error: " + strerror(errno);
+			WARN_STREAM << __FUNCTION__<< ": " << list_file_error;
+		}
+	}
 
 	for (unsigned int i=0 ; i<tmplist.size() ; i++)
 	{
@@ -405,24 +431,16 @@ void HdbDevice::get_hdb_signal_list(vector<string> & list)
 //=============================================================================
 void HdbDevice::put_signal_property(vector<string> &prop)
 {
-#if 0
-	Tango::DbData	data;
-	data.push_back(Tango::DbDatum("SignalList"));
-	data[0]  <<  prop;
-	try
+	if(list_from_file)
 	{
-DECLARE_TIME_VAR	t0, t1;
-GET_TIME(t0);
-		//put_property(data);
-GET_TIME(t1);
-DEBUG_STREAM << ELAPSED(t0, t1) << " ms" << endl;
+		std::ofstream out(list_filename, ios::trunc);
+		if(out.is_open())
+		{
+			for (const auto &e : prop) out << e << "\n";
+			out.close();
+		}
+		return;	
 	}
-	catch (Tango::DevFailed &e)
-	{
-		Tango::Except::print_exception(e);
-	}
-#endif
-
 	Tango::DbData	data;
 	data.push_back(Tango::DbDatum("AttributeList"));
 	data[0]  <<  prop;
@@ -469,6 +487,8 @@ auto HdbDevice::subcribing_state() -> Tango::DevState
 	if (state==Tango::ON)
 		state = shared->state();				//	If OK get signals state
 */
+	if(!list_file_error.empty())
+		return Tango::FAULT;
 	Tango::DevState	evstate =  shared->state();
 	Tango::DevState	dbstate =  push_shared->state();
 	if(evstate == Tango::ALARM || dbstate == Tango::ALARM)

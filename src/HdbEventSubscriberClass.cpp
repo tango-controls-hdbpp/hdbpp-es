@@ -895,6 +895,19 @@ void HdbEventSubscriberClass::set_default_property()
 	}
 	else
 		add_wiz_dev_prop(prop_name, prop_desc);
+	prop_name = "AttributeListFile";
+	prop_desc = "File with attribute list, alternative to AttributeList property";
+	prop_def  = "";
+	vect_data.clear();
+	if (prop_def.length()>0)
+	{
+		Tango::DbDatum	data(prop_name);
+		data << vect_data ;
+		dev_def_prop.push_back(data);
+		add_wiz_dev_prop(prop_name, prop_desc,  prop_def);
+	}
+	else
+		add_wiz_dev_prop(prop_name, prop_desc);
 }
 
 //--------------------------------------------------------
@@ -2097,7 +2110,7 @@ void HdbEventSubscriberClass::erase_dynamic_attributes(const Tango::DevVarString
 
 //--------------------------------------------------------
 /**
- *	Method      : HdbEventSubscriberClass::get_attr_by_name()
+ *	Method      : HdbEventSubscriberClass::get_attr_object_by_name()
  *	Description : returns Tango::Attr * object found by name
  */
 //--------------------------------------------------------
