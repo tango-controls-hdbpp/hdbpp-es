@@ -46,7 +46,7 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    auto AbortableThread::run_undetached(void */*unused*/) -> void *
+    auto AbortableThread::run_undetached(void* /*unused*/) -> void *
     {
         init_abort_loop();
 
