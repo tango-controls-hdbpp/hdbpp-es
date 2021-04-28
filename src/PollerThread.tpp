@@ -48,7 +48,7 @@ namespace HdbEventSubscriber_ns
         catch(Tango::DevFailed &e){}
 
         // TODO is this needed ?
-        usleep(1 * s_to_ms_factor);
+        usleep(1 * ms_to_us_factor);
     }
 
     template<typename T>
@@ -62,7 +62,7 @@ namespace HdbEventSubscriber_ns
         catch(Tango::DevFailed &e){}
 
         // TODO is this needed ?
-        usleep(1 * s_to_ms_factor);
+        usleep(1 * ms_to_us_factor);
     }
 
 }// namespace_ns

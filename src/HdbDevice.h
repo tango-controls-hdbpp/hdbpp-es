@@ -425,7 +425,7 @@ void HdbDevice::push_events(const std::string& attr_name, T* data, bool sleep)
 
     // TODO is this needed ?
     if(sleep)
-        usleep(1 * s_to_ms_factor);
+        usleep(1 * ms_to_us_factor);
 }
 
 template<typename T>
