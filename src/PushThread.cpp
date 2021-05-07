@@ -198,7 +198,6 @@ namespace HdbEventSubscriber_ns
             events_size = events.size();
         }
 
-        hdb_dev->AttributePendingNumber = events_size;
 #if 0	//TODO: disabled because of problems with: Not able to acquire serialization (dev, class or process) monitor
         try
         {
@@ -216,6 +215,9 @@ namespace HdbEventSubscriber_ns
             cmds.push_back(events.front());
             events.pop_front();
         }
+        
+        // We cleared the list, so this should be 0.
+        hdb_dev->AttributePendingNumber = 0;
 
         return cmds;
     }
