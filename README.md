@@ -6,7 +6,7 @@ Tango device server for the HDB++ Event Subscriber
 
 ## Documentation
 
-* See the Tango documentation [here](http://tango-controls.readthedocs.io/en/latest/administration/services/hdbpp/index.html#hdb-an-archiving-historian-service) for broader information about the HB++ archiving system and its integration into Tango Controls
+* See the Tango documentation [here](http://tango-controls.readthedocs.io/en/latest/administration/services/hdbpp/index.html#hdb-an-archiving-historian-service) for broader information about the HDB++ archiving system and its integration into Tango Controls
 * hdbpp-es [CHANGELOG.md](https://github.com/tango-controls-hdbpp/hdbpp-es/blob/master/CHANGELOG.md) contains the latest changes both released and in development.
 
 ## Bugs Reports
