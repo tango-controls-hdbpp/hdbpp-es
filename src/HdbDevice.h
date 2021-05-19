@@ -103,8 +103,6 @@ class HdbDevice: public Tango::LogAdapter
 public:
 	//	Data members here
 	//-----------------------------------------
-  std::string				status;
-
 	std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>> thread;
 	std::unique_ptr<PushThread, std::function<void(PushThread*)>> push_thread;
 	std::unique_ptr<StatsThread, std::function<void(StatsThread*)>> stats_thread;
@@ -116,6 +114,7 @@ public:
 	int					check_periodic_delay;
 	bool				subscribe_change;
 	bool				list_from_file;
+	string				list_file_error;
 	string				list_filename;
 	/**
 	 *	Shared data

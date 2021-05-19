@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 * New CMake build system that can download libhdbpp when requested
 * Moved HDBCmdData source from libhdbpp project
 * Clang integration
+* AttributeListFile device property to read attribute list from file
 
 ### Changed
 

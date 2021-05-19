@@ -237,7 +237,7 @@ namespace HdbEventSubscriber_ns
 
         //	Create one event handler by HDB access device
         INFO_STREAM << "HdbEventSubscriber id="<<omni_thread::self()->id()<<endl;
-        string	status;
+        string status;
         hdb_dev = std::make_shared<HdbDevice>(subscribeRetryPeriod, pollingThreadPeriod, statisticsTimeWindow, checkPeriodicTimeoutDelay, subscribeChangeAsFallback, attributeListFile, this);
         uint8_t index=0;
         for(const auto& context : contextsList)
@@ -301,13 +301,13 @@ namespace HdbEventSubscriber_ns
             status += e.errors[0].desc;
         }
         //	Check if WARNING
-        if (hdb_dev->status.length()>0)
+        if (!hdb_dev->list_file_error.empty())
         {
-            status += "PushThread:\n";
-            status += hdb_dev->status;
+            set_state(Tango::FAULT);
+            set_status(hdb_dev->list_file_error);
         }
         //	Set state and status if something wrong
-        if (status.length()>0)
+        else if (status.length()>0)
         {
             set_state(Tango::ALARM);
             set_status(status);
@@ -507,7 +507,9 @@ namespace HdbEventSubscriber_ns
 
             if (state==Tango::ON)
                 set_status("Everything is OK");
-            else
+            else if(!hdb_dev->list_file_error.empty())
+                set_status(hdb_dev->list_file_error);
+            else if (state==Tango::ALARM)
                 set_status("At least, one signal is faulty");
         }
 

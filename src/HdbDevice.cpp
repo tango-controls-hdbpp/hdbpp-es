@@ -384,6 +384,7 @@ namespace HdbEventSubscriber_ns
             }
             else
             {
+                list_file_error="Error opening AttributeList file: " + list_filename + " Error: " + strerror(errno);
                 WARN_STREAM << __FUNCTION__<< ": cannot open Attribute List File '" << list_filename << "' error: '" << strerror(errno) << "'";
             }
         }
@@ -460,7 +461,6 @@ namespace HdbEventSubscriber_ns
         data.push_back(Tango::DbDatum("AttributeList"));
         data[0]  <<  prop;
         {
-
 #ifndef _USE_FERMI_DB_RW
             auto db = std::make_unique<Tango::Database>();
 #else
@@ -506,6 +506,8 @@ namespace HdbEventSubscriber_ns
            if (state==Tango::ON)
            state = shared->state();				//	If OK get signals state
            */
+        if(!list_file_error.empty())
+            return Tango::FAULT;
         Tango::DevState	evstate =  shared->state();
         Tango::DevState	dbstate =  push_thread->state();
         if(evstate == Tango::ALARM || dbstate == Tango::ALARM)
