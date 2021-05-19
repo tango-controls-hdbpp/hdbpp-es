@@ -42,6 +42,8 @@
 #include <tango.h>
 #include <eventconsumer.h>
 #include <stdint.h>
+#include <sys/time.h>
+#include <string>
 
 
 /**
@@ -71,11 +73,11 @@ typedef struct
 	int		write_type;
 	int max_dim_x;
 	int max_dim_y;
-	Tango::AttributeProxy	*attr;
+        std::shared_ptr<Tango::AttributeProxy> attr;
 	Tango::DevState			evstate;
 	bool 	first;
 	bool 	first_err;
-	ArchiveCB	*archive_cb;
+        std::shared_ptr<ArchiveCB> archive_cb;
 	int		event_id;
 	int		event_conf_id;
 	bool	isZMQ;
@@ -92,8 +94,8 @@ typedef struct
 	bool stopped;
 	vector<string> contexts;
 	vector<string> contexts_upper;
-	Tango::DevULong ttl;
-	ReadersWritersLock *siglock;
+	unsigned int ttl;
+        std::shared_ptr<ReadersWritersLock> siglock;
 }
 HdbSignal;
 
@@ -116,12 +118,15 @@ private:
 	HdbDevice	*hdb_dev;
 
 	bool	stop_it;
-	bool	initialized;
+        bool initialized;
+        omni_mutex init_mutex;
+        omni_condition init_condition;
 
+        auto is_same_signal_name(const std::string& name1, const std::string& name2) -> bool;
 public:
 	int		action;
 	//omni_condition condition;
-	vector<HdbSignal>	signals;
+	vector<std::shared_ptr<HdbSignal>>	signals;
 	ReadersWritersLock      veclock;
 
 
@@ -130,35 +135,36 @@ public:
 	 */
 	//SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
 	SharedData(HdbDevice *dev);
+	~SharedData();
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, const vector<string> & contexts);
-	void add(string &signame, const vector<string> & contexts, int to_do, bool start);
+	void add(const string &signame, const vector<string> & contexts);
+	void add(const string &signame, const vector<string> & contexts, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
-	void remove(string &signame, bool stop);
+	void remove(const string &signame, bool stop);
 	/**
 	 * Update contexts for a signal.
 	 */
-	void update(string &signame, const vector<string> & contexts);
+	void update(const string &signame, const vector<string> & contexts);
 	/**
 	 * Update ttl for a signal.
 	 */
-	void updatettl(string &signame, Tango::DevULong ttl);
+	void updatettl(const string &signame, unsigned int ttl);
 	/**
 	 * Start saving on DB a signal.
 	 */
-	void start(string &signame);
+	void start(const string &signame);
 	/**
 	 * Pause saving on DB a signal.
 	 */
-	void pause(string &signame);
+	void pause(const string &signame);
 	/**
 	 * Stop saving on DB a signal.
 	 */
-	void stop(string &signame);
+	void stop(const string &signame);
 	/**
 	 * Start saving on DB all signals.
 	 */
@@ -174,39 +180,39 @@ public:
 	/**
 	 * Is a signal saved on DB?
 	 */
-	bool is_running(string &signame);
+	auto is_running(const string &signame) -> bool;
 	/**
 	 * Is a signal saved on DB?
 	 */
-	bool is_paused(string &signame);
+	auto is_paused(const string &signame) -> bool;
 	/**
 	 * Is a signal not subscribed?
 	 */
-	bool is_stopped(string &signame);
+	auto is_stopped(const string &signame) -> bool;
 	/**
 	 * Is a signal to be archived with current context?
 	 */
-	bool is_current_context(string &signame, string context);
+	auto is_current_context(const string &signame, string context) -> bool;
 	/**
 	 * Is a signal first event arrived?
 	 */
-	bool is_first(string &signame);
+	auto is_first(const string &signame) -> bool;
 	/**
 	 * Set a signal first event arrived
 	 */
-	void set_first(string &signame);
+	void set_first(const string &signame);
 	/**
 	 * Is a signal first consecutive error event arrived?
 	 */
-	bool is_first_err(string &signame);
+	auto is_first_err(const string &signame) -> bool;
 	/**
 	 * Set a signal first consecutive error event arrived
 	 */
-	void set_first_err(string &signame);
+	void set_first_err(const string &signame);
 	/**
 	 *	get signal by name.
 	 */
-	auto get_signal(const string &name) -> const HdbSignal &;
+	auto get_signal(const string &name) -> std::shared_ptr<HdbSignal>;
 	/**
 	 * Subscribe achive event for each signal
 	 */
@@ -218,7 +224,7 @@ public:
 	/**
 	 *	return number of signals to be subscribed
 	 */
-	int nb_sig_to_subscribe();
+	auto nb_sig_to_subscribe() -> int;
 	/**
 	 *	build a list of signal to set HDB device property
 	 */
@@ -230,11 +236,11 @@ public:
 	/**
 	 *	Return the list of sources
 	 */
-	vector<bool> get_sig_source_list();
+	auto get_sig_source_list() -> vector<bool>;
 	/**
 	 *	Return the source of specified signal
 	 */
-	bool  get_sig_source(string &signame);
+	auto get_sig_source(const string &signame) -> bool;
 	/**
 	 *	Return the list of signals on error
 	 */
@@ -254,7 +260,7 @@ public:
 	/**
 	 *	Return the list of errors
 	 */
-	bool get_error_list(vector<string> &);
+	auto get_error_list(vector<string> &) -> bool;
 	/**
 	 *	Return the list of event received
 	 */
@@ -262,59 +268,59 @@ public:
 	/**
 	 *	Return the number of signals on error
 	 */
-	int  get_sig_on_error_num();
+	auto  get_sig_on_error_num() -> int;
 	/**
 	 *	Return the number of signals not on error
 	 */
-	int  get_sig_not_on_error_num();
+	auto  get_sig_not_on_error_num() -> int;
 	/**
 	 *	Return the number of signals started
 	 */
-	int  get_sig_started_num();
+	auto  get_sig_started_num() -> int;
 	/**
 	 *	Return the number of signals not started
 	 */
-	int  get_sig_not_started_num();
+	auto  get_sig_not_started_num() -> int;
 	/**
 	 *	Return the complete, started and stopped lists of signals
 	 */
-	bool  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list, Tango::DevULong *ttl_list);
+	auto  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list, Tango::DevULong *ttl_list) -> bool;
 	/**
 	 *	Increment the ok counter of event rx
 	 */
-	void  set_ok_event(string &signame);
+	void  set_ok_event(const string &signame);
 	/**
 	 *	Get the ok counter of event rx
 	 */
-	uint32_t  get_ok_event(string &signame);
+	auto get_ok_event(const string &signame) -> uint32_t;
 	/**
 	 *	Get the ok counter of event rx for freq stats
 	 */
-	uint32_t  get_ok_event_freq(string &signame);
+	auto get_ok_event_freq(const string &signame) -> uint32_t;
 	/**
 	 *	Get last okev timestamp
 	 */
-	timeval  get_last_okev(string &signame);
+	auto get_last_okev(const string &signame) -> timeval;
 	/**
 	 *	Increment the error counter of event rx
 	 */
-	void  set_nok_event(string &signame);
+	void  set_nok_event(const string &signame);
 	/**
 	 *	Get the error counter of event rx
 	 */
-	uint32_t  get_nok_event(string &signame);
+	auto get_nok_event(const string &signame) -> uint32_t;
 	/**
 	 *	Get the error counter of event rx for freq stats
 	 */
-	uint32_t  get_nok_event_freq(string &signame);
+	auto get_nok_event_freq(const string &signame) -> uint32_t;
 	/**
 	 *	Get last nokev timestamp
 	 */
-	timeval  get_last_nokev(string &signame);
+	auto get_last_nokev(const string &signame) -> timeval;
 	/**
 	 *	Set state and status of timeout on periodic event
 	 */
-	void  set_nok_periodic_event(string &signame);
+	void  set_nok_periodic_event(const string& signame);
 	/**
 	 *	Return the status of specified signal
 	 */
@@ -338,7 +344,7 @@ public:
 	/**
 	 *	Check Archive periodic event period
 	 */
-	int  check_periodic_event_timeout(int delay_tolerance_ms);
+	auto check_periodic_event_timeout(unsigned int delay_tolerance_ms) -> int;
 	/**
 	 *	Reset statistic counters
 	 */
@@ -350,12 +356,12 @@ public:
 	/**
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */
-	Tango::DevState state();
+	auto state() -> Tango::DevState;
 	
-	bool is_initialized();
-	bool get_if_stop();
+	auto is_initialized() -> bool;
+	auto get_if_stop() -> bool;
 	void stop_thread();
-	
+	void wait_initialized();
 };
 
 

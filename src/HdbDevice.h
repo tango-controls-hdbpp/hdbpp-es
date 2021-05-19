@@ -39,7 +39,7 @@
 #ifndef _HDBDEVICE_H
 #define _HDBDEVICE_H
 
-#define MAX_ATTRIBUTES		10000
+//#define MAX_ATTRIBUTES		10000
 #define CONTEXT_KEY		"strategy"
 #define TTL_KEY			"ttl"
 #define DEFAULT_TTL		0	//0 -> infinite, >0 -> time to live in hours
@@ -47,11 +47,8 @@
 #define ALWAYS_CONTEXT_DESC	"Always stored"
 
 #include <tango.h>
-#include <SubscribeThread.h>
-#include <PushThread.h>
-#include <StatsThread.h>
-#include <PollerThread.h>
-#include <CheckPeriodicThread.h>
+#include "Consts.h"
+
 /**
  * @author	$Author: graziano $
  * @version	$Revision: 1.5 $
@@ -85,6 +82,13 @@
 namespace HdbEventSubscriber_ns
 {
 
+class PollerThread;
+class StatsThread;
+class CheckPeriodicThread;
+class PushThread;
+class SubscribeThread;
+class SharedData;
+
 //==========================================================
 /**
  * Class Description:
@@ -93,6 +97,9 @@ namespace HdbEventSubscriber_ns
 //==========================================================
 class HdbDevice: public Tango::LogAdapter
 {
+    private:
+        std::string current_context;
+        timeval last_stat;
 public:
 	//	Data members here
 	//-----------------------------------------
@@ -113,9 +120,8 @@ public:
 	 *	Shared data
 	 */
 	std::shared_ptr<SharedData> shared;
-	std::shared_ptr<PushThreadShared> push_shared;
 	Tango::DeviceImpl *_device;
-	map<string, string> domain_map;
+        std::map<std::string, std::string> domain_map;
 
 	Tango::DevDouble	AttributeRecordFreq;
 	Tango::DevDouble	AttributeFailureFreq;
@@ -150,31 +156,22 @@ public:
 	Tango::DevULong		attr_AttributeTTLList_read[MAX_ATTRIBUTES];
 
 	vector<string> attribute_list_str;
-	vector<string> old_attribute_list_str;
 	size_t attribute_list_str_size;
 	vector<string> attribute_ok_list_str;
-	vector<string> old_attribute_ok_list_str;
 	size_t attribute_ok_list_str_size;
 	vector<string> attribute_nok_list_str;
-	vector<string> old_attribute_nok_list_str;
 	size_t attribute_nok_list_str_size;
 	vector<string> attribute_pending_list_str;
-	vector<string> old_attribute_pending_list_str;
 	size_t attribute_pending_list_str_size;
 	vector<string> attribute_started_list_str;
-	vector<string> old_attribute_started_list_str;
 	size_t attribute_started_list_str_size;
 	vector<string> attribute_paused_list_str;
-	vector<string> old_attribute_paused_list_str;
 	size_t attribute_paused_list_str_size;
 	vector<string> attribute_stopped_list_str;
-	vector<string> old_attribute_stopped_list_str;
 	size_t attribute_stopped_list_str_size;
 	vector<string> attribute_error_list_str;
-	vector<string> old_attribute_error_list_str;
 	size_t attribute_error_list_str_size;
 	vector<string> attribute_context_list_str;
-	vector<string> old_attribute_context_list_str;
 	size_t attribute_context_list_str_size;
 
 	map<string,string> contexts_map;
@@ -207,19 +204,19 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(string &signame, vector<string>& contexts, int data_type, int data_format, int write_type);
+	void add(const string &signame, vector<string>& contexts, int data_type, int data_format, int write_type);
 	/**
 	 * AddRemove a signal in the list.
 	 */
-	void remove(string &signame);
+	void remove(const string &signame);
 	/**
 	 * Update contexts for a signal.
 	 */
-	void update(string &signame, vector<string>& contexts);
+	void update(const string &signame, vector<string>& contexts);
 	/**
 	 * Update ttl for a signal.
 	 */
-	void updatettl(string &signame, Tango::DevULong ttl);
+	void updatettl(const string &signame, long ttl);
 	/**
 	 *	Update SignalList property
 	 */
@@ -272,7 +269,7 @@ public:
 	/**
 	 *	Return the status of specified signal
 	 */
-	string  get_sig_status(string &signame);
+	auto get_sig_status(const string &signame) -> string;
 	/**
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */
@@ -288,15 +285,15 @@ public:
 	/**
 	 *	Returns how many signals are waiting to be stored
 	 */
-	 int get_max_waiting();
+	 auto get_max_waiting() const -> int;
 	/**
 	 *	Returns how many signals are waiting to be stored
 	 */
-	 int nb_cmd_waiting();
+	 auto nb_cmd_waiting() const -> int;
 	/**
 	 *	Returns the list of signals waiting to be stored
 	 */
-	void get_sig_list_waiting(vector<string> &);
+	void get_sig_list_waiting(vector<string> &) const;
 	/**
 	 *	Reset statistic counters
 	 */
@@ -310,41 +307,55 @@ public:
 	 */
 	bool  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list, Tango::DevULong *ttl_list);
 	/**
-	 *	Returns the signal name (tango host has been added sinse tango 7.1.1)
-	 */
-	auto	get_only_signal_name(const string &signame) -> string;
-	/**
-	 *	Returns the tango host (tango host has been added sinse tango 7.1.1)
-	 */
-	auto	get_only_tango_host(const string &signame) -> string;
-	/**
 	 *	Check if fqdn, otherwise fix it
 	 */
-	void fix_tango_host(string &attr);
+	void fix_tango_host(const string &attr, string& fixed);
 	/**
 	 *	Check if full domain name, otherwise fix it
 	 */
-	void add_domain(string &attr);
+	void add_domain(const string &attr, string& with_domain);
 	/**
-	 *	Remove domain
+	 *	Set current context and start the attributes that should start.
 	 */
-	auto remove_domain(const string &str) -> string;
+	void set_context_and_start_attributes(const string& context);
+	/**
+	 *	Start an attribute.
+	 */
+	void start_attribute(const string& attribute);
+	/**
+	 *	Stop an attribute.
+	 */
+	void stop_attribute(const string& attribute);
+	/**
+	 *	Pause an attribute.
+	 */
+	void pause_attribute(const string& attribute);
+
+        auto get_last_stat() -> timeval&
+        {
+            return last_stat;
+        };
 #ifndef _MULTI_TANGO_HOST
 	/**
 	 *	Compare without domain
 	 */
-	bool compare_without_domain(const string &str1, const string &str2);
+	static auto compare_without_domain(const string &str1, const string &str2) -> bool;
 #else
 	/**
 	 *	compare 2 tango names considering fqdn, domain, multi tango host
 	 *	returns 0 if equal
 	 */
-	int compare_tango_names(string str1, string str2);
+	static auto compare_tango_names(const string& str1, const string& str2) -> int;
 #endif
 	/**
 	 *	explode a string in multiple strings using separator
 	 */
-	void string_explode(const string &str, const string &separator, vector<string>& results);
+	static void string_explode(const string &str, const string &separator, vector<string>& results);
+
+        template<typename T>
+        void push_events(const std::string& att_name, T* data, bool sleep = false);
+        template<typename T>
+        void push_events(const std::string& att_name, T* data, long size, bool sleep = false);
 
 protected :	
 	/**
@@ -370,7 +381,16 @@ protected :
 	 *	Store string (vector) in HDB
 	 */
 	void store_string(string &name, vector<string> values, int time);
-	
+
+private:	
+	/**
+	 *	Returns the tango host and signal name (tango host has been added since tango 7.1.1)
+	 */
+	static void get_tango_host_and_signal_name(const string &signame, string& tango_host, string& name);
+	/**
+	 *	Remove domain
+	 */
+	static auto remove_domain(const string &str) -> string;
 };
 
 
@@ -392,7 +412,35 @@ public:
 	virtual void push_event(Tango::AttrConfEventData* data);
 };
 
+template<typename T>
+void HdbDevice::push_events(const std::string& attr_name, T* data, bool sleep)
+{
+    try
+    {
+        _device->push_change_event(attr_name, data);
+        _device->push_archive_event(attr_name, data);
+    }
+    catch(Tango::DevFailed &e){}
 
+    // TODO is this needed ?
+    if(sleep)
+        usleep(1 * ms_to_us_factor);
+}
+
+template<typename T>
+void HdbDevice::push_events(const std::string& attr_name, T* data, long size, bool sleep)
+{
+    try
+    {
+        _device->push_change_event(attr_name, data, size);
+        _device->push_archive_event(attr_name, data, size);
+    }
+    catch(Tango::DevFailed &e){}
+
+    // TODO is this needed ?
+    if(sleep)
+        usleep(1 * ms_to_us_factor);
+}
 }	// namespace_ns
 
 #endif	// _HDBDEVICE_H
