@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+* In AttributeAdd command, only the attribute name is needed, if the other parameters
+  are missing, a request to the database will be done to get them.
 * Do not depend on HdbClient.h, but only AbstracDB.h
 * Small refactoring and code modernization to get rid of some clang warnings.
 * Updated README for new build system
