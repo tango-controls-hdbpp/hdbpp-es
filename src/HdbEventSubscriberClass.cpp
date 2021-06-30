@@ -1903,7 +1903,7 @@ void HdbEventSubscriberClass::command_factory()
 	AttributeAddClass	*pAttributeAddCmd =
 		new AttributeAddClass("AttributeAdd",
 			Tango::DEVVAR_STRINGARRAY, Tango::DEV_VOID,
-			"Attribute name, strategy, data_type, data_format, write_type",
+			"Attribute name, strategy, data_type, data_format, write_type.\n\nNote that only attribute name is mandatory.\nIf the strategy is not provided, default strategy will be used.\nIf any of the 3 last arguments is not provided the database will be queried to retrieve the proper values.",
 			"",
 			Tango::OPERATOR);
 	command_list.push_back(pAttributeAddCmd);
