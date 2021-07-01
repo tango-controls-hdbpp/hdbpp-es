@@ -1206,9 +1206,34 @@ namespace HdbEventSubscriber_ns
                 }
             }
         }
+        
         if(contexts.empty())
             contexts.push_back(defaultStrategy);
-        if(argin->length() > 2)
+        
+        // Some data is not provided, get it from the database
+        if(argin->length() < 5)
+        {
+            string::size_type idx = signame.find_last_of('/');
+            if (idx == string::npos)
+                Tango::Except::throw_exception(
+                        (const char *)"SyntaxError",
+                        "Syntax error in signal name",
+                        (const char *)__func__);
+            
+            string devname = signame.substr(0, idx);
+            string attname = signame.substr(idx+1);
+            
+            std::unique_ptr<Tango::DeviceProxy> dp = std::unique_ptr<Tango::DeviceProxy>(new Tango::DeviceProxy(devname));
+
+            Tango::AttributeInfo info = dp->get_attribute_config(attname);
+            data_type = info.data_type;
+            data_format = info.data_format;
+            write_type = info.writable;
+        }
+        // In the case some of them are provided but not all, we still keep the one we got from the database
+        // configuration. We could override them by the provided values, but if there is a difference
+        // in the value provided and the one found in the db we are in a bit of trouble.
+        else
         {
             string s_data_type((*argin)[2]);
             try
@@ -1221,9 +1246,7 @@ namespace HdbEventSubscriber_ns
             {
                 DEBUG_STREAM << __func__ << ": error extracting data_type from '" << s_data_type << "'";
             }
-        }
-        if(argin->length() > 3)
-        {
+
             string s_data_format((*argin)[3]);
             try
             {
@@ -1235,9 +1258,7 @@ namespace HdbEventSubscriber_ns
             {
                 DEBUG_STREAM << __func__ << ": error extracting data_format from '" << s_data_format << "'";
             }
-        }
-        if(argin->length() > 4)
-        {
+
             string s_write_type((*argin)[4]);
             try
             {

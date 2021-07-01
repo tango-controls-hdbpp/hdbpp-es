@@ -518,7 +518,11 @@ public:
 	 *	Command AttributeAdd related method
 	 *	Description: Add a new attribute to archive in HDB.
 	 *
-	 *	@param argin Attribute name, strategy, data_type, data_format, write_type
+	 *	@param argin Attribute name, strategy, data_type, data_format, write_type.
+	 *               
+	 *               Note that only attribute name is mandatory.
+	 *               If the strategy is not provided, default strategy will be used.
+	 *               If any of the 3 last arguments is not provided the database will be queried to retrieve the proper values.
 	 */
 	virtual void attribute_add(const Tango::DevVarStringArray *argin);
 	virtual bool is_AttributeAdd_allowed(const CORBA::Any &any);
