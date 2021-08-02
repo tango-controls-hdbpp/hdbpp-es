@@ -71,19 +71,20 @@ endif()
 
 # Find Dependencies  -----------------------------------
 if(FETCH_LIBHDBPP)
-    set(FETCH_PROJECT_NAME "libhdb++")
-    set(FETCH_REPOSITORY_ADDRESS ${BACKEND_URI})
-    set(FETCH_REPOSITORY_TAG ${FETCH_LIBHDBPP_TAG})
- 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/FetchExternal.cmake.in ${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download/CMakeLists.txt)
+     include(FetchContent)
 
-    execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download" )
+    FetchContent_Declare(
+      backend
+      GIT_REPOSITORY ${BACKEND_URI}
+      GIT_TAG        ${FETCH_LIBHDBPP_TAG}
+    )
 
-    execute_process(COMMAND "${CMAKE_COMMAND}" --build .
-        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-download" )
-
-    add_subdirectory("${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-src" "${CMAKE_BINARY_DIR}/${FETCH_PROJECT_NAME}-build" EXCLUDE_FROM_ALL)
+    FetchContent_GetProperties(backend)
+    if(NOT backend_POPULATED)
+        FetchContent_Populate(backend)
+        add_subdirectory(${backend_SOURCE_DIR} ${backend_BINARY_DIR}
+            EXCLUDE_FROM_ALL)
+    endif()
 
     # For ease of use, we set the libhdb++ output to our projects build directory,
     # making linking and running easy
