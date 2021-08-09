@@ -11,7 +11,6 @@
 //
 // $Revision: 1.5 $
 //
-// $Log: CheckPeriodicThread.h,v $
 //
 //
 //

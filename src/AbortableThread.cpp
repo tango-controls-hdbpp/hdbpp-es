@@ -9,7 +9,6 @@
 //
 // $Revision: 1.6 $
 //
-// $Log: CheckPeriodicThread.cpp,v $
 //
 //
 //

@@ -56,7 +56,6 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include <netdb.h> //for getaddrinfo
 #include "PollerThread.h"
 #include "StatsThread.h"
-#include "CheckPeriodicThread.h"
 #include "PushThread.h"
 #include "SubscribeThread.h"
 #include "Consts.h"
@@ -73,10 +72,8 @@ namespace HdbEventSubscriber_ns
         INFO_STREAM << "	Deleting HdbDevice" << endl;
         DEBUG_STREAM << "	Stopping stats thread" << endl;
         stats_thread->abort();
-        check_periodic_thread->abort();
         poller_thread->abort();
-        check_periodic_thread->join(nullptr);
-        //DEBUG_STREAM << "	CheckPeriodic thread Joined " << endl;
+        
         stats_thread->join(nullptr);
         //DEBUG_STREAM << "	Stats thread Joined " << endl;
         poller_thread->join(nullptr);
@@ -177,8 +174,6 @@ namespace HdbEventSubscriber_ns
         stats_thread->set_period(stats_window);
         poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
                 , [](PollerThread* /*unused*/){});
-        check_periodic_thread = std::unique_ptr<CheckPeriodicThread, AbortableThreadDeleter>(new CheckPeriodicThread(this));
-        check_periodic_thread->delay_tolerance_ms = check_periodic_delay * s_to_ms_factor;
 
         build_signal_vector(list, defaultStrategy);
 
@@ -186,7 +181,6 @@ namespace HdbEventSubscriber_ns
         push_thread->start();
         poller_thread->start();
         thread->start();
-        check_periodic_thread->start();
 
         //	Wait end of first subscribing loop
         shared->wait_initialized();

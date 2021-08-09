@@ -1,6 +1,6 @@
 //=============================================================================
 //
-// file :        HdbEventHandler.h
+// file :        HdbDevice.h
 //
 // description : Include for the HDbDevice class.
 //
@@ -84,7 +84,6 @@ namespace HdbEventSubscriber_ns
 
 class PollerThread;
 class StatsThread;
-class CheckPeriodicThread;
 class PushThread;
 class SubscribeThread;
 class SharedData;
@@ -106,7 +105,6 @@ public:
 	std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>> thread;
 	std::unique_ptr<PushThread, std::function<void(PushThread*)>> push_thread;
 	std::unique_ptr<StatsThread, std::function<void(StatsThread*)>> stats_thread;
-	std::unique_ptr<CheckPeriodicThread, std::function<void(CheckPeriodicThread*)>> check_periodic_thread;
 	std::unique_ptr<PollerThread, std::function<void(PollerThread*)>> poller_thread;
 	int					period;
 	int					poller_period;
