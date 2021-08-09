@@ -74,7 +74,7 @@ namespace HdbEventSubscriber_ns
         double store_time_avg;
         double store_time_min;
         double store_time_max;
-        timeval last_nokdb;
+        timespec last_nokdb;
 
         public:
             HdbStat();
@@ -226,7 +226,7 @@ namespace HdbEventSubscriber_ns
             /**
              *	Get last nokdb timestamp
              */
-            auto get_last_nokdb(const string& signame) -> timeval;
+            auto get_last_nokdb(const string& signame) -> timespec;
             /**
              *	reset state
              */

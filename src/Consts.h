@@ -34,6 +34,7 @@ namespace HdbEventSubscriber_ns
 {
     const unsigned int s_to_ms_factor = 1000;
     const unsigned int ms_to_us_factor = 1000;
+    const unsigned int us_to_ns_factor = 1000;
     const unsigned int s_to_ns_factor = 1000000000;
     const unsigned int ms_to_ns_factor = 1000000;
     const unsigned int s_to_us_factor = 1000000;

@@ -1376,7 +1376,7 @@ namespace HdbEventSubscriber_ns
         /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_status) ENABLED START -----*/
 
         //	Add your own code
-        struct timeval tv{};
+        struct timespec tv;
         struct tm *nowtm = nullptr;
         char buf[64];
         size_t strfret = 0;
@@ -1878,7 +1878,7 @@ namespace HdbEventSubscriber_ns
         hdb_dev->pause_attribute(attribute);
     }
     
-    auto HdbEventSubscriber::format_date(const timeval& tv, size_t ev) -> std::string
+    auto HdbEventSubscriber::format_date(const timespec& tv, size_t ev) -> std::string
     {
         if(ev != 0)
         {
@@ -1887,7 +1887,7 @@ namespace HdbEventSubscriber_ns
             str_stream.precision(6);
             str_stream.fill('0');
 
-            str_stream << std::put_time(&nowtm, "%Y-%m-%d %H:%M:%S") << std::left << tv.tv_usec << std::endl;
+            str_stream << std::put_time(&nowtm, "%Y-%m-%d %H:%M:%S") << std::left << tv.tv_nsec/us_to_ns_factor << std::endl;
 
             return str_stream.str();
         }

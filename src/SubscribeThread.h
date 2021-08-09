@@ -42,9 +42,10 @@
 #include <tango.h>
 #include <eventconsumer.h>
 #include <stdint.h>
-#include <sys/time.h>
+#include <time.h>
 #include <string>
-
+#include <deque>
+#include "Consts.h"
 
 /**
  * @author	$Author: graziano $
@@ -62,7 +63,49 @@ namespace HdbEventSubscriber_ns
 
 class ArchiveCB;
 
-typedef struct 
+struct EventCounter
+{
+    uint32_t counter;
+    std::deque<timespec> timestamps;
+
+    void increment(double window)
+    {
+        ++counter;
+        timespec now{};
+        clock_gettime(CLOCK_MONOTONIC, &now);
+
+        auto first = timestamps.front();
+        double interval = now.tv_sec - first.tv_sec + (now.tv_nsec - first.tv_nsec)/s_to_ns_factor;
+        if(interval > window)
+            timestamps.pop_front();
+        
+        timestamps.push_back(now);
+    }
+    
+    double get_freq(double window)
+    {
+        return timestamps.size()/window;
+    }
+
+    double get_freq_inst()
+    {
+        if(timestamps.size() > 1)
+        {
+            timespec last_val = timestamps.back();
+            timespec second_last = timestamps[timestamps.size() - 2];
+
+            return 1./(last_val.tv_sec-second_last.tv_sec +(last_val.tv_nsec-second_last.tv_nsec)/s_to_ns_factor);
+        }
+        return 0.;
+    }
+
+    void reset()
+    {
+        counter = 0;
+    };
+};
+
+struct HdbSignal
 {
 	string	name;
 	string	devname;
@@ -81,12 +124,8 @@ typedef struct
 	int		event_id;
 	int		event_conf_id;
 	bool	isZMQ;
-	uint32_t okev_counter;
-	uint32_t okev_counter_freq;
-	timeval last_okev;
-	uint32_t nokev_counter;
-	uint32_t nokev_counter_freq;
-	timeval last_nokev;
+        EventCounter ok_events;
+        EventCounter nok_events;
 	timespec last_ev;
 	int periodic_ev;
 	bool running;
@@ -96,8 +135,7 @@ typedef struct
 	vector<string> contexts_upper;
 	unsigned int ttl;
         std::shared_ptr<ReadersWritersLock> siglock;
-}
-HdbSignal;
+};
 
 class HdbDevice;
 class SubscribeThread;
@@ -300,7 +338,7 @@ public:
 	/**
 	 *	Get last okev timestamp
 	 */
-	auto get_last_okev(const string &signame) -> timeval;
+	auto get_last_okev(const string &signame) -> timespec;
 	/**
 	 *	Increment the error counter of event rx
 	 */
@@ -316,7 +354,7 @@ public:
 	/**
 	 *	Get last nokev timestamp
 	 */
-	auto get_last_nokev(const string &signame) -> timeval;
+	auto get_last_nokev(const string &signame) -> timespec;
 	/**
 	 *	Set state and status of timeout on periodic event
 	 */

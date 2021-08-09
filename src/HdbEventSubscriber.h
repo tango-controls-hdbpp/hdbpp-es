@@ -92,7 +92,7 @@ private:
         void start_attribute(const std::string& attribute);
         void pause_attribute(const std::string& attribute);
 
-        auto format_date(const timeval& tv, size_t ev) -> std::string;
+        auto format_date(const timespec& tv, size_t ev) -> std::string;
 	double last_statistics_reset_time;
 
 #ifdef _USE_FERMI_DB_RW

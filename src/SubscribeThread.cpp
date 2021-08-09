@@ -701,11 +701,8 @@ namespace HdbEventSubscriber_ns
             signal->event_conf_id = ERR;
             signal->evstate    = Tango::ALARM;
             signal->isZMQ    = false;
-            signal->okev_counter = 0;
-            signal->okev_counter_freq = 0;
-            signal->nokev_counter = 0;
-            signal->nokev_counter_freq = 0;
-            signal->first = true;
+            signal->ok_events.counter = 0;
+            signal->nok_events.counter = 0;
             signal->first_err = true;
             signal->periodic_ev = -1;
             signal->ttl = DEFAULT_TTL;
@@ -1309,7 +1306,7 @@ namespace HdbEventSubscriber_ns
         for(const auto& signal : signals)
         {
             signal->siglock->readerIn();
-            list.push_back(signal->okev_counter + signal->nokev_counter);
+            list.push_back(signal->ok_events.counter + signal->nok_events.counter);
             signal->siglock->readerOut();
         }
     }
@@ -1525,10 +1522,8 @@ namespace HdbEventSubscriber_ns
         signal->siglock->writerIn();
         signal->evstate = Tango::ON;
         signal->status = "Event received";
-        signal->okev_counter++;
-        signal->okev_counter_freq++;
+        signal->ok_events.increment(hdb_dev->stats_window);
         signal->first_err = true;
-        gettimeofday(&signal->last_okev, nullptr);
         clock_gettime(CLOCK_MONOTONIC, &signal->last_ev);
         signal->siglock->writerOut();
     }
@@ -1545,7 +1540,7 @@ namespace HdbEventSubscriber_ns
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        retval = signal->okev_counter;
+        retval = signal->ok_events.counter;
         signal->siglock->readerOut();
         return retval;
     }
@@ -1562,7 +1557,7 @@ namespace HdbEventSubscriber_ns
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        retval = signal->okev_counter_freq;
+        retval = signal->ok_events.get_freq(hdb_dev->stats_window);
         signal->siglock->readerOut();
         return retval;
     }
@@ -1571,15 +1566,15 @@ namespace HdbEventSubscriber_ns
      *	Get last okev timestamp
      */
     //=============================================================================
-    auto SharedData::get_last_okev(const string &signame) -> timeval
+    auto SharedData::get_last_okev(const string &signame) -> timespec
     {
-        timeval retval{};
+        timespec retval;
         ReaderLock lock(veclock);
         
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        retval = signal->last_okev;
+        retval = signal->ok_events.timestamps.back();
         signal->siglock->readerOut();
         return retval;
     }
@@ -1595,9 +1590,7 @@ namespace HdbEventSubscriber_ns
         auto signal = get_signal(signame);
         
         signal->siglock->writerIn();
-        signal->nokev_counter++;
-        signal->nokev_counter_freq++;
-        gettimeofday(&signal->last_nokev, nullptr);
+        signal->nok_events.increment(hdb_dev->stats_window);
         clock_gettime(CLOCK_MONOTONIC, &signal->last_ev);
         signal->siglock->writerOut();
     }
@@ -1614,7 +1607,7 @@ namespace HdbEventSubscriber_ns
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        retval = signal->nokev_counter;
+        retval = signal->nok_events.counter;
         signal->siglock->readerOut();
         return retval;
     }
@@ -1631,7 +1624,7 @@ namespace HdbEventSubscriber_ns
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        retval = signal->nokev_counter_freq;
+        retval = signal->nok_events.get_freq(hdb_dev->stats_window);
         signal->siglock->readerOut();
         return retval;
     }
@@ -1640,15 +1633,15 @@ namespace HdbEventSubscriber_ns
      *	Get last nokev timestamp
      */
     //=============================================================================
-    auto SharedData::get_last_nokev(const string& signame) -> timeval
+    auto SharedData::get_last_nokev(const string& signame) -> timespec
     {
-        timeval retval{};
+        timespec retval;
         ReaderLock lock(veclock);
         
         auto signal = get_signal(signame);
         
         signal->siglock->readerIn();
-        retval = signal->last_nokev;
+        retval = signal->nok_events.timestamps.back();
         signal->siglock->readerOut();
         return retval;
     }
@@ -1818,8 +1811,8 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->siglock->writerIn();
-            signal->nokev_counter=0;
-            signal->okev_counter=0;
+            signal->nok_events.reset();
+            signal->ok_events.reset();
             signal->siglock->writerOut();
         }
     }
@@ -1834,8 +1827,8 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->siglock->writerIn();
-            signal->nokev_counter_freq=0;
-            signal->okev_counter_freq=0;
+            signal->nok_events.timestamps.clear();
+            signal->ok_events.timestamps.clear();
             signal->siglock->writerOut();
         }
     }

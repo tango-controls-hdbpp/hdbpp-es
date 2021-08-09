@@ -373,7 +373,7 @@ namespace HdbEventSubscriber_ns
             signal.dberror = STATUS_DB_ERROR;
             if(error.length() > 0)
                 signal.dberror += ": " + error;
-            gettimeofday(&signal.last_nokdb, nullptr);
+            clock_gettime(CLOCK_MONOTONIC, &signal.last_nokdb);
         }
         else
         {
@@ -391,7 +391,7 @@ namespace HdbEventSubscriber_ns
             sig.dberror = STATUS_DB_ERROR;
             if(error.length() > 0)
                 sig.dberror += ": " + error;
-            gettimeofday(&sig.last_nokdb, nullptr);
+            clock_gettime(CLOCK_MONOTONIC, &sig.last_nokdb);
             signals[signame] = sig;
         }
         sig_lock.unlock();
@@ -538,11 +538,11 @@ namespace HdbEventSubscriber_ns
      *	Get last nokdb timestamp
      */
     //=============================================================================
-    auto PushThread::get_last_nokdb(const string &signame) -> timeval
+    auto PushThread::get_last_nokdb(const string &signame) -> timespec
     {
         sig_lock.lock();
 
-        timeval last_nokdb = get_signal(signame).last_nokdb;
+        timespec last_nokdb = get_signal(signame).last_nokdb;
 
         sig_lock.unlock();
         //        timeval ret;
