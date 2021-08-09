@@ -39,3 +39,6 @@ lib/
 
 # Build directory
 build/
+
+# vim swap files
+*.swp
