@@ -1,4 +1,3 @@
-static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/SubscribeThread.cpp,v 1.6 2014-03-06 15:21:43 graziano Exp $";
 //+=============================================================================
 //
 // file :         HdbEventHandler.cpp
@@ -44,6 +43,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include "SubscribeThread.h"
 #include <HdbDevice.h>
 #include <HdbEventSubscriber.h>
+#include "HdbSignal.h"
 #include "Consts.h"
 
 namespace HdbEventSubscriber_ns
@@ -111,103 +111,105 @@ namespace HdbEventSubscriber_ns
     void SharedData::remove(const string& signame, bool stop)
     {
         //	Remove in signals list (vector)
+        if(!stop)
+            veclock.readerIn();
+
+        auto sig = get_signal(signame);
+        int event_id = sig->event_id;
+        int event_conf_id = sig->event_conf_id;
+        std::shared_ptr<Tango::AttributeProxy> attr = sig->attr;
+
+        if(!stop)
+            veclock.readerOut();
+
+        if(stop)
         {
-            if(!stop)
-                veclock.readerIn();
-            auto sig = get_signal(signame);
-            int event_id = sig->event_id;
-            int event_conf_id = sig->event_conf_id;
-            std::shared_ptr<Tango::AttributeProxy> attr = sig->attr;
-            if(!stop)
-                veclock.readerOut();
-            if(stop)
+            try
             {
-                try
+                if(event_id != ERR && attr != nullptr)
                 {
-                    if(event_id != ERR && attr != nullptr)
-                    {
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ARCHIVE_EVENT... "<< signame << endl;
-                        //unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
-                        sig->siglock->writerOut();
-                        attr->unsubscribe_event(event_id);
-                        sig->siglock->writerIn();
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ARCHIVE_EVENT... "<< signame << endl;
-                    }
-                    if(event_conf_id != ERR && attr != nullptr)
-                    {
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ATTR_CONF_EVENT... "<< signame << endl;
-                        //unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
-                        sig->siglock->writerOut();
-                        attr->unsubscribe_event(event_conf_id);
-                        sig->siglock->writerIn();
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ATTR_CONF_EVENT... "<< signame << endl;
-                    }
-                }
-                catch (Tango::DevFailed &e)
-                {
-                    //	Do nothing
-                    //	Unregister failed means Register has also failed
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ARCHIVE_EVENT... "<< signame << endl;
+                    //unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
+                    sig->siglock->writerOut();
+                    attr->unsubscribe_event(event_id);
                     sig->siglock->writerIn();
-                    INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ARCHIVE_EVENT... "<< signame << endl;
                 }
-            }
-
-            if(!stop)
-                veclock.writerIn();
-            auto pos = signals.begin();
-
-            bool found = false;
-            for(unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
-            {
-                std::shared_ptr<HdbSignal> sig = signals[i];
-                if(is_same_signal_name(sig->name, signame))
+                if(event_conf_id != ERR && attr != nullptr)
                 {
-                    found = true;
-                    if(stop)
-                    {
-                        DEBUG_STREAM <<"SharedData::"<<__func__<< ": removing " << signame << endl;
-                        //sig->siglock->writerIn(); //: removed, already locked in SharedData::stop
-                        try
-                        {
-                            if(sig->event_id != ERR)
-                            {
-                                sig->archive_cb.reset();
-                            }
-                            sig->event_id = ERR;
-                            sig->attr.reset();
-                        }
-                        catch (Tango::DevFailed &e)
-                        {
-                            //	Do nothing
-                            //	Unregister failed means Register has also failed
-                            INFO_STREAM <<"SharedData::"<< __func__<<": Exception deleting " << signame << " err=" << e.errors[0].desc << endl;
-                        }
-                        //sig->siglock->writerOut();
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": stopped " << signame << endl;
-                    }
-                    if(!stop)
-                    {
-                        if(sig->running)
-                            hdb_dev->attr_AttributeStartedNumber_read--;
-                        if(sig->paused)
-                            hdb_dev->attr_AttributePausedNumber_read--;
-                        if(sig->stopped)
-                            hdb_dev->attr_AttributeStoppedNumber_read--;
-                        hdb_dev->attr_AttributeNumber_read--;
-                        signals.erase(pos);
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
-                    }
-                    break;
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ATTR_CONF_EVENT... "<< signame << endl;
+                    //unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
+                    sig->siglock->writerOut();
+                    attr->unsubscribe_event(event_conf_id);
+                    sig->siglock->writerIn();
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ATTR_CONF_EVENT... "<< signame << endl;
                 }
             }
-            pos = signals.begin();
-            
-            if (!found)
-                Tango::Except::throw_exception(
-                        (const char *)"BadSignalName",
-                        "Signal " + signame + " NOT subscribed",
-                        (const char *)"SharedData::remove()");
+            catch (Tango::DevFailed &e)
+            {
+                //	Do nothing
+                //	Unregister failed means Register has also failed
+                sig->siglock->writerIn();
+                INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
+            }
         }
+
+        if(!stop)
+            veclock.writerIn();
+        auto pos = signals.begin();
+
+        bool found = false;
+        for(unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
+        {
+            std::shared_ptr<HdbSignal> sig = signals[i];
+            if(is_same_signal_name(sig->name, signame))
+            {
+                found = true;
+                if(stop)
+                {
+                    DEBUG_STREAM <<"SharedData::"<<__func__<< ": removing " << signame << endl;
+                    //sig->siglock->writerIn(); //: removed, already locked in SharedData::stop
+                    try
+                    {
+                        if(sig->event_id != ERR)
+                        {
+                            sig->archive_cb.reset();
+                        }
+                        sig->event_id = ERR;
+                        sig->attr.reset();
+                    }
+                    catch (Tango::DevFailed &e)
+                    {
+                        //	Do nothing
+                        //	Unregister failed means Register has also failed
+                        INFO_STREAM <<"SharedData::"<< __func__<<": Exception deleting " << signame << " err=" << e.errors[0].desc << endl;
+                    }
+                    //sig->siglock->writerOut();
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": stopped " << signame << endl;
+                }
+                if(!stop)
+                {
+                    if(sig->running)
+                        hdb_dev->attr_AttributeStartedNumber_read--;
+                    if(sig->paused)
+                        hdb_dev->attr_AttributePausedNumber_read--;
+                    if(sig->stopped)
+                        hdb_dev->attr_AttributeStoppedNumber_read--;
+                    hdb_dev->attr_AttributeNumber_read--;
+                    signals.erase(pos);
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
+                }
+                break;
+            }
+        }
+        pos = signals.begin();
+
+        if (!found)
+            Tango::Except::throw_exception(
+                    (const char *)"BadSignalName",
+                    "Signal " + signame + " NOT subscribed",
+                    (const char *)"SharedData::remove()");
+
         //	then, update property
         if(!stop)
         {

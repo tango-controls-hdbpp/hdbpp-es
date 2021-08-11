@@ -62,84 +62,9 @@ namespace HdbEventSubscriber_ns
 {
 
 class ArchiveCB;
-
-struct EventCounter
-{
-    uint32_t counter;
-    std::deque<timespec> timestamps;
-
-    void increment(double window)
-    {
-        ++counter;
-        timespec now{};
-        clock_gettime(CLOCK_MONOTONIC, &now);
-
-        auto first = timestamps.front();
-        double interval = now.tv_sec - first.tv_sec + (now.tv_nsec - first.tv_nsec)/s_to_ns_factor;
-        if(interval > window)
-            timestamps.pop_front();
-        
-        timestamps.push_back(now);
-    }
-    
-    double get_freq(double window)
-    {
-        return timestamps.size()/window;
-    }
-
-    double get_freq_inst()
-    {
-        if(timestamps.size() > 1)
-        {
-            timespec last_val = timestamps.back();
-            timespec second_last = timestamps[timestamps.size() - 2];
-
-            return 1./(last_val.tv_sec-second_last.tv_sec +(last_val.tv_nsec-second_last.tv_nsec)/s_to_ns_factor);
-        }
-        return 0.;
-    }
-
-    void reset()
-    {
-        counter = 0;
-    };
-};
-
-struct HdbSignal
-{
-	string	name;
-	string	devname;
-	string	attname;
-	string	status;
-	int		data_type;
-	Tango::AttrDataFormat		data_format;
-	int		write_type;
-	int max_dim_x;
-	int max_dim_y;
-        std::shared_ptr<Tango::AttributeProxy> attr;
-	Tango::DevState			evstate;
-	bool 	first;
-	bool 	first_err;
-        std::shared_ptr<ArchiveCB> archive_cb;
-	int		event_id;
-	int		event_conf_id;
-	bool	isZMQ;
-        EventCounter ok_events;
-        EventCounter nok_events;
-	timespec last_ev;
-	int periodic_ev;
-	bool running;
-	bool paused;
-	bool stopped;
-	vector<string> contexts;
-	vector<string> contexts_upper;
-	unsigned int ttl;
-        std::shared_ptr<ReadersWritersLock> siglock;
-};
-
 class HdbDevice;
 class SubscribeThread;
-
+class HdbSignal;
 
 //=========================================================
 /**
