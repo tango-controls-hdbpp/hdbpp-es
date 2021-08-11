@@ -95,7 +95,7 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     //=============================================================================
-    HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const Context& context, Tango::DeviceImpl *device)
+    HdbDevice::HdbDevice(int p, int pp, int s, int c, bool ch, const string &fn, const Context& context, Tango::DeviceImpl *device)
         :Tango::LogAdapter(device)
          , current_context_idx(ContextMap::index(Context::no_context()))
          , default_context(context)

@@ -199,7 +199,7 @@ public:
 	 *	@param ch	 	Subscribe to change event if archive event is not used
 	 *	@param context   	Default context to be used on startup
 	 */
-	HdbDevice(int p, int pp, int s, int c, bool ch, const Context& context, Tango::DeviceImpl *device);
+	HdbDevice(int p, int pp, int s, int c, bool ch, const string& fn, const Context& context, Tango::DeviceImpl *device);
 	~HdbDevice();
 	/**
 	 * initialize object
