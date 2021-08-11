@@ -106,93 +106,97 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //================================================================
 //  Attributes managed are:
 //================================================================
-//  AttributeOkNumber           |  Tango::DevLong	Scalar
-//  AttributeNokNumber          |  Tango::DevLong	Scalar
-//  AttributePendingNumber      |  Tango::DevLong	Scalar
-//  AttributeNumber             |  Tango::DevLong	Scalar
-//  AttributeMaxStoreTime       |  Tango::DevDouble	Scalar
-//  AttributeMinStoreTime       |  Tango::DevDouble	Scalar
-//  AttributeMaxProcessingTime  |  Tango::DevDouble	Scalar
-//  AttributeMinProcessingTime  |  Tango::DevDouble	Scalar
-//  AttributeRecordFreq         |  Tango::DevDouble	Scalar
-//  AttributeFailureFreq        |  Tango::DevDouble	Scalar
-//  AttributeStartedNumber      |  Tango::DevLong	Scalar
-//  AttributeStoppedNumber      |  Tango::DevLong	Scalar
-//  AttributeMaxPendingNumber   |  Tango::DevLong	Scalar
-//  StatisticsResetTime         |  Tango::DevDouble	Scalar
-//  AttributePausedNumber       |  Tango::DevLong	Scalar
-//  Context                     |  Tango::DevString	Scalar
-//  AttributeList               |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeOkList             |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeNokList            |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributePendingList        |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeRecordFreqList     |  Tango::DevDouble	Spectrum  ( max = 10000)
-//  AttributeFailureFreqList    |  Tango::DevDouble	Spectrum  ( max = 10000)
-//  AttributeStartedList        |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeStoppedList        |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeEventNumberList    |  Tango::DevLong	Spectrum  ( max = 10000)
-//  AttributeErrorList          |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributePausedList         |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeStrategyList       |  Tango::DevString	Spectrum  ( max = 10000)
-//  ContextsList                |  Tango::DevString	Spectrum  ( max = 1000)
-//  AttributeTTLList            |  Tango::DevULong	Spectrum  ( max = 10000)
+//  AttributeOkNumber             |  Tango::DevLong	Scalar
+//  AttributeNokNumber            |  Tango::DevLong	Scalar
+//  AttributePendingNumber        |  Tango::DevLong	Scalar
+//  AttributeNumber               |  Tango::DevLong	Scalar
+//  AttributeMaxStoreTime         |  Tango::DevDouble	Scalar
+//  AttributeMinStoreTime         |  Tango::DevDouble	Scalar
+//  AttributeMaxProcessingTime    |  Tango::DevDouble	Scalar
+//  AttributeMinProcessingTime    |  Tango::DevDouble	Scalar
+//  AttributeRecordFreq           |  Tango::DevDouble	Scalar
+//  AttributeRecordFreqInst       |  Tango::DevDouble	Scalar
+//  AttributeFailureFreq          |  Tango::DevDouble	Scalar
+//  AttributeFailureFreqInst      |  Tango::DevDouble	Scalar
+//  AttributeStartedNumber        |  Tango::DevLong	Scalar
+//  AttributeStoppedNumber        |  Tango::DevLong	Scalar
+//  AttributeMaxPendingNumber     |  Tango::DevLong	Scalar
+//  StatisticsResetTime           |  Tango::DevDouble	Scalar
+//  AttributePausedNumber         |  Tango::DevLong	Scalar
+//  Context                       |  Tango::DevString	Scalar
+//  AttributeList                 |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeOkList               |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeNokList              |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributePendingList          |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeRecordFreqList       |  Tango::DevDouble	Spectrum  ( max = 10000)
+//  AttributeRecordFreqInstList   |  Tango::DevDouble	Spectrum  ( max = 10000)
+//  AttributeFailureFreqList      |  Tango::DevDouble	Spectrum  ( max = 10000)
+//  AttributeFailureFreqInstList  |  Tango::DevDouble	Spectrum  ( max = 10000)
+//  AttributeStartedList          |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeStoppedList          |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeEventNumberList      |  Tango::DevLong	Spectrum  ( max = 10000)
+//  AttributeErrorList            |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributePausedList           |  Tango::DevString	Spectrum  ( max = 10000)
+//  AttributeStrategyList         |  Tango::DevString	Spectrum  ( max = 10000)
+//  ContextsList                  |  Tango::DevString	Spectrum  ( max = 1000)
+//  AttributeTTLList              |  Tango::DevULong	Spectrum  ( max = 10000)
 //================================================================
 
 namespace HdbEventSubscriber_ns
 {
-    /*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_starting) ENABLED START -----*/
+/*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_starting) ENABLED START -----*/
 
     //	static initializations
 
     /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::namespace_starting
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::HdbEventSubscriber()
-     *	Description : Constructors for a Tango device
-     *                implementing the classHdbEventSubscriber
-     */
-    //--------------------------------------------------------
-    HdbEventSubscriber::HdbEventSubscriber(Tango::DeviceClass *cl, string &s)
-        : TANGO_BASE_CLASS(cl, s.c_str())
-    {
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::constructor_1) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::HdbEventSubscriber()
+ *	Description : Constructors for a Tango device
+ *                implementing the classHdbEventSubscriber
+ */
+//--------------------------------------------------------
+HdbEventSubscriber::HdbEventSubscriber(Tango::DeviceClass *cl, string &s)
+ : TANGO_BASE_CLASS(cl, s.c_str())
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::constructor_1) ENABLED START -----*/
 
         init_device();
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::constructor_1
-    }
-    //--------------------------------------------------------
-    HdbEventSubscriber::HdbEventSubscriber(Tango::DeviceClass *cl, const char *s)
-        : TANGO_BASE_CLASS(cl, s)
-    {
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::constructor_2) ENABLED START -----*/
+}
+//--------------------------------------------------------
+HdbEventSubscriber::HdbEventSubscriber(Tango::DeviceClass *cl, const char *s)
+ : TANGO_BASE_CLASS(cl, s)
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::constructor_2) ENABLED START -----*/
 
         init_device();
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::constructor_2
-    }
-    //--------------------------------------------------------
-    HdbEventSubscriber::HdbEventSubscriber(Tango::DeviceClass *cl, const char *s, const char *d)
-        : TANGO_BASE_CLASS(cl, s, d)
-    {
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::constructor_3) ENABLED START -----*/
+}
+//--------------------------------------------------------
+HdbEventSubscriber::HdbEventSubscriber(Tango::DeviceClass *cl, const char *s, const char *d)
+ : TANGO_BASE_CLASS(cl, s, d)
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::constructor_3) ENABLED START -----*/
 
         init_device();
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::constructor_3
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::delete_device()
-     *	Description : will be called at device destruction or at init command
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::delete_device()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::delete_device() " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::delete_device) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::delete_device()
+ *	Description : will be called at device destruction or at init command
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::delete_device()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::delete_device() " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::delete_device) ENABLED START -----*/
 
         //	Delete device allocated objects
         INFO_STREAM << "-------- Delete device's allocated object --------" << endl;
@@ -201,35 +205,35 @@ namespace HdbEventSubscriber_ns
         //Tango::client_leavefunc();
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
-        delete[] attr_StatisticsResetTime_read;
-        delete[] attr_Context_read;
-        delete[] attr_ContextsList_read;
-    }
+	delete[] attr_StatisticsResetTime_read;
+	delete[] attr_Context_read;
+	delete[] attr_ContextsList_read;
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::init_device()
-     *	Description : will be called at device initialization.
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::init_device()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::init_device() create device " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::init_device_before) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::init_device()
+ *	Description : will be called at device initialization.
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::init_device()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::init_device() create device " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device_before) ENABLED START -----*/
 
         //	Initialization before get_device_property() call
 
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::init_device_before
+	
 
-
-        //	Get the device properties from database
-        get_device_property();
-
-        attr_StatisticsResetTime_read = new Tango::DevDouble[1];
-        attr_Context_read = new Tango::DevString[1];
-        attr_ContextsList_read = new Tango::DevString[1000];
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
+	//	Get the device properties from database
+	get_device_property();
+	
+	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
+	attr_Context_read = new Tango::DevString[1];
+	attr_ContextsList_read = new Tango::DevString[1000];
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
         //	Initialize device
         initialized = false;
         set_state(Tango::MOVING);
@@ -321,17 +325,17 @@ namespace HdbEventSubscriber_ns
         initialized = true;
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::init_device
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::get_device_property()
-     *	Description : Read database to initialize property data members.
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::get_device_property()
-    {
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_before) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::get_device_property()
+ *	Description : Read database to initialize property data members.
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::get_device_property()
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_before) ENABLED START -----*/
 
         //	Initialize property data members
         subscribeRetryPeriod = 60;
@@ -340,144 +344,145 @@ namespace HdbEventSubscriber_ns
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_device_property_before
 
 
-        //	Read device properties from database.
-        Tango::DbData	dev_prop;
-        dev_prop.push_back(Tango::DbDatum("SubscribeRetryPeriod"));
-        dev_prop.push_back(Tango::DbDatum("AttributeList"));
-        dev_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
-        dev_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
-        dev_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
-        dev_prop.push_back(Tango::DbDatum("LibConfiguration"));
-        dev_prop.push_back(Tango::DbDatum("ContextsList"));
-        dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
-        dev_prop.push_back(Tango::DbDatum("SubscribeChangeAsFallback"));
-        dev_prop.push_back(Tango::DbDatum("AttributeListFile"));
+	//	Read device properties from database.
+	Tango::DbData	dev_prop;
+	dev_prop.push_back(Tango::DbDatum("SubscribeRetryPeriod"));
+	dev_prop.push_back(Tango::DbDatum("AttributeList"));
+	dev_prop.push_back(Tango::DbDatum("StatisticsTimeWindow"));
+	dev_prop.push_back(Tango::DbDatum("CheckPeriodicTimeoutDelay"));
+	dev_prop.push_back(Tango::DbDatum("PollingThreadPeriod"));
+	dev_prop.push_back(Tango::DbDatum("LibConfiguration"));
+	dev_prop.push_back(Tango::DbDatum("ContextsList"));
+	dev_prop.push_back(Tango::DbDatum("DefaultStrategy"));
+	dev_prop.push_back(Tango::DbDatum("SubscribeChangeAsFallback"));
+	dev_prop.push_back(Tango::DbDatum("AttributeListFile"));
 
-        //	is there at least one property to be read ?
-        if (!dev_prop.empty())
-        {
-            //	Call database and extract values
-            if (Tango::Util::instance()->_UseDb==true)
-                get_db_device()->get_property(dev_prop);
+	//	is there at least one property to be read ?
+	if (dev_prop.size()>0)
+	{
+		//	Call database and extract values
+		if (Tango::Util::instance()->_UseDb==true)
+			get_db_device()->get_property(dev_prop);
+	
+		//	get instance on HdbEventSubscriberClass to get class property
+		Tango::DbDatum	def_prop, cl_prop;
+		HdbEventSubscriberClass	*ds_class =
+			(static_cast<HdbEventSubscriberClass *>(get_device_class()));
+		int	i = -1;
 
-            //	get instance on HdbEventSubscriberClass to get class property
-            Tango::DbDatum	def_prop, cl_prop;
-            HdbEventSubscriberClass	*ds_class =
-                (static_cast<HdbEventSubscriberClass *>(get_device_class()));
-            int	i = -1;
+		//	Try to initialize SubscribeRetryPeriod from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  subscribeRetryPeriod;
+		else {
+			//	Try to initialize SubscribeRetryPeriod from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  subscribeRetryPeriod;
+		}
+		//	And try to extract SubscribeRetryPeriod value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeRetryPeriod;
 
-            //	Try to initialize SubscribeRetryPeriod from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  subscribeRetryPeriod;
-            else {
-                //	Try to initialize SubscribeRetryPeriod from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  subscribeRetryPeriod;
-            }
-            //	And try to extract SubscribeRetryPeriod value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeRetryPeriod;
+		//	Try to initialize AttributeList from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  attributeList;
+		else {
+			//	Try to initialize AttributeList from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  attributeList;
+		}
+		//	And try to extract AttributeList value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeList;
 
-            //	Try to initialize AttributeList from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  attributeList;
-            else {
-                //	Try to initialize AttributeList from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  attributeList;
-            }
-            //	And try to extract AttributeList value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeList;
+		//	Try to initialize StatisticsTimeWindow from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  statisticsTimeWindow;
+		else {
+			//	Try to initialize StatisticsTimeWindow from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  statisticsTimeWindow;
+		}
+		//	And try to extract StatisticsTimeWindow value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  statisticsTimeWindow;
 
-            //	Try to initialize StatisticsTimeWindow from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  statisticsTimeWindow;
-            else {
-                //	Try to initialize StatisticsTimeWindow from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  statisticsTimeWindow;
-            }
-            //	And try to extract StatisticsTimeWindow value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  statisticsTimeWindow;
+		//	Try to initialize CheckPeriodicTimeoutDelay from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  checkPeriodicTimeoutDelay;
+		else {
+			//	Try to initialize CheckPeriodicTimeoutDelay from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  checkPeriodicTimeoutDelay;
+		}
+		//	And try to extract CheckPeriodicTimeoutDelay value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  checkPeriodicTimeoutDelay;
 
-            //	Try to initialize CheckPeriodicTimeoutDelay from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  checkPeriodicTimeoutDelay;
-            else {
-                //	Try to initialize CheckPeriodicTimeoutDelay from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  checkPeriodicTimeoutDelay;
-            }
-            //	And try to extract CheckPeriodicTimeoutDelay value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  checkPeriodicTimeoutDelay;
+		//	Try to initialize PollingThreadPeriod from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  pollingThreadPeriod;
+		else {
+			//	Try to initialize PollingThreadPeriod from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  pollingThreadPeriod;
+		}
+		//	And try to extract PollingThreadPeriod value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  pollingThreadPeriod;
 
-            //	Try to initialize PollingThreadPeriod from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  pollingThreadPeriod;
-            else {
-                //	Try to initialize PollingThreadPeriod from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  pollingThreadPeriod;
-            }
-            //	And try to extract PollingThreadPeriod value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  pollingThreadPeriod;
+		//	Try to initialize LibConfiguration from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  libConfiguration;
+		else {
+			//	Try to initialize LibConfiguration from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  libConfiguration;
+		}
+		//	And try to extract LibConfiguration value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  libConfiguration;
 
-            //	Try to initialize LibConfiguration from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  libConfiguration;
-            else {
-                //	Try to initialize LibConfiguration from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  libConfiguration;
-            }
-            //	And try to extract LibConfiguration value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  libConfiguration;
+		//	Try to initialize ContextsList from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  contextsList;
+		else {
+			//	Try to initialize ContextsList from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  contextsList;
+		}
+		//	And try to extract ContextsList value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  contextsList;
 
-            //	Try to initialize ContextsList from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  contextsList;
-            else {
-                //	Try to initialize ContextsList from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  contextsList;
-            }
-            //	And try to extract ContextsList value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  contextsList;
+		//	Try to initialize DefaultStrategy from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  defaultStrategy;
+		else {
+			//	Try to initialize DefaultStrategy from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  defaultStrategy;
+		}
+		//	And try to extract DefaultStrategy value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  defaultStrategy;
 
-            //	Try to initialize DefaultStrategy from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  defaultStrategy;
-            else {
-                //	Try to initialize DefaultStrategy from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  defaultStrategy;
-            }
-            //	And try to extract DefaultStrategy value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  defaultStrategy;
+		//	Try to initialize SubscribeChangeAsFallback from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  subscribeChangeAsFallback;
+		else {
+			//	Try to initialize SubscribeChangeAsFallback from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  subscribeChangeAsFallback;
+		}
+		//	And try to extract SubscribeChangeAsFallback value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeChangeAsFallback;
 
-            //	Try to initialize SubscribeChangeAsFallback from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  subscribeChangeAsFallback;
-            else {
-                //	Try to initialize SubscribeChangeAsFallback from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  subscribeChangeAsFallback;
-            }
-            //	And try to extract SubscribeChangeAsFallback value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  subscribeChangeAsFallback;
-		
-            //	Try to initialize AttributeListFile from class property
-            cl_prop = ds_class->get_class_property(dev_prop[++i].name);
-            if (cl_prop.is_empty()==false)	cl_prop  >>  attributeListFile;
-            else {
-                //	Try to initialize AttributeListFile from default device value
-                def_prop = ds_class->get_default_device_property(dev_prop[i].name);
-                if (def_prop.is_empty()==false)	def_prop  >>  attributeListFile;
-            }
-            //	And try to extract AttributeListFile value from database
-            if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeListFile;
-        }
+		//	Try to initialize AttributeListFile from class property
+		cl_prop = ds_class->get_class_property(dev_prop[++i].name);
+		if (cl_prop.is_empty()==false)	cl_prop  >>  attributeListFile;
+		else {
+			//	Try to initialize AttributeListFile from default device value
+			def_prop = ds_class->get_default_device_property(dev_prop[i].name);
+			if (def_prop.is_empty()==false)	def_prop  >>  attributeListFile;
+		}
+		//	And try to extract AttributeListFile value from database
+		if (dev_prop[i].is_empty()==false)	dev_prop[i]  >>  attributeListFile;
 
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_after) ENABLED START -----*/
+	}
+
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_device_property_after) ENABLED START -----*/
 
         //	Check device property data members init
         //DEBUG_STREAM << "hdbAccessDevice      = " << hdbAccessDevice << endl;
@@ -485,18 +490,18 @@ namespace HdbEventSubscriber_ns
         DEBUG_STREAM << "subscribeChangeAsFallback = " << subscribeChangeAsFallback << endl;
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_device_property_after
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::always_executed_hook()
-     *	Description : method always executed before any command is executed
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::always_executed_hook()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::always_executed_hook()  " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::always_executed_hook) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::always_executed_hook()
+ *	Description : method always executed before any command is executed
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::always_executed_hook()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::always_executed_hook()  " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::always_executed_hook) ENABLED START -----*/
 
         //	code always executed before all requests
         //	Do not check state before end ofinitializing phase
@@ -514,200 +519,200 @@ namespace HdbEventSubscriber_ns
         }
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::always_executed_hook
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::read_attr_hardware()
-     *	Description : Hardware acquisition for attributes
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_attr_hardware) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::read_attr_hardware()
+ *	Description : Hardware acquisition for attributes
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_attr_hardware) ENABLED START -----*/
 
         //	Add your own code
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_attr_hardware
-    }
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::write_attr_hardware()
-     *	Description : Hardware writing for attributes
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::write_attr_hardware) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::write_attr_hardware()
+ *	Description : Hardware writing for attributes
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_list))
+{
+	DEBUG_STREAM << "HdbEventSubscriber::write_attr_hardware(vector<long> &attr_list) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::write_attr_hardware) ENABLED START -----*/
 
         //	Add your own code
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_attr_hardware
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeOkNumber related method
-     *	Description: Number of archived attributes not in error
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkNumber) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeOkNumber related method
+ *	Description: Number of archived attributes not in error
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkNumber) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeOkNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeOkNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeNokNumber related method
-     *	Description: Number of archived attributes in error
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeNokNumber related method
+ *	Description: Number of archived attributes in error
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokNumber) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeNokNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeNokNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributePendingNumber related method
-     *	Description: Number of attributes waiting to be archived
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributePendingNumber related method
+ *	Description: Number of attributes waiting to be archived
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingNumber) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(&hdb_dev->AttributePendingNumber);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePendingNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeNumber related method
-     *	Description: Number of configured attributes
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeNumber related method
+ *	Description: Number of configured attributes
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNumber) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeMaxStoreTime related method
-     *	Description: Maximum storing time
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxStoreTime) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeMaxStoreTime related method
+ *	Description: Maximum storing time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxStoreTime) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeMaxStoreTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxStoreTime
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeMinStoreTime related method
-     *	Description: Minimum storing time
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinStoreTime) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeMinStoreTime related method
+ *	Description: Minimum storing time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinStoreTime) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeMinStoreTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMinStoreTime
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeMaxProcessingTime related method
-     *	Description: Maximum processing (from event reception to storage) time
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxProcessingTime) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeMaxProcessingTime related method
+ *	Description: Maximum processing (from event reception to storage) time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxProcessingTime) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeMaxProcessingTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxProcessingTime
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeMinProcessingTime related method
-     *	Description: Minimum processing (from event reception to storage) time
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinProcessingTime) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeMinProcessingTime related method
+ *	Description: Minimum processing (from event reception to storage) time
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinProcessingTime) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeMinProcessingTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMinProcessingTime
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeRecordFreq related method
-     *	Description: Record frequency
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreq) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeRecordFreq related method
+ *	Description: Record frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreq) ENABLED START -----*/
         //	Set the attribute value
         if(*attr_AttributeRecordFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
@@ -715,92 +720,128 @@ namespace HdbEventSubscriber_ns
             attr.set_value_date_quality(attr_AttributeRecordFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreq
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeFailureFreq related method
-     *	Description: Failure frequency
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreq) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeRecordFreqInst related method
+ *	Description: Record frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeRecordFreqInst(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqInst(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqInst) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_AttributeRecordFreqInst_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqInst
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeFailureFreq related method
+ *	Description: Failure frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreq) ENABLED START -----*/
         //	Set the attribute value
         if(*attr_AttributeFailureFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         else
             attr.set_value_date_quality(attr_AttributeFailureFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreq
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeStartedNumber related method
-     *	Description: Number of archived attributes started
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeFailureFreqInst related method
+ *	Description: Failure frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeFailureFreqInst(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqInst(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqInst) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_AttributeFailureFreqInst_read);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqInst
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeStartedNumber related method
+ *	Description: Number of archived attributes started
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedNumber) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeStartedNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStartedNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeStoppedNumber related method
-     *	Description: Number of archived attributes stopped
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeStoppedNumber related method
+ *	Description: Number of archived attributes stopped
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedNumber) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributeStoppedNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStoppedNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeMaxPendingNumber related method
-     *	Description: Max number of attributes waiting to be archived
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxPendingNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeMaxPendingNumber related method
+ *	Description: Max number of attributes waiting to be archived
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxPendingNumber) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->AttributeMaxPendingNumber);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxPendingNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute StatisticsResetTime related method
-     *	Description: Seconds elapsed since the last statistics reset
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_StatisticsResetTime) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute StatisticsResetTime related method
+ *	Description: Seconds elapsed since the last statistics reset
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_StatisticsResetTime) ENABLED START -----*/
         timespec now{};
         clock_gettime(CLOCK_MONOTONIC, &now);
         double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/s_to_ns_factor;
@@ -809,58 +850,58 @@ namespace HdbEventSubscriber_ns
         attr.set_value(attr_StatisticsResetTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_StatisticsResetTime
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributePausedNumber related method
-     *	Description: Number of archived attributes paused
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedNumber) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributePausedNumber related method
+ *	Description: Number of archived attributes paused
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedNumber) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(&hdb_dev->attr_AttributePausedNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedNumber
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute Context related method
-     *	Description: 
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_Context(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_Context(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_Context) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute Context related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_Context(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_Context(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_Context) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(attr_Context_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_Context
-    }
-    //--------------------------------------------------------
-    /**
-     *	Write attribute Context related method
-     *	Description: 
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Scalar
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::write_Context(Tango::WAttribute &attr) entering... " << endl;
-        //	Retrieve write value
-        Tango::DevString w_val = nullptr;
-        attr.get_write_value(w_val);
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::write_Context) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Write attribute Context related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Scalar
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::write_Context(Tango::WAttribute &attr) entering... " << endl;
+	//	Retrieve write value
+	Tango::DevString	w_val;
+	attr.get_write_value(w_val);
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::write_Context) ENABLED START -----*/
         string argin(w_val);
         string argin_upper(w_val);
         std::transform(argin_upper.begin(), argin_upper.end(), argin_upper.begin(), (int(*)(int))toupper);		//transform to uppercase
@@ -879,291 +920,331 @@ namespace HdbEventSubscriber_ns
         hdb_dev->set_context_and_start_attributes(context_set);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_Context
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeList related method
-     *	Description: Returns the configured attribute list
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeList related method
+ *	Description: Returns the configured attribute list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeList) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeList_read, hdb_dev->attribute_list_str_size);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeOkList related method
-     *	Description: Returns the attributes not on error list
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeOkList related method
+ *	Description: Returns the attributes not on error list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkList) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeOkList_read, hdb_dev->attribute_ok_list_str_size);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeOkList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeNokList related method
-     *	Description: Returns the attributes on error list
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeNokList related method
+ *	Description: Returns the attributes on error list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokList) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeNokList_read, hdb_dev->attribute_nok_list_str_size);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeNokList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributePendingList related method
-     *	Description: Returns the list attributes waiting to be archived
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributePendingList related method
+ *	Description: Returns the list attributes waiting to be archived
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingList) ENABLED START -----*/
 
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributePendingList_read, hdb_dev->attribute_pending_list_str_size);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePendingList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeRecordFreqList related method
-     *	Description: Returns the list of record frequencies
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeRecordFreqList related method
+ *	Description: Returns the list of record frequencies
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqList) ENABLED START -----*/
         if(*attr_AttributeRecordFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         //	Set the attribute value
         attr.set_value_date_quality(attr_AttributeRecordFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeFailureFreqList related method
-     *	Description: Returns the list of failure frequencies
-     *
-     *	Data type:	Tango::DevDouble
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeRecordFreqInstList related method
+ *	Description: Returns the list of record frequencies
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeRecordFreqInstList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqInstList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqInstList) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_AttributeRecordFreqInstList_read, 10000);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqInstList
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeFailureFreqList related method
+ *	Description: Returns the list of failure frequencies
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqList) ENABLED START -----*/
         if(*attr_AttributeFailureFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         //	Set the attribute value
         attr.set_value_date_quality(attr_AttributeFailureFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeStartedList related method
-     *	Description: Returns the attributes started list
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeFailureFreqInstList related method
+ *	Description: Returns the list of failure frequencies
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeFailureFreqInstList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqInstList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqInstList) ENABLED START -----*/
+	//	Set the attribute value
+	attr.set_value(attr_AttributeFailureFreqInstList_read, 10000);
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqInstList
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeStartedList related method
+ *	Description: Returns the attributes started list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeStartedList_read, hdb_dev->attribute_started_list_str_size);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStartedList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeStoppedList related method
-     *	Description: Returns the attributes stopped list
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeStoppedList related method
+ *	Description: Returns the attributes stopped list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeStoppedList_read, hdb_dev->attribute_stopped_list_str_size);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStoppedList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeEventNumberList related method
-     *	Description: Returns the list of numbers of events received
-     *
-     *	Data type:	Tango::DevLong
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeEventNumberList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeEventNumberList related method
+ *	Description: Returns the list of numbers of events received
+ *
+ *	Data type:	Tango::DevLong
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeEventNumberList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(attr_AttributeEventNumberList_read, hdb_dev->attr_AttributeNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeEventNumberList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeErrorList related method
-     *	Description: Returns the list of attribute errors
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeErrorList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeErrorList related method
+ *	Description: Returns the list of attribute errors
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeErrorList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeErrorList_read, hdb_dev->attribute_error_list_str_size);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeErrorList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributePausedList related method
-     *	Description: Returns the attributes stopped list
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributePausedList related method
+ *	Description: Returns the attributes stopped list
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributePausedList_read, hdb_dev->attribute_paused_list_str_size);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeStrategyList related method
-     *	Description: Returns the list of attribute strategy
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStrategyList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeStrategyList related method
+ *	Description: Returns the list of attribute strategy
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStrategyList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeContextList_read, hdb_dev->attribute_context_list_str_size);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStrategyList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute ContextsList related method
-     *	Description: 
-     *
-     *	Data type:	Tango::DevString
-     *	Attr type:	Spectrum max = 1000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_ContextsList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute ContextsList related method
+ *	Description: 
+ *
+ *	Data type:	Tango::DevString
+ *	Attr type:	Spectrum max = 1000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_ContextsList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_ContextsList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(attr_ContextsList_read, contextsList.size());
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_ContextsList
-    }
-    //--------------------------------------------------------
-    /**
-     *	Read attribute AttributeTTLList related method
-     *	Description: Returns the list of attribute strategy
-     *
-     *	Data type:	Tango::DevULong
-     *	Attr type:	Spectrum max = 10000
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr) entering... " << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeTTLList) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Read attribute AttributeTTLList related method
+ *	Description: Returns the list of attribute strategy
+ *
+ *	Data type:	Tango::DevULong
+ *	Attr type:	Spectrum max = 10000
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr) entering... " << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeTTLList) ENABLED START -----*/
         //	Set the attribute value
         attr.set_value(hdb_dev->attr_AttributeTTLList_read, hdb_dev->attr_AttributeNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeTTLList
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::add_dynamic_attributes()
-     *	Description : Create the dynamic attributes if any
-     *                for specified device.
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::add_dynamic_attributes()
-    {
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::add_dynamic_attributes) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::add_dynamic_attributes()
+ *	Description : Create the dynamic attributes if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::add_dynamic_attributes()
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::add_dynamic_attributes) ENABLED START -----*/
 
         //	Add your own code to create and add dynamic attributes if any
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::add_dynamic_attributes
-    }
+}
 
-    //--------------------------------------------------------
-    /**
-     *	Command AttributeAdd related method
-     *	Description: Add a new attribute to archive in HDB.
-     *
-     *	@param argin Attribute name, strategy, data_type, data_format, write_type 
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::AttributeAdd()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_add) ENABLED START -----*/
+//--------------------------------------------------------
+/**
+ *	Command AttributeAdd related method
+ *	Description: Add a new attribute to archive in HDB.
+ *
+ *	@param argin Attribute name, strategy, data_type, data_format, write_type.
+ *               
+ *               Note that only attribute name is mandatory.
+ *               If the strategy is not provided, default strategy will be used.
+ *               If any of the 3 last arguments is not provided the database will be queried to retrieve the proper values.
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeAdd()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_add) ENABLED START -----*/
 
         //	Add your own code
         string	signame;
@@ -1314,19 +1395,19 @@ namespace HdbEventSubscriber_ns
         }
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_add
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command AttributeRemove related method
-     *	Description: Remove attribute from configuration.
-     *
-     *	@param argin Attribute name
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::AttributeRemove()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_remove) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributeRemove related method
+ *	Description: Remove attribute from configuration.
+ *
+ *	@param argin Attribute name
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeRemove()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_remove) ENABLED START -----*/
 
         //	Add your own code
         const string sig(argin);
@@ -1359,21 +1440,21 @@ namespace HdbEventSubscriber_ns
         hdb_dev->remove(signame);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_remove
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command AttributeStatus related method
-     *	Description: Read a attribute status.
-     *
-     *	@param argin The attribute name
-     *	@returns The attribute status.
-     */
-    //--------------------------------------------------------
-    Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
-    {
-        Tango::DevString argout = nullptr;
-        DEBUG_STREAM << "HdbEventSubscriber::AttributeStatus()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_status) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributeStatus related method
+ *	Description: Read a attribute status.
+ *
+ *	@param argin The attribute name
+ *	@returns The attribute status.
+ */
+//--------------------------------------------------------
+Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
+{
+	Tango::DevString argout;
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeStatus()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_status) ENABLED START -----*/
 
         //	Add your own code
         struct timespec tv;
@@ -1451,19 +1532,19 @@ namespace HdbEventSubscriber_ns
            */
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_status
-        return argout;
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command Start related method
-     *	Description: Start archiving
-     *
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::start()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::Start()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
+	return argout;
+}
+//--------------------------------------------------------
+/**
+ *	Command Start related method
+ *	Description: Start archiving
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::start()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::Start()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::start) ENABLED START -----*/
 
         //	Add your own code
         vector<string> att_list_tmp;
@@ -1491,18 +1572,18 @@ namespace HdbEventSubscriber_ns
                 start_attribute(attr);
         }
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::start
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command Stop related method
-     *	Description: Stop archiving
-     *
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::stop()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::Stop()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::stop) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command Stop related method
+ *	Description: Stop archiving
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::stop()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::Stop()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::stop) ENABLED START -----*/
 
         //	Add your own code
 
@@ -1516,55 +1597,55 @@ namespace HdbEventSubscriber_ns
             stop_attribute(att);
 #endif
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::stop
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command AttributeStart related method
-     *	Description: Start archiving single attribute
-     *
-     *	@param argin Attribute name
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::attribute_start(Tango::DevString argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::AttributeStart()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_start) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributeStart related method
+ *	Description: Start archiving single attribute
+ *
+ *	@param argin Attribute name
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_start(Tango::DevString argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeStart()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_start) ENABLED START -----*/
         const string attribute(argin);
         start_attribute(attribute);
         //	Add your own code
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_start
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command AttributeStop related method
-     *	Description: Stop archiving single attribute
-     *
-     *	@param argin Attribute name
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::AttributeStop()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_stop) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributeStop related method
+ *	Description: Stop archiving single attribute
+ *
+ *	@param argin Attribute name
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_stop(Tango::DevString argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributeStop()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_stop) ENABLED START -----*/
 
         //	Add your own code
 
         const string signame(argin);
         stop_attribute(signame);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_stop
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command ResetStatistics related method
-     *	Description: Reset statistic counters
-     *
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::reset_statistics()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::ResetStatistics()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::reset_statistics) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command ResetStatistics related method
+ *	Description: Reset statistic counters
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::reset_statistics()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::ResetStatistics()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::reset_statistics) ENABLED START -----*/
 
         //	Add your own code
         hdb_dev->reset_statistics();
@@ -1574,18 +1655,18 @@ namespace HdbEventSubscriber_ns
         last_statistics_reset_time = dnow;
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::reset_statistics
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command Pause related method
-     *	Description: Pause archiving
-     *
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::pause()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::Pause()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::pause) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command Pause related method
+ *	Description: Pause archiving
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::pause()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::Pause()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::pause) ENABLED START -----*/
         //	Add your own code
 #if 0
         hdb_dev->shared->pause_all();
@@ -1620,36 +1701,36 @@ namespace HdbEventSubscriber_ns
         }
 #endif
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::pause
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command AttributePause related method
-     *	Description: Pause archiving single attribute
-     *
-     *	@param argin Attribute name
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::attribute_pause(Tango::DevString argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::AttributePause()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_pause) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command AttributePause related method
+ *	Description: Pause archiving single attribute
+ *
+ *	@param argin Attribute name
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::attribute_pause(Tango::DevString argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::AttributePause()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_pause) ENABLED START -----*/
         //	Add your own code
         const string sig(argin);
         pause_attribute(sig);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::attribute_pause
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command SetAttributeStrategy related method
-     *	Description: Update strategy associated to an already archived attribute.
-     *
-     *	@param argin Attribute name, strategy
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::SetAttributeStrategy()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::set_attribute_strategy) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command SetAttributeStrategy related method
+ *	Description: Update strategy associated to an already archived attribute.
+ *
+ *	@param argin Attribute name, strategy
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::SetAttributeStrategy()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::set_attribute_strategy) ENABLED START -----*/
 
         //	Add your own code
         string	signame;
@@ -1728,21 +1809,21 @@ namespace HdbEventSubscriber_ns
                     (const char *)__func__);
         }
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::set_attribute_strategy
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command GetAttributeStrategy related method
-     *	Description: Read a attribute contexts.
-     *
-     *	@param argin The attribute name
-     *	@returns The attribute contexts.
-     */
-    //--------------------------------------------------------
-    Tango::DevString HdbEventSubscriber::get_attribute_strategy(Tango::DevString argin)
-    {
-        Tango::DevString argout = nullptr;
-        DEBUG_STREAM << "HdbEventSubscriber::GetAttributeStrategy()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::get_attribute_strategy) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command GetAttributeStrategy related method
+ *	Description: Read a attribute contexts.
+ *
+ *	@param argin The attribute name
+ *	@returns The attribute contexts.
+ */
+//--------------------------------------------------------
+Tango::DevString HdbEventSubscriber::get_attribute_strategy(Tango::DevString argin)
+{
+	Tango::DevString argout;
+	DEBUG_STREAM << "HdbEventSubscriber::GetAttributeStrategy()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_attribute_strategy) ENABLED START -----*/
 
         //	Add your own code
         const string sig(argin);
@@ -1756,19 +1837,19 @@ namespace HdbEventSubscriber_ns
         strcpy(argout, attr_context.str().c_str());
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_attribute_strategy
-        return argout;
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command StopFaulty related method
-     *	Description: Stop archiving faulty attributes
-     *
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::stop_faulty()
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::StopFaulty()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::stop_faulty) ENABLED START -----*/
+	return argout;
+}
+//--------------------------------------------------------
+/**
+ *	Command StopFaulty related method
+ *	Description: Stop archiving faulty attributes
+ *
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::stop_faulty()
+{
+	DEBUG_STREAM << "HdbEventSubscriber::StopFaulty()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::stop_faulty) ENABLED START -----*/
 
         //	Add your own code
         vector<string> att_list_tmp;
@@ -1778,19 +1859,19 @@ namespace HdbEventSubscriber_ns
             stop_attribute(att);
         }
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::stop_faulty
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command SetAttributeTTL related method
-     *	Description: Update TTL associated to an already archived attribute.
-     *
-     *	@param argin Attribute name, TTL
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::set_attribute_ttl(const Tango::DevVarStringArray *argin)
-    {
-        DEBUG_STREAM << "HdbEventSubscriber::SetAttributeTTL()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::set_attribute_ttl) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command SetAttributeTTL related method
+ *	Description: Update TTL associated to an already archived attribute.
+ *
+ *	@param argin Attribute name, TTL
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::set_attribute_ttl(const Tango::DevVarStringArray *argin)
+{
+	DEBUG_STREAM << "HdbEventSubscriber::SetAttributeTTL()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::set_attribute_ttl) ENABLED START -----*/
 
         //	Add your own code
         string	signame;
@@ -1817,21 +1898,21 @@ namespace HdbEventSubscriber_ns
         hdb_dev->updatettl(signame, ttl);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::set_attribute_ttl
-    }
-    //--------------------------------------------------------
-    /**
-     *	Command GetAttributeTTL related method
-     *	Description: Read an attribute TTL.
-     *
-     *	@param argin The attribute name
-     *	@returns The attribute TTL.
-     */
-    //--------------------------------------------------------
-    Tango::DevULong HdbEventSubscriber::get_attribute_ttl(Tango::DevString argin)
-    {
-        Tango::DevULong argout = 0;
-        DEBUG_STREAM << "HdbEventSubscriber::GetAttributeTTL()  - " << device_name << endl;
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::get_attribute_ttl) ENABLED START -----*/
+}
+//--------------------------------------------------------
+/**
+ *	Command GetAttributeTTL related method
+ *	Description: Read an attribute TTL.
+ *
+ *	@param argin The attribute name
+ *	@returns The attribute TTL.
+ */
+//--------------------------------------------------------
+Tango::DevULong HdbEventSubscriber::get_attribute_ttl(Tango::DevString argin)
+{
+	Tango::DevULong argout;
+	DEBUG_STREAM << "HdbEventSubscriber::GetAttributeTTL()  - " << device_name << endl;
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::get_attribute_ttl) ENABLED START -----*/
 
         //	Add your own code
         const string sig(argin);
@@ -1841,25 +1922,25 @@ namespace HdbEventSubscriber_ns
         argout = hdb_dev->shared->get_sig_ttl(signame);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::get_attribute_ttl
-        return argout;
-    }
-    //--------------------------------------------------------
-    /**
-     *	Method      : HdbEventSubscriber::add_dynamic_commands()
-     *	Description : Create the dynamic commands if any
-     *                for specified device.
-     */
-    //--------------------------------------------------------
-    void HdbEventSubscriber::add_dynamic_commands()
-    {
-        /*----- PROTECTED REGION ID(HdbEventSubscriber::add_dynamic_commands) ENABLED START -----*/
+	return argout;
+}
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::add_dynamic_commands()
+ *	Description : Create the dynamic commands if any
+ *                for specified device.
+ */
+//--------------------------------------------------------
+void HdbEventSubscriber::add_dynamic_commands()
+{
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::add_dynamic_commands) ENABLED START -----*/
 
         //	Add your own code to create and add dynamic commands if any
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::add_dynamic_commands
-    }
+}
 
-    /*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_ending) ENABLED START -----*/
+/*----- PROTECTED REGION ID(HdbEventSubscriber::namespace_ending) ENABLED START -----*/
 
     //	Additional Methods
 

@@ -102,7 +102,7 @@ namespace HdbEventSubscriber_ns
         
         return false;
     }
-    
+
     //=============================================================================
     /**
      * Remove a signal in the list.
@@ -115,9 +115,6 @@ namespace HdbEventSubscriber_ns
             veclock.readerIn();
 
         auto sig = get_signal(signame);
-        int event_id = sig->event_id;
-        int event_conf_id = sig->event_conf_id;
-        std::shared_ptr<Tango::AttributeProxy> attr = sig->attr;
 
         if(!stop)
             veclock.readerOut();
@@ -126,30 +123,15 @@ namespace HdbEventSubscriber_ns
         {
             try
             {
-                if(event_id != ERR && attr != nullptr)
-                {
-                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ARCHIVE_EVENT... "<< signame << endl;
-                    //unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
-                    sig->siglock->writerOut();
-                    attr->unsubscribe_event(event_id);
-                    sig->siglock->writerIn();
-                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ARCHIVE_EVENT... "<< signame << endl;
-                }
-                if(event_conf_id != ERR && attr != nullptr)
-                {
-                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing ATTR_CONF_EVENT... "<< signame << endl;
-                    //unlocking, locked in SharedData::stop but possible deadlock if unsubscribing remote attribute with a faulty event connection
-                    sig->siglock->writerOut();
-                    attr->unsubscribe_event(event_conf_id);
-                    sig->siglock->writerIn();
-                    DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed ATTR_CONF_EVENT... "<< signame << endl;
-                }
+                DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing events... "<< signame << endl;
+                sig->remove_callback();
+                DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed events... "<< signame << endl;
             }
             catch (Tango::DevFailed &e)
             {
                 //	Do nothing
                 //	Unregister failed means Register has also failed
-                sig->siglock->writerIn();
+                //sig->siglock->writerIn();
                 INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
             }
         }
@@ -158,42 +140,18 @@ namespace HdbEventSubscriber_ns
             veclock.writerIn();
         auto pos = signals.begin();
 
-        bool found = false;
-        for(unsigned int i=0 ; i<signals.size() && !found ; i++, pos++)
+        for(size_t i = 0; i < signals.size(); ++i, pos++)
         {
             std::shared_ptr<HdbSignal> sig = signals[i];
             if(is_same_signal_name(sig->name, signame))
             {
-                found = true;
-                if(stop)
-                {
-                    DEBUG_STREAM <<"SharedData::"<<__func__<< ": removing " << signame << endl;
-                    //sig->siglock->writerIn(); //: removed, already locked in SharedData::stop
-                    try
-                    {
-                        if(sig->event_id != ERR)
-                        {
-                            sig->archive_cb.reset();
-                        }
-                        sig->event_id = ERR;
-                        sig->attr.reset();
-                    }
-                    catch (Tango::DevFailed &e)
-                    {
-                        //	Do nothing
-                        //	Unregister failed means Register has also failed
-                        INFO_STREAM <<"SharedData::"<< __func__<<": Exception deleting " << signame << " err=" << e.errors[0].desc << endl;
-                    }
-                    //sig->siglock->writerOut();
-                    DEBUG_STREAM <<"SharedData::"<< __func__<<": stopped " << signame << endl;
-                }
                 if(!stop)
                 {
-                    if(sig->running)
+                    if(sig->is_running())
                         hdb_dev->attr_AttributeStartedNumber_read--;
-                    if(sig->paused)
+                    if(sig->is_paused())
                         hdb_dev->attr_AttributePausedNumber_read--;
-                    if(sig->stopped)
+                    if(sig->is_stopped())
                         hdb_dev->attr_AttributeStoppedNumber_read--;
                     hdb_dev->attr_AttributeNumber_read--;
                     signals.erase(pos);
@@ -203,12 +161,6 @@ namespace HdbEventSubscriber_ns
             }
         }
         pos = signals.begin();
-
-        if (!found)
-            Tango::Except::throw_exception(
-                    (const char *)"BadSignalName",
-                    "Signal " + signame + " NOT subscribed",
-                    (const char *)"SharedData::remove()");
 
         //	then, update property
         if(!stop)
@@ -229,47 +181,25 @@ namespace HdbEventSubscriber_ns
     {
         ReaderLock lock(veclock);
         vector<string> contexts;	//TODO: not used in add(..., true)!!!
-        for (auto &signal : signals)
+        auto signal = get_signal(signame);
+        
+        if(!signal->is_running())
         {
-            if(is_same_signal_name(signal->name, signame))
+            if(signal->is_stopped())
             {
-                signal->siglock->writerIn();
-                if(!signal->running)
-                {
-                    if(signal->stopped)
-                    {
-                        hdb_dev->attr_AttributeStoppedNumber_read--;
-                        try
-                        {
-                            add(signame, contexts, NOTHING, true);
-                        }
-                        catch (Tango::DevFailed &e)
-                        {
-                            //Tango::Except::print_exception(e);
-                            INFO_STREAM << "SharedData::start: error adding  " << signame <<" err="<< e.errors[0].desc << endl;
-                            signal->status = e.errors[0].desc;
-                            /*signal.siglock->writerOut();
-                              return;*/
-                        }
-                    }
-                    signal->running=true;
-                    if(signal->paused)
-                        hdb_dev->attr_AttributePausedNumber_read--;
-                    hdb_dev->attr_AttributeStartedNumber_read++;
-                    signal->paused=false;
-                    signal->stopped=false;
-                }
-                signal->siglock->writerOut();
-                return;
+                hdb_dev->attr_AttributeStoppedNumber_read--;
+                add(signame, contexts, NOTHING, true);
             }
+            
+            if(signal->is_paused())
+                hdb_dev->attr_AttributePausedNumber_read--;
+            
+            hdb_dev->attr_AttributeStartedNumber_read++;
+            
+            signal->set_running();
         }
-
-        //	if not found
-        Tango::Except::throw_exception(
-                (const char *)"BadSignalName",
-                "Signal " + signame + " NOT subscribed",
-                (const char *)"SharedData::start()");
     }
+
     //=============================================================================
     /**
      * Pause saving on DB a signal.
@@ -637,9 +567,64 @@ namespace HdbEventSubscriber_ns
      * Add a new signal.
      */
     //=============================================================================
+    void SharedData::add(std::shared_ptr<HdbSignal> signal, const vector<string> & contexts, int to_do, bool start)
+    {
+        signal->event_id = ERR;
+        signal->event_conf_id = ERR;
+        signal->evstate    = Tango::ALARM;
+        signal->isZMQ    = false;
+        signal->ok_events.counter = 0;
+        signal->nok_events.counter = 0;
+        signal->first_err = true;
+        signal->periodic_ev = -1;
+        signal->ttl = DEFAULT_TTL;
+        clock_gettime(CLOCK_MONOTONIC, &signal->last_ev);
+
+        if(start)
+        {
+            signal->siglock->writerIn();
+            signal->status = "NOT connected";
+            signal->siglock->writerOut();
+            //DEBUG_STREAM << "created proxy to " << signame << endl;
+            //	create Attribute proxy
+            signal->attr = std::make_shared<Tango::AttributeProxy>(signal->name);	//TODO: OK out of siglock? accessed only inside the same thread?
+            DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created proxy"<< endl;
+            try
+            {
+                if(signal->attr)
+                {
+                    Tango::AttributeInfo info = signal->attr->get_config();
+                    signal->data_type = info.data_type;
+                    signal->data_format = info.data_format;
+                    signal->write_type = info.writable;
+                    signal->max_dim_x = info.max_dim_x;
+                    signal->max_dim_y = info.max_dim_y;
+                }
+            }
+            catch (Tango::DevFailed &e)
+            {
+                INFO_STREAM <<"SubscribeThread::"<<__func__<< " ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
+            }
+        }
+
+        DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<" += " << to_do << endl;
+
+        if(action <= UPDATE_PROP)
+            action += to_do;
+        
+        DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
+        signal();
+    }
+
+    //=============================================================================
+    /**
+     * Add a new signal.
+     */
+    //=============================================================================
     void SharedData::add(const string& signame, const vector<string> & contexts, int to_do, bool start)
     {
         DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
+        
         {
             veclock.readerIn();
 
@@ -688,73 +673,23 @@ namespace HdbEventSubscriber_ns
                 for(auto &it : signal->contexts_upper)
                     std::transform(it.begin(), it.end(), it.begin(), ::toupper);
                 //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created signal"<< endl;
-            }
-            if(start)
-            {
-                signal->siglock->writerIn();
-                signal->status = "NOT connected";
-                signal->siglock->writerOut();
-                //DEBUG_STREAM << "created proxy to " << signame << endl;
-                //	create Attribute proxy
-                signal->attr = std::make_shared<Tango::AttributeProxy>(signal->name);	//TODO: OK out of siglock? accessed only inside the same thread?
-                DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" created proxy"<< endl;
-            }
-            signal->event_id = ERR;
-            signal->event_conf_id = ERR;
-            signal->evstate    = Tango::ALARM;
-            signal->isZMQ    = false;
-            signal->ok_events.counter = 0;
-            signal->nok_events.counter = 0;
-            signal->first_err = true;
-            signal->periodic_ev = -1;
-            signal->ttl = DEFAULT_TTL;
-            clock_gettime(CLOCK_MONOTONIC, &signal->last_ev);
-
-            if(found && start)
-            {
-                try
-                {
-                    if(signal->attr)
-                    {
-                        Tango::AttributeInfo info = signal->attr->get_config();
-                        signal->data_type = info.data_type;
-                        signal->data_format = info.data_format;
-                        signal->write_type = info.writable;
-                        signal->max_dim_x = info.max_dim_x;
-                        signal->max_dim_y = info.max_dim_y;
-                    }
-                }
-                catch (Tango::DevFailed &e)
-                {
-                    INFO_STREAM <<"SubscribeThread::"<<__func__<< " ERROR for " << signame << " in get_config err=" << e.errors[0].desc << endl;
-                }
-            }
-
-            //DEBUG_STREAM <<"SubscribeThread::"<< __func__<< " created proxy to " << signame << endl;
-            if (!found)
-            {
+                
                 veclock.writerIn();
                 //	Add in vector
                 signals.push_back(std::move(signal));
                 hdb_dev->attr_AttributeNumber_read++;
-                
+
                 if(!start)
                     hdb_dev->attr_AttributeStoppedNumber_read++;
-                
+
                 veclock.writerOut();
-                //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" push_back signal"<< endl;
             }
             
-            DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<" += " << to_do << endl;
-            
-            if(action <= UPDATE_PROP)
-                action += to_do;
+            add(signal, contexts, to_do, start);
+
+            //condition.signal();
         }
-        DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
-        signal();
-        //condition.signal();
-    }
-    //=============================================================================
+        //=============================================================================
     /**
      * Update contexts for a signal.
      */

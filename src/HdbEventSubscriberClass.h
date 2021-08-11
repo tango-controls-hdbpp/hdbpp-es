@@ -177,6 +177,19 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeRecordFreq_allowed(ty);}
 };
 
+//	Attribute AttributeRecordFreqInst class definition
+class AttributeRecordFreqInstAttrib: public Tango::Attr
+{
+public:
+	AttributeRecordFreqInstAttrib():Attr("AttributeRecordFreqInst",
+			Tango::DEV_DOUBLE, Tango::READ) {};
+	~AttributeRecordFreqInstAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeRecordFreqInst(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeRecordFreqInst_allowed(ty);}
+};
+
 //	Attribute AttributeFailureFreq class definition
 class AttributeFailureFreqAttrib: public Tango::Attr
 {
@@ -188,6 +201,19 @@ public:
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeFailureFreq(att);}
 	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeFailureFreq_allowed(ty);}
+};
+
+//	Attribute AttributeFailureFreqInst class definition
+class AttributeFailureFreqInstAttrib: public Tango::Attr
+{
+public:
+	AttributeFailureFreqInstAttrib():Attr("AttributeFailureFreqInst",
+			Tango::DEV_DOUBLE, Tango::READ) {};
+	~AttributeFailureFreqInstAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeFailureFreqInst(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeFailureFreqInst_allowed(ty);}
 };
 
 //	Attribute AttributeStartedNumber class definition
@@ -335,6 +361,19 @@ public:
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeRecordFreqList_allowed(ty);}
 };
 
+//	Attribute AttributeRecordFreqInstList class definition
+class AttributeRecordFreqInstListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributeRecordFreqInstListAttrib():SpectrumAttr("AttributeRecordFreqInstList",
+			Tango::DEV_DOUBLE, Tango::READ, 10000) {};
+	~AttributeRecordFreqInstListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeRecordFreqInstList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeRecordFreqInstList_allowed(ty);}
+};
+
 //	Attribute AttributeFailureFreqList class definition
 class AttributeFailureFreqListAttrib: public Tango::SpectrumAttr
 {
@@ -346,6 +385,19 @@ public:
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeFailureFreqList(att);}
 	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
 		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeFailureFreqList_allowed(ty);}
+};
+
+//	Attribute AttributeFailureFreqInstList class definition
+class AttributeFailureFreqInstListAttrib: public Tango::SpectrumAttr
+{
+public:
+	AttributeFailureFreqInstListAttrib():SpectrumAttr("AttributeFailureFreqInstList",
+			Tango::DEV_DOUBLE, Tango::READ, 10000) {};
+	~AttributeFailureFreqInstListAttrib() {};
+	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
+		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeFailureFreqInstList(att);}
+	virtual bool is_allowed(Tango::DeviceImpl *dev,Tango::AttReqType ty)
+		{return (static_cast<HdbEventSubscriber *>(dev))->is_AttributeFailureFreqInstList_allowed(ty);}
 };
 
 //	Attribute AttributeStartedList class definition

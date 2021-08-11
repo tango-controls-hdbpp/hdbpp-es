@@ -1277,6 +1277,35 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributerecordfreq->set_archive_event(true, true);
 	att_list.push_back(attributerecordfreq);
 
+	//	Attribute : AttributeRecordFreqInst
+	AttributeRecordFreqInstAttrib	*attributerecordfreqinst = new AttributeRecordFreqInstAttrib();
+	Tango::UserDefaultAttrProp	attributerecordfreqinst_prop;
+	attributerecordfreqinst_prop.set_description("Record frequency");
+	//	label	not set for AttributeRecordFreqInst
+	attributerecordfreqinst_prop.set_unit("ev/s");
+	attributerecordfreqinst_prop.set_standard_unit("1");
+	attributerecordfreqinst_prop.set_display_unit("ev/s");
+	//	format	not set for AttributeRecordFreqInst
+	//	max_value	not set for AttributeRecordFreqInst
+	//	min_value	not set for AttributeRecordFreqInst
+	//	max_alarm	not set for AttributeRecordFreqInst
+	//	min_alarm	not set for AttributeRecordFreqInst
+	//	max_warning	not set for AttributeRecordFreqInst
+	//	min_warning	not set for AttributeRecordFreqInst
+	//	delta_t	not set for AttributeRecordFreqInst
+	//	delta_val	not set for AttributeRecordFreqInst
+	attributerecordfreqinst_prop.set_event_abs_change("1");
+	attributerecordfreqinst_prop.set_archive_event_period("3600000");
+	attributerecordfreqinst_prop.set_archive_event_abs_change("1");
+	
+	attributerecordfreqinst->set_default_properties(attributerecordfreqinst_prop);
+	//	Not Polled
+	attributerecordfreqinst->set_disp_level(Tango::EXPERT);
+	//	Not Memorized
+	attributerecordfreqinst->set_change_event(true, true);
+	attributerecordfreqinst->set_archive_event(true, true);
+	att_list.push_back(attributerecordfreqinst);
+
 	//	Attribute : AttributeFailureFreq
 	AttributeFailureFreqAttrib	*attributefailurefreq = new AttributeFailureFreqAttrib();
 	Tango::UserDefaultAttrProp	attributefailurefreq_prop;
@@ -1305,6 +1334,35 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributefailurefreq->set_change_event(true, true);
 	attributefailurefreq->set_archive_event(true, true);
 	att_list.push_back(attributefailurefreq);
+
+	//	Attribute : AttributeFailureFreqInst
+	AttributeFailureFreqInstAttrib	*attributefailurefreqinst = new AttributeFailureFreqInstAttrib();
+	Tango::UserDefaultAttrProp	attributefailurefreqinst_prop;
+	attributefailurefreqinst_prop.set_description("Failure frequency");
+	//	label	not set for AttributeFailureFreqInst
+	attributefailurefreqinst_prop.set_unit("ev/period");
+	attributefailurefreqinst_prop.set_standard_unit("1");
+	attributefailurefreqinst_prop.set_display_unit("ev/period");
+	//	format	not set for AttributeFailureFreqInst
+	//	max_value	not set for AttributeFailureFreqInst
+	//	min_value	not set for AttributeFailureFreqInst
+	//	max_alarm	not set for AttributeFailureFreqInst
+	//	min_alarm	not set for AttributeFailureFreqInst
+	//	max_warning	not set for AttributeFailureFreqInst
+	//	min_warning	not set for AttributeFailureFreqInst
+	//	delta_t	not set for AttributeFailureFreqInst
+	//	delta_val	not set for AttributeFailureFreqInst
+	attributefailurefreqinst_prop.set_event_abs_change("1");
+	attributefailurefreqinst_prop.set_archive_event_period("3600000");
+	attributefailurefreqinst_prop.set_archive_event_abs_change("1");
+	
+	attributefailurefreqinst->set_default_properties(attributefailurefreqinst_prop);
+	//	Not Polled
+	attributefailurefreqinst->set_disp_level(Tango::EXPERT);
+	//	Not Memorized
+	attributefailurefreqinst->set_change_event(true, true);
+	attributefailurefreqinst->set_archive_event(true, true);
+	att_list.push_back(attributefailurefreqinst);
 
 	//	Attribute : AttributeStartedNumber
 	AttributeStartedNumberAttrib	*attributestartednumber = new AttributeStartedNumberAttrib();
@@ -1610,6 +1668,35 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributerecordfreqlist->set_archive_event(true, true);
 	att_list.push_back(attributerecordfreqlist);
 
+	//	Attribute : AttributeRecordFreqInstList
+	AttributeRecordFreqInstListAttrib	*attributerecordfreqinstlist = new AttributeRecordFreqInstListAttrib();
+	Tango::UserDefaultAttrProp	attributerecordfreqinstlist_prop;
+	attributerecordfreqinstlist_prop.set_description("Returns the list of record frequencies");
+	//	label	not set for AttributeRecordFreqInstList
+	//	unit	not set for AttributeRecordFreqInstList
+	//	standard_unit	not set for AttributeRecordFreqInstList
+	//	display_unit	not set for AttributeRecordFreqInstList
+	//	format	not set for AttributeRecordFreqInstList
+	//	max_value	not set for AttributeRecordFreqInstList
+	//	min_value	not set for AttributeRecordFreqInstList
+	//	max_alarm	not set for AttributeRecordFreqInstList
+	//	min_alarm	not set for AttributeRecordFreqInstList
+	//	max_warning	not set for AttributeRecordFreqInstList
+	//	min_warning	not set for AttributeRecordFreqInstList
+	//	delta_t	not set for AttributeRecordFreqInstList
+	//	delta_val	not set for AttributeRecordFreqInstList
+	attributerecordfreqinstlist_prop.set_event_abs_change("1");
+	attributerecordfreqinstlist_prop.set_archive_event_period("3600000");
+	attributerecordfreqinstlist_prop.set_archive_event_abs_change("1");
+	
+	attributerecordfreqinstlist->set_default_properties(attributerecordfreqinstlist_prop);
+	//	Not Polled
+	attributerecordfreqinstlist->set_disp_level(Tango::EXPERT);
+	//	Not Memorized
+	attributerecordfreqinstlist->set_change_event(true, true);
+	attributerecordfreqinstlist->set_archive_event(true, true);
+	att_list.push_back(attributerecordfreqinstlist);
+
 	//	Attribute : AttributeFailureFreqList
 	AttributeFailureFreqListAttrib	*attributefailurefreqlist = new AttributeFailureFreqListAttrib();
 	Tango::UserDefaultAttrProp	attributefailurefreqlist_prop;
@@ -1638,6 +1725,35 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributefailurefreqlist->set_change_event(true, true);
 	attributefailurefreqlist->set_archive_event(true, true);
 	att_list.push_back(attributefailurefreqlist);
+
+	//	Attribute : AttributeFailureFreqInstList
+	AttributeFailureFreqInstListAttrib	*attributefailurefreqinstlist = new AttributeFailureFreqInstListAttrib();
+	Tango::UserDefaultAttrProp	attributefailurefreqinstlist_prop;
+	attributefailurefreqinstlist_prop.set_description("Returns the list of failure frequencies");
+	//	label	not set for AttributeFailureFreqInstList
+	//	unit	not set for AttributeFailureFreqInstList
+	//	standard_unit	not set for AttributeFailureFreqInstList
+	//	display_unit	not set for AttributeFailureFreqInstList
+	//	format	not set for AttributeFailureFreqInstList
+	//	max_value	not set for AttributeFailureFreqInstList
+	//	min_value	not set for AttributeFailureFreqInstList
+	//	max_alarm	not set for AttributeFailureFreqInstList
+	//	min_alarm	not set for AttributeFailureFreqInstList
+	//	max_warning	not set for AttributeFailureFreqInstList
+	//	min_warning	not set for AttributeFailureFreqInstList
+	//	delta_t	not set for AttributeFailureFreqInstList
+	//	delta_val	not set for AttributeFailureFreqInstList
+	attributefailurefreqinstlist_prop.set_event_abs_change("1");
+	attributefailurefreqinstlist_prop.set_archive_event_period("3600000");
+	attributefailurefreqinstlist_prop.set_archive_event_abs_change("1");
+	
+	attributefailurefreqinstlist->set_default_properties(attributefailurefreqinstlist_prop);
+	//	Not Polled
+	attributefailurefreqinstlist->set_disp_level(Tango::EXPERT);
+	//	Not Memorized
+	attributefailurefreqinstlist->set_change_event(true, true);
+	attributefailurefreqinstlist->set_archive_event(true, true);
+	att_list.push_back(attributefailurefreqinstlist);
 
 	//	Attribute : AttributeStartedList
 	AttributeStartedListAttrib	*attributestartedlist = new AttributeStartedListAttrib();

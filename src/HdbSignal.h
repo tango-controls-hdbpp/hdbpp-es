@@ -14,6 +14,8 @@ namespace HdbEventSubscriber_ns
     class ArchiveCB;
     class HdbSignal
     {
+        static constexpr int ERR = -1;
+        
         public:
             static double stats_window;
 
@@ -88,6 +90,52 @@ namespace HdbEventSubscriber_ns
         std::vector<std::string> contexts_upper;
         unsigned int ttl;
         ReadersWritersLock siglock;
+
+        void unsubscribe_event(const int event_id);
+        public:
+        void remove_callback();
+	
+	auto is_running() -> bool
+        {
+            ReaderLock lock(siglock);
+            return running; 
+        }
+        
+        auto is_paused() -> bool
+        {
+            ReaderLock lock(siglock);
+            return paused; 
+        }
+        
+        auto is_stopped() -> bool
+        {
+            ReaderLock lock(siglock);
+            return stopped; 
+        }
+	
+        auto set_running() -> void
+        {
+            WriterLock lock(siglock);
+            running = true;
+            paused = false;
+            stopped = false;
+        }
+        
+        auto set_paused() -> void
+        {
+            WriterLock lock(siglock);
+            running = false;
+            paused = true;
+            stopped = false;
+        }
+        
+        auto set_stopped() -> void
+        {
+            WriterLock lock(siglock);
+            running = false;
+            paused = false;
+            stopped = true;
+        }
     };
 };
 #endif // HDBSIGNAL_H

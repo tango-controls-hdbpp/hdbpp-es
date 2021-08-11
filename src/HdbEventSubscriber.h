@@ -139,7 +139,9 @@ public:
 	Tango::DevDouble	*attr_AttributeMaxProcessingTime_read;
 	Tango::DevDouble	*attr_AttributeMinProcessingTime_read;
 	Tango::DevDouble	*attr_AttributeRecordFreq_read;
+	Tango::DevDouble	*attr_AttributeRecordFreqInst_read;
 	Tango::DevDouble	*attr_AttributeFailureFreq_read;
+	Tango::DevDouble	*attr_AttributeFailureFreqInst_read;
 	Tango::DevLong	*attr_AttributeStartedNumber_read;
 	Tango::DevLong	*attr_AttributeStoppedNumber_read;
 	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
@@ -151,7 +153,9 @@ public:
 	Tango::DevString	*attr_AttributeNokList_read;
 	Tango::DevString	*attr_AttributePendingList_read;
 	Tango::DevDouble	*attr_AttributeRecordFreqList_read;
+	Tango::DevDouble	*attr_AttributeRecordFreqInstList_read;
 	Tango::DevDouble	*attr_AttributeFailureFreqList_read;
+	Tango::DevDouble	*attr_AttributeFailureFreqInstList_read;
 	Tango::DevString	*attr_AttributeStartedList_read;
 	Tango::DevString	*attr_AttributeStoppedList_read;
 	Tango::DevLong	*attr_AttributeEventNumberList_read;
@@ -310,6 +314,15 @@ public:
 	virtual void read_AttributeRecordFreq(Tango::Attribute &attr);
 	virtual bool is_AttributeRecordFreq_allowed(Tango::AttReqType type);
 /**
+ *	Attribute AttributeRecordFreqInst related methods
+ *	Description: Record frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeRecordFreqInst(Tango::Attribute &attr);
+	virtual bool is_AttributeRecordFreqInst_allowed(Tango::AttReqType type);
+/**
  *	Attribute AttributeFailureFreq related methods
  *	Description: Failure frequency
  *
@@ -318,6 +331,15 @@ public:
  */
 	virtual void read_AttributeFailureFreq(Tango::Attribute &attr);
 	virtual bool is_AttributeFailureFreq_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeFailureFreqInst related methods
+ *	Description: Failure frequency
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Scalar
+ */
+	virtual void read_AttributeFailureFreqInst(Tango::Attribute &attr);
+	virtual bool is_AttributeFailureFreqInst_allowed(Tango::AttReqType type);
 /**
  *	Attribute AttributeStartedNumber related methods
  *	Description: Number of archived attributes started
@@ -419,6 +441,15 @@ public:
 	virtual void read_AttributeRecordFreqList(Tango::Attribute &attr);
 	virtual bool is_AttributeRecordFreqList_allowed(Tango::AttReqType type);
 /**
+ *	Attribute AttributeRecordFreqInstList related methods
+ *	Description: Returns the list of record frequencies
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeRecordFreqInstList(Tango::Attribute &attr);
+	virtual bool is_AttributeRecordFreqInstList_allowed(Tango::AttReqType type);
+/**
  *	Attribute AttributeFailureFreqList related methods
  *	Description: Returns the list of failure frequencies
  *
@@ -427,6 +458,15 @@ public:
  */
 	virtual void read_AttributeFailureFreqList(Tango::Attribute &attr);
 	virtual bool is_AttributeFailureFreqList_allowed(Tango::AttReqType type);
+/**
+ *	Attribute AttributeFailureFreqInstList related methods
+ *	Description: Returns the list of failure frequencies
+ *
+ *	Data type:	Tango::DevDouble
+ *	Attr type:	Spectrum max = 10000
+ */
+	virtual void read_AttributeFailureFreqInstList(Tango::Attribute &attr);
+	virtual bool is_AttributeFailureFreqInstList_allowed(Tango::AttReqType type);
 /**
  *	Attribute AttributeStartedList related methods
  *	Description: Returns the attributes started list

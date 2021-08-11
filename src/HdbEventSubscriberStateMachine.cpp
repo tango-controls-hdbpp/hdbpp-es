@@ -204,6 +204,22 @@ bool HdbEventSubscriber::is_AttributeRecordFreq_allowed(TANGO_UNUSED(Tango::AttR
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_AttributeRecordFreqInst_allowed()
+ *	Description : Execution allowed for AttributeRecordFreqInst attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeRecordFreqInst_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeRecordFreqInst attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeRecordFreqInstStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeRecordFreqInstStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeFailureFreq_allowed()
  *	Description : Execution allowed for AttributeFailureFreq attribute
  */
@@ -215,6 +231,22 @@ bool HdbEventSubscriber::is_AttributeFailureFreq_allowed(TANGO_UNUSED(Tango::Att
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeFailureFreqStateAllowed_READ) ENABLED START -----*/
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeFailureFreqStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeFailureFreqInst_allowed()
+ *	Description : Execution allowed for AttributeFailureFreqInst attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeFailureFreqInst_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeFailureFreqInst attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeFailureFreqInstStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeFailureFreqInstStateAllowed_READ
 	return true;
 }
 
@@ -400,6 +432,22 @@ bool HdbEventSubscriber::is_AttributeRecordFreqList_allowed(TANGO_UNUSED(Tango::
 
 //--------------------------------------------------------
 /**
+ *	Method      : HdbEventSubscriber::is_AttributeRecordFreqInstList_allowed()
+ *	Description : Execution allowed for AttributeRecordFreqInstList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeRecordFreqInstList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeRecordFreqInstList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeRecordFreqInstListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeRecordFreqInstListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
  *	Method      : HdbEventSubscriber::is_AttributeFailureFreqList_allowed()
  *	Description : Execution allowed for AttributeFailureFreqList attribute
  */
@@ -411,6 +459,22 @@ bool HdbEventSubscriber::is_AttributeFailureFreqList_allowed(TANGO_UNUSED(Tango:
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeFailureFreqListStateAllowed_READ) ENABLED START -----*/
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeFailureFreqListStateAllowed_READ
+	return true;
+}
+
+//--------------------------------------------------------
+/**
+ *	Method      : HdbEventSubscriber::is_AttributeFailureFreqInstList_allowed()
+ *	Description : Execution allowed for AttributeFailureFreqInstList attribute
+ */
+//--------------------------------------------------------
+bool HdbEventSubscriber::is_AttributeFailureFreqInstList_allowed(TANGO_UNUSED(Tango::AttReqType type))
+{
+
+	//	Not any excluded states for AttributeFailureFreqInstList attribute in read access.
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::AttributeFailureFreqInstListStateAllowed_READ) ENABLED START -----*/
+	
+	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::AttributeFailureFreqInstListStateAllowed_READ
 	return true;
 }
 
