@@ -1362,13 +1362,10 @@ void HdbEventSubscriber::attribute_add(const Tango::DevVarStringArray *argin)
         bool is_current_context = false;
         try
         {
-            hdb_dev->shared->veclock.readerIn();
             is_current_context = hdb_dev->shared->is_current_context(signame, context_set);
-            hdb_dev->shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            hdb_dev->shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_current_context for " << signame;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",
@@ -1418,14 +1415,11 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
         bool is_paused = false;
         try
         {
-            hdb_dev->shared->veclock.readerIn();
             is_running = hdb_dev->shared->is_running(signame);
             is_paused = hdb_dev->shared->is_paused(signame);
-            hdb_dev->shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            hdb_dev->shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_running or is_paused for " << signame;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",
@@ -1476,15 +1470,12 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
         bool is_paused = false;
         try
         {
-            hdb_dev->shared->veclock.readerIn();
             is_running = hdb_dev->shared->is_running(signame);
             is_paused = hdb_dev->shared->is_paused(signame);
             attr_status << "Archiving          : "<<((is_running && !is_paused) ? "Started" : (is_paused ? "Paused" : "Stopped"));
-            hdb_dev->shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            hdb_dev->shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_running or is_paused for " << signame;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",
@@ -1554,14 +1545,11 @@ void HdbEventSubscriber::start()
             bool is_current_context = false;
             try
             {
-                hdb_dev->shared->veclock.readerIn();
                 is_current_context = hdb_dev->shared->is_current_context(attr, context_set);
                 DEBUG_STREAM << "HdbEventSubscriber::start="<<context_set<<" : " << attr << " is_current_context=" << (is_current_context ? "Y" : "N") << endl;
-                hdb_dev->shared->veclock.readerOut();
             }
             catch(Tango::DevFailed &e)
             {
-                hdb_dev->shared->veclock.readerOut();
                 INFO_STREAM << __func__ << ": Failed to check is_current_context for " << attr;
                 Tango::Except::re_throw_exception(e,
                         (const char *)"BadSignalName",
@@ -1679,13 +1667,10 @@ void HdbEventSubscriber::pause()
             bool is_running = false;
             try
             {
-                hdb_dev->shared->veclock.readerIn();
                 is_running = hdb_dev->shared->is_running(attr);
-                hdb_dev->shared->veclock.readerOut();
             }
             catch(Tango::DevFailed &e)
             {
-                hdb_dev->shared->veclock.readerOut();
                 INFO_STREAM << __func__ << ": Failed to check is_running for " << attr;
                 continue;
             }
@@ -1777,13 +1762,10 @@ void HdbEventSubscriber::set_attribute_strategy(const Tango::DevVarStringArray *
         bool is_current_context = false;
         try
         {
-            hdb_dev->shared->veclock.readerIn();
             is_current_context = hdb_dev->shared->is_current_context(signame, context_set);
-            hdb_dev->shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            hdb_dev->shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_current_context for " << signame;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",

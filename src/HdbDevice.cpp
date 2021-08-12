@@ -58,6 +58,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include "StatsThread.h"
 #include "PushThread.h"
 #include "SubscribeThread.h"
+#include "HdbSignal.h"
 #include "Consts.h"
 
 
@@ -98,6 +99,7 @@ namespace HdbEventSubscriber_ns
         this->period = p;
         this->poller_period = pp;
         this->stats_window = s;
+        HdbSignal::stats_window = s;
         this->check_periodic_delay = c;
         this->subscribe_change = ch;
         this->list_filename = fn;
@@ -733,60 +735,46 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void ArchiveCB::push_event(Tango::EventData *data)
     {
-
         //time_t	t = time(NULL);
         //DEBUG_STREAM << __func__<<": Event '"<<data->attr_name<<"' id="<<omni_thread::self()->id() << "  Received at " << ctime(&t);
         string fixed_name;
         hdb_dev->fix_tango_host(data->attr_name, fixed_name);	//TODO: why sometimes event arrive without fqdn ??
         data->attr_name = fixed_name;
 
-        hdb_dev->shared->veclock.readerIn();
         try
         {
             auto signal = hdb_dev->shared->get_signal(data->attr_name);
 
             hdbpp::HdbEventDataType ev_data_type;
             ev_data_type.attr_name = data->attr_name;
-            if(!hdb_dev->shared->is_first(data->attr_name))
+
+            try
             {
-                ev_data_type.max_dim_x = signal->max_dim_x;
-                ev_data_type.max_dim_y = signal->max_dim_y;
-                ev_data_type.data_type = signal->data_type;
-                ev_data_type.data_format = signal->data_format;
-                ev_data_type.write_type	= signal->write_type;
+                auto conf = signal->get_signal_config();
+            
+                ev_data_type.data_type = conf.data_type;
+                ev_data_type.data_format = conf.data_format;
+                ev_data_type.write_type = conf.write_type;
+                ev_data_type.max_dim_x = conf.max_dim_x;
+                ev_data_type.max_dim_y = conf.max_dim_y;
             }
-            else
+            catch (Tango::DevFailed &e)
             {
-                try
-                {
-                    Tango::AttributeInfo	info = signal->attr->get_config();
-                    ev_data_type.data_type = info.data_type;
-                    ev_data_type.data_format = info.data_format;
-                    ev_data_type.write_type = info.writable;
-                    ev_data_type.max_dim_x = info.max_dim_x;
-                    ev_data_type.max_dim_y = info.max_dim_y;
-                }
-                catch (Tango::DevFailed &e)
-                {
-                    INFO_STREAM<< __func__ << ": FIRST exception in get_config: " << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
-                    hdb_dev->shared->veclock.readerOut();
-                    return;
-                }
+                INFO_STREAM<< __func__ << ": FIRST exception in get_config: " << data->attr_name <<" ev_data_type.data_type="<<ev_data_type.data_type<<" err="<<e.errors[0].desc<< endl;
+                return;
             }
 
             //	Check if event is an error event.
-            if (data->err)
+            if(data->err)
             {
-                signal->evstate  = Tango::ALARM;
-                signal->siglock->writerIn();
-                signal->status = data->errors[0].desc;
-                signal->siglock->writerOut();
+                std::string error(data->errors[0].desc);
+                signal->set_error(error);
 
                 INFO_STREAM<< __func__ << ": Exception on " << data->attr_name << endl;
                 INFO_STREAM << data->errors[0].desc  << endl;
                 try
                 {
-                    hdb_dev->shared->set_nok_event(data->attr_name);
+                    signal->set_nok_event();
                 }
                 catch(Tango::DevFailed &e)
                 {
@@ -795,9 +783,8 @@ namespace HdbEventSubscriber_ns
 
                 try
                 {
-                    if(!(hdb_dev->shared->is_running(data->attr_name) && hdb_dev->shared->is_first_err(data->attr_name)))
+                    if(!(signal->is_running() && signal->is_first_err()))
                     {
-                        hdb_dev->shared->veclock.readerOut();
                         return;
                     }
                 }
@@ -807,7 +794,7 @@ namespace HdbEventSubscriber_ns
                 }
                 try
                 {
-                    hdb_dev->shared->set_first_err(data->attr_name);
+                    signal->set_first_err();
                 }
                 catch(Tango::DevFailed &e)
                 {
@@ -859,27 +846,23 @@ namespace HdbEventSubscriber_ns
             {
                 try
                 {
-                    hdb_dev->shared->set_ok_event(data->attr_name);	//also reset first_err
+                    signal->set_ok_event();	//also reset first_err
                 }
                 catch(Tango::DevFailed &e)
                 {
                     WARN_STREAM << __func__ << " Unable to set_ok_event: " << e.errors[0].desc << "'"<<endl;
                 }
                 //	Check if already OK
-                if (signal->evstate!=Tango::ON)
+                if (signal->get_state() != Tango::ON)
                 {
-                    signal->siglock->writerIn();
-                    signal->evstate  = Tango::ON;
-                    signal->status = "Subscribed";
-                    signal->siglock->writerOut();
+                    signal->set_on();
                 }
 
                 //if attribute stopped, just return
                 try
                 {
-                    if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first(data->attr_name))
+                    if(!signal->is_running() && !signal->is_first())
                     {
-                        hdb_dev->shared->veclock.readerOut();
                         return;
                     }
                 }
@@ -889,16 +872,14 @@ namespace HdbEventSubscriber_ns
                 }
                 try
                 {
-                    if(hdb_dev->shared->is_first(data->attr_name))
-                        hdb_dev->shared->set_first(data->attr_name);
+                    if(signal->is_first())
+                        signal->set_first();
                 }
                 catch(Tango::DevFailed &e)
                 {
                     WARN_STREAM << __func__ << " Unable to set first: " << e.errors[0].desc << "'"<<endl;
                 }
             }
-
-            hdb_dev->shared->veclock.readerOut();
 
             //OK only with C++11:
             //Tango::EventData	*cmd = new Tango::EventData(*data);
@@ -917,7 +898,6 @@ namespace HdbEventSubscriber_ns
         catch(Tango::DevFailed &e)
         {
             ERROR_STREAM << __func__<<": Event '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
-            hdb_dev->shared->veclock.readerOut();
             return;
         }
     }
@@ -942,14 +922,12 @@ namespace HdbEventSubscriber_ns
         }
         hdbpp::HdbEventDataType ev_data_type;
         ev_data_type.attr_name = data->attr_name;
-        hdb_dev->shared->veclock.readerIn();
         try
         {
             auto signal = hdb_dev->shared->get_signal(data->attr_name);
         } catch(Tango::DevFailed &e)
         {
             ERROR_STREAM << __func__<<": AttrConfEvent '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
-            hdb_dev->shared->veclock.readerOut();
             return;
         }
         //if attribute stopped, just return
@@ -957,7 +935,6 @@ namespace HdbEventSubscriber_ns
         {
             if(!hdb_dev->shared->is_running(data->attr_name) && !hdb_dev->shared->is_first(data->attr_name))
             {
-                hdb_dev->shared->veclock.readerOut();
                 return;
             }
         }
@@ -974,7 +951,6 @@ namespace HdbEventSubscriber_ns
         {
             WARN_STREAM << __func__ << " Unable to set_nok_event: " << e.errors[0].desc << "'"<<endl;
         }
-        hdb_dev->shared->veclock.readerOut();
 
         auto *attr_conf = new Tango::AttributeInfoEx();
         *attr_conf = *(data->attr_conf);
@@ -1114,13 +1090,10 @@ namespace HdbEventSubscriber_ns
             bool is_current_context = false;
             try
             {
-                shared->veclock.readerIn();
                 is_current_context = shared->is_current_context(att, context);
-                shared->veclock.readerOut();
             }
             catch(Tango::DevFailed &e)
             {
-                shared->veclock.readerOut();
                 INFO_STREAM << __func__ << ": Failed to check is_current_context for " << att;
                 Tango::Except::re_throw_exception(e,
                         (const char *)"BadSignalName",
@@ -1144,14 +1117,11 @@ namespace HdbEventSubscriber_ns
         bool is_stopped = false;
         try
         {
-            shared->veclock.readerIn();
             is_paused = shared->is_paused(signame);
             is_stopped = shared->is_stopped(signame);
-            shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_stopped or is_paused for " << signame;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",
@@ -1175,14 +1145,11 @@ namespace HdbEventSubscriber_ns
         bool is_paused = false;
         try
         {
-            shared->veclock.readerIn();
             is_running = shared->is_running(attr_name);
             is_paused = shared->is_paused(attr_name);
-            shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_running or is_paused for " << attr_name;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",
@@ -1206,13 +1173,10 @@ namespace HdbEventSubscriber_ns
         bool is_running = false;
         try
         {
-            shared->veclock.readerIn();
             is_running = shared->is_running(signame);
-            shared->veclock.readerOut();
         }
         catch(Tango::DevFailed &e)
         {
-            shared->veclock.readerOut();
             INFO_STREAM << __func__ << ": Failed to check is_running for " << signame;
             Tango::Except::re_throw_exception(e,
                     (const char *)"BadSignalName",

@@ -40,11 +40,11 @@
 #define _HDBDEVICE_H
 
 //#define MAX_ATTRIBUTES		10000
+#define ALWAYS_CONTEXT_DESC	"Always stored"
+#define ALWAYS_CONTEXT	"ALWAYS"
+#define DEFAULT_TTL		0	//0 -> infinite, >0 -> time to live in hours
 #define CONTEXT_KEY		"strategy"
 #define TTL_KEY			"ttl"
-#define DEFAULT_TTL		0	//0 -> infinite, >0 -> time to live in hours
-#define ALWAYS_CONTEXT	"ALWAYS"
-#define ALWAYS_CONTEXT_DESC	"Always stored"
 
 #include <tango.h>
 #include "Consts.h"

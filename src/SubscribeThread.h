@@ -54,7 +54,7 @@
 
  //	constants definitions here.
  //-----------------------------------------------
-#define	ERR			-1
+//#define	ERR			-1
 #define	NOTHING		0
 #define	UPDATE_PROP	1
 
@@ -86,11 +86,12 @@ private:
         omni_condition init_condition;
 
         auto is_same_signal_name(const std::string& name1, const std::string& name2) -> bool;
+
+        vector<std::shared_ptr<HdbSignal>>	signals;
+	ReadersWritersLock      veclock;
 public:
 	int		action;
 	//omni_condition condition;
-	vector<std::shared_ptr<HdbSignal>>	signals;
-	ReadersWritersLock      veclock;
 
 
 	/**
@@ -104,10 +105,15 @@ public:
 	 */
 	void add(const string &signame, const vector<string> & contexts);
 	void add(const string &signame, const vector<string> & contexts, int to_do, bool start);
+	void add(std::shared_ptr<HdbSignal> signal, const vector<string> & contexts, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
 	void remove(const string &signame, bool stop);
+	/**
+         * Unsubscribe events for this signal
+         */
+        void unsubscribe_events(std::shared_ptr<HdbSignal>);
 	/**
 	 * Update contexts for a signal.
 	 */
@@ -169,10 +175,6 @@ public:
 	 */
 	auto is_first_err(const string &signame) -> bool;
 	/**
-	 * Set a signal first consecutive error event arrived
-	 */
-	void set_first_err(const string &signame);
-	/**
 	 *	get signal by name.
 	 */
 	auto get_signal(const string &name) -> std::shared_ptr<HdbSignal>;
@@ -182,8 +184,9 @@ public:
 	void subscribe_events();
 	/**
 	 * Unsubscribe achive event for each signal
+         * and clear the signals list
 	 */
-	void unsubscribe_events();
+	void clear_signals();
 	/**
 	 *	return number of signals to be subscribed
 	 */
@@ -249,10 +252,6 @@ public:
 	 */
 	auto  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list, Tango::DevULong *ttl_list) -> bool;
 	/**
-	 *	Increment the ok counter of event rx
-	 */
-	void  set_ok_event(const string &signame);
-	/**
 	 *	Get the ok counter of event rx
 	 */
 	auto get_ok_event(const string &signame) -> uint32_t;
@@ -264,10 +263,6 @@ public:
 	 *	Get last okev timestamp
 	 */
 	auto get_last_okev(const string &signame) -> timespec;
-	/**
-	 *	Increment the error counter of event rx
-	 */
-	void  set_nok_event(const string &signame);
 	/**
 	 *	Get the error counter of event rx
 	 */
