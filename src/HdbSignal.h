@@ -129,7 +129,10 @@ namespace HdbEventSubscriber_ns
         auto get_last_event(const EventCounter& c) -> timespec
         {
             ReaderLock lock(siglock);
-            return c.timestamps.back();
+            if(c.timestamps.size()>0)
+                return c.timestamps.back();
+            struct timespec ret;
+            return ret;
         }
 
         public:
