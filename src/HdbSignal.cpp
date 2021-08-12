@@ -135,6 +135,7 @@ namespace HdbEventSubscriber_ns
 
     auto HdbSignal::init() -> void
     {
+        WriterLock lock(siglock);
         event_id = ERR;
         event_conf_id = ERR;
         evstate = Tango::ALARM;
@@ -264,34 +265,31 @@ namespace HdbEventSubscriber_ns
 
     auto HdbSignal::get_signal_config() -> HdbSignal::SignalConfig
     {
+        if(!config_set)
         {
-            ReaderLock lock(siglock);
-            if(config_set)
+            WriterLock lock(siglock);
+            if(attr)
             {
-                return config;
+                Tango::AttributeInfo info = attr->get_config();
+
+                config.data_type = info.data_type;
+                config.data_format = info.data_format;
+                config.write_type = info.writable;
+                config.max_dim_x = info.max_dim_x;
+                config.max_dim_y = info.max_dim_y;
+
+                config_set = true;
+            }
+            else
+            {
+                Tango::Except::throw_exception(
+                        (const char *)"AttributeNotStarted",
+                        "Attribute " + name + " not started.",
+                        (const char *)__func__);
             }
         }
-
-        WriterLock lock(siglock);
-        if(attr)
-        {
-            Tango::AttributeInfo info = attr->get_config();
-
-            config.data_type = info.data_type;
-            config.data_format = info.data_format;
-            config.write_type = info.writable;
-            config.max_dim_x = info.max_dim_x;
-            config.max_dim_y = info.max_dim_y;
-
-            config_set = true;
-        }
-        else
-        {
-            Tango::Except::throw_exception(
-                    (const char *)"AttributeNotStarted",
-                    "Attribute " + name + " not started.",
-                    (const char *)__func__);
-        }
+        ReaderLock lock(siglock);
+        return config;
     }
 
     void HdbSignal::unsubscribe_event(const int event_id)

@@ -97,10 +97,10 @@ namespace HdbEventSubscriber_ns
 #ifndef _MULTI_TANGO_HOST
         if(HdbDevice::compare_without_domain(name1, name2))
 #else  
-        if(!hdb_dev->compare_tango_names(name1, name2))
+            if(!hdb_dev->compare_tango_names(name1, name2))
 #endif
-            return true;
-        
+                return true;
+
         return false;
     }
 
@@ -143,9 +143,12 @@ namespace HdbEventSubscriber_ns
             pos = signals.begin();
 
             // then, update property
-            DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<"++" << endl;
-            if(action <= UPDATE_PROP)
-                action++;
+            {
+                omni_mutex_lock sync(*this);
+                DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<"++" << endl;
+                if(action <= UPDATE_PROP)
+                    action++;
+            }
             //put_signal_property(); //TODO: wakeup thread and let it do it? -> signal()
             signal();
         }
@@ -189,12 +192,12 @@ namespace HdbEventSubscriber_ns
                 hdb_dev->attr_AttributeStoppedNumber_read--;
                 add(signal, contexts, NOTHING, true);
             }
-            
+
             if(signal->is_paused())
                 hdb_dev->attr_AttributePausedNumber_read--;
-            
+
             hdb_dev->attr_AttributeStartedNumber_read++;
-            
+
             signal->set_running();
         }
     }
@@ -207,7 +210,7 @@ namespace HdbEventSubscriber_ns
     void SharedData::pause(const string& signame)
     {
         auto signal = get_signal(signame);
-        
+
         if(!signal->is_paused())
         {
             hdb_dev->attr_AttributePausedNumber_read++;
@@ -316,7 +319,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::is_running(const string& signame) -> bool
     {
         //to be locked if called outside lock in ArchiveCB::push_event
-        
+
         auto signal = get_signal(signame);
 
         return signal->is_running();
@@ -329,7 +332,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::is_paused(const string& signame) -> bool
     {
         //to be locked if called outside lock in ArchiveCB::push_event
-        
+
         auto signal = get_signal(signame);
 
         return signal->is_paused();
@@ -342,7 +345,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::is_stopped(const string& signame) -> bool
     {
         //to be locked if called outside lock in ArchiveCB::push_event
-        
+
         auto signal = get_signal(signame);
 
         return signal->is_stopped();
@@ -361,7 +364,7 @@ namespace HdbEventSubscriber_ns
             return true;
         }
         //to be locked if called outside lock
-        
+
         auto signal = get_signal(signame);
 
         return signal->is_current_context(context);
@@ -374,7 +377,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::is_first(const string& signame) -> bool
     {
         auto signal = get_signal(signame);
-        
+
         return signal->is_first();
     }
     //=============================================================================
@@ -385,7 +388,7 @@ namespace HdbEventSubscriber_ns
     void SharedData::set_first(const string& signame)
     {
         auto signal = get_signal(signame);
-        
+
         signal->set_first();
     }
     //=============================================================================
@@ -444,11 +447,17 @@ namespace HdbEventSubscriber_ns
             sig->start();
         }
 
-        DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<" += " << to_do << endl;
 
-        if(action <= UPDATE_PROP)
-            action += to_do;
-        
+        {
+            omni_mutex_lock sync(*this);
+
+            DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<" += " << to_do << endl;
+            if(action <= UPDATE_PROP)
+            {
+                action += to_do;
+            }
+        }
+
         DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << sig->name << endl;
         signal();
     }
@@ -461,7 +470,7 @@ namespace HdbEventSubscriber_ns
     void SharedData::add(const string& signame, const vector<string> & contexts, int to_do, bool start)
     {
         DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
-        
+
         // Check if already subscribed
         bool found = false;
         std::shared_ptr<HdbSignal> signal;
@@ -486,7 +495,7 @@ namespace HdbEventSubscriber_ns
 
             veclock.writerIn();
             // Add in vector
-            signals.push_back(std::move(signal));
+            signals.push_back(signal);
             hdb_dev->attr_AttributeNumber_read++;
 
             if(!start)
@@ -513,12 +522,14 @@ namespace HdbEventSubscriber_ns
         //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << endl;
 
         sig->update_contexts(contexts);
-        
-        if(action <= UPDATE_PROP)
-            action += UPDATE_PROP;
-        
+
+        { 
+            omni_mutex_lock sync(*this);
+            if(action <= UPDATE_PROP)
+                action += UPDATE_PROP;
+        }
         DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
-        
+
         signal();
     }
     //=============================================================================
@@ -531,16 +542,18 @@ namespace HdbEventSubscriber_ns
         DEBUG_STREAM << "SharedData::"<<__func__<<": updating " << signame << " ttl=" << ttl<< endl;
 
         auto sig = get_signal(signame);
-        
+
         //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << endl;
-        
+
         sig->set_ttl(ttl);
 
-        if(action <= UPDATE_PROP)
-            action += UPDATE_PROP;
-        
+        {
+            omni_mutex_lock sync(*this);
+            if(action <= UPDATE_PROP)
+                action += UPDATE_PROP;
+        }
         DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": exiting... " << signame << endl;
-        
+
         signal();
     }
     //=============================================================================
@@ -563,33 +576,39 @@ namespace HdbEventSubscriber_ns
         {
             if (sig->is_not_subscribed())
             {
-                    try
-                    {
-                        vector<string> contexts; //TODO: not used in add(..., true)!!!
-                        add(sig, contexts, NOTHING, true);
+                try
+                {
+                    vector<string> contexts; //TODO: not used in add(..., true)!!!
+                    add(sig, contexts, NOTHING, true);
 
-                    }
-                    catch (Tango::DevFailed &e)
-                    {
-                        //Tango::Except::print_exception(e);
-                        INFO_STREAM << "SharedData::subscribe_events: error adding  " << sig->name <<" err="<< e.errors[0].desc << endl;
-                    }
-                
+                }
+                catch (Tango::DevFailed &e)
+                {
+                    //Tango::Except::print_exception(e);
+                    INFO_STREAM << "SharedData::subscribe_events: error adding  " << sig->name <<" err="<< e.errors[0].desc << endl;
+                }
+
 
                 sig->subscribe_events(hdb_dev);
             }
         }
         veclock.readerOut();
+
+        init_mutex.lock();
         initialized = true;
-        
+        init_mutex.unlock();
+
         init_condition.signal();
     }
     //=============================================================================
     //=============================================================================
     auto SharedData::is_initialized() -> bool
     {
-        //omni_mutex_lock sync(*this);
-        return initialized; 
+        bool ret;
+        init_mutex.lock();
+        ret = initialized;
+        init_mutex.unlock();
+        return ret; 
     }
     //=============================================================================
     /**
@@ -617,24 +636,25 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void SharedData::put_signal_property()
     {
+        omni_mutex_lock sync(*this);
         DEBUG_STREAM << "SharedData::"<<__func__<<": put_signal_property entering action=" << action << endl;
         //ReaderLock lock(veclock);
         if (action>NOTHING)
         {
             vector<string> v;
             veclock.readerIn();
-            
+
             for(const auto& signal : signals)
             {
                 std::string conf_string = signal->get_config();
                 DEBUG_STREAM << "SharedData::"<<__func__<<": "<< conf_string << endl;
                 v.push_back(conf_string);
             }
-            
+
             veclock.readerOut();
-            
+
             hdb_dev->put_signal_property(v);
-            
+
             if(action >= UPDATE_PROP)
                 action--;
         }
@@ -813,7 +833,7 @@ namespace HdbEventSubscriber_ns
         for (i=0 ; i<signals.size() && i < old_size ; i++)
         {
             string err = signals[i]->get_error();
-            
+
             if(err != list[i])
             {
                 list[i] = err;
@@ -830,7 +850,7 @@ namespace HdbEventSubscriber_ns
             for (size_t i=old_size ; i<signals.size() ; i++)
             {
                 string err = signals[i]->get_error();
-                
+
                 list.push_back(err);
                 changed = true;
             }
@@ -895,23 +915,23 @@ namespace HdbEventSubscriber_ns
                 s_list[i] = signame;
                 changed = true;
             }
-            
+
             auto ttl = signals[i]->get_ttl();
             if(ttl_list[i] != ttl)
             {
                 ttl_list[i] = ttl;
                 changed = true;
             }
-            
+
             std::string context = signals[i]->get_contexts();
-            
+
             if(context != s_context_list[i])
             {
                 s_context_list[i] = context;
                 changed = true;
             }
         }
-        
+
         if(signals.size() < old_s_list_size)
         {
             s_list.erase(s_list.begin()+i, s_list.begin()+old_s_list_size);
@@ -925,7 +945,7 @@ namespace HdbEventSubscriber_ns
                 changed = true;
                 string signame(signals[i]->name);
                 s_list.push_back(signame);
-                
+
                 string context = signals[i]->get_contexts();;
                 s_context_list.push_back(context);
             }
@@ -1030,7 +1050,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_ok_event(const string& signame) -> uint32_t
     {
         auto signal = get_signal(signame);
-       
+
         return signal->get_ok_events();
     }
     //=============================================================================
@@ -1041,7 +1061,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_ok_event_freq(const string &signame) -> uint32_t
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_ok_events_freq();
     }
     //=============================================================================
@@ -1052,7 +1072,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_last_okev(const string &signame) -> timespec
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_last_ok_event();
     }
     //=============================================================================
@@ -1063,7 +1083,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_nok_event(const string& signame) -> uint32_t
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_nok_events();
     }
     //=============================================================================
@@ -1074,7 +1094,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_nok_event_freq(const string& signame) -> uint32_t
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_nok_events_freq();
     }
     //=============================================================================
@@ -1096,7 +1116,7 @@ namespace HdbEventSubscriber_ns
     void SharedData::set_nok_periodic_event(const string& signame)
     {
         auto signal = get_signal(signame);
-        
+
         signal->set_nok_periodic_event();
     }
     //=============================================================================
@@ -1107,7 +1127,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_sig_status(const string &signame) -> string
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_status();
     }
     //=============================================================================
@@ -1118,7 +1138,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_sig_state(const string &signame) -> Tango::DevState
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_state();
     }
     //=============================================================================
@@ -1129,7 +1149,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_sig_context(const string &signame) -> string
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_contexts();
     }
     //=============================================================================
@@ -1140,7 +1160,7 @@ namespace HdbEventSubscriber_ns
     auto SharedData::get_sig_ttl(const string &signame) -> unsigned int
     {
         auto signal = get_signal(signame);
-        
+
         return signal->get_ttl();
     }
     //=============================================================================
@@ -1151,7 +1171,7 @@ namespace HdbEventSubscriber_ns
     void SharedData::set_conf_periodic_event(const string &signame, const string &period)
     {
         auto signal = get_signal(signame);
-        
+
         signal->set_periodic_event(atoi(period.c_str()));
     }
     //=============================================================================
@@ -1181,7 +1201,7 @@ namespace HdbEventSubscriber_ns
             }
 
             double time_to_timeout_ms = signal->check_periodic_event_timeout(now, delay_tolerance_ms);
-            
+
             if(time_to_timeout_ms > 0 && (time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0))
                 min_time_to_timeout_ms = time_to_timeout_ms;
         }
@@ -1236,15 +1256,17 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto SharedData::get_if_stop() -> bool
     {
-        //omni_mutex_lock sync(*this);
+        omni_mutex_lock sync(*this);
         return stop_it;
     }
     //=============================================================================
     //=============================================================================
     void SharedData::stop_thread()
     {
-        //omni_mutex_lock sync(*this);
-        stop_it = true;
+        {
+            omni_mutex_lock sync(*this);
+            stop_it = true;
+        }
         signal();
         //condition.signal();
     }
@@ -1252,10 +1274,12 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void SharedData::wait_initialized()
     {
-        if(!is_initialized())
+        init_mutex.lock();
+        while(!initialized)
         {
             init_condition.wait();
         }
+        init_mutex.unlock();
     }
 
     //=============================================================================

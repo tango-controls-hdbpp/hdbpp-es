@@ -68,6 +68,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto AbortableThread::timed_wait() -> int
     {
+        omni_mutex_lock sync(abort_mutex);
         if(!abort_flag.load())
         {
             unsigned long abs_sec = 0;
