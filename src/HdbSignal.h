@@ -49,11 +49,13 @@ namespace HdbEventSubscriber_ns
                 timespec now{};
                 clock_gettime(CLOCK_MONOTONIC, &now);
 
-                auto first = timestamps.front();
-                double interval = now.tv_sec - first.tv_sec + (now.tv_nsec - first.tv_nsec)/s_to_ns_factor;
-                if(interval > stats_window)
-                    timestamps.pop_front();
-
+                if(timestamps.size()>0)
+                {
+                    auto first = timestamps.front();
+                    double interval = now.tv_sec - first.tv_sec + (now.tv_nsec - first.tv_nsec)/s_to_ns_factor;
+                    if(interval > stats_window)
+                        timestamps.pop_front();
+                }
                 timestamps.push_back(now);
             }
             
