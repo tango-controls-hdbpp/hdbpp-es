@@ -691,6 +691,16 @@ public:
 	//	Additional Method prototypes
 protected :
 
+        template <class T>
+        void set_value_date_quality(Tango::Attribute &attr, T* dat,const std::chrono::time_point<std::chrono::system_clock>& time, Tango::AttrQuality qual, long x = 1)
+        {
+            auto time_epoch = time.time_since_epoch();
+            std::chrono::seconds time_epoch_s = std::chrono::duration_cast<std::chrono::seconds>(time_epoch);
+            timeval t;
+            t.tv_sec = time_epoch_s.count();
+            t.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(time_epoch-time_epoch_s).count();
+            attr.set_value_date_quality(dat, t, qual, x);
+        }
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::Additional Method prototypes
 };
 

@@ -715,7 +715,7 @@ void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
         if(*attr_AttributeRecordFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         else
-            attr.set_value_date_quality(attr_AttributeRecordFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
+            set_value_date_quality(attr, attr_AttributeRecordFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreq
 }
@@ -754,7 +754,7 @@ void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
         if(*attr_AttributeFailureFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         else
-            attr.set_value_date_quality(attr_AttributeFailureFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
+            set_value_date_quality(attr, attr_AttributeFailureFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreq
 }
 //--------------------------------------------------------
@@ -1010,7 +1010,7 @@ void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
         if(*attr_AttributeRecordFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         //	Set the attribute value
-        attr.set_value_date_quality(attr_AttributeRecordFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
+        set_value_date_quality(attr, attr_AttributeRecordFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqList
 }
@@ -1048,7 +1048,7 @@ void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
         if(*attr_AttributeFailureFreq_read == -1)
             attr.set_quality(Tango::ATTR_INVALID);
         //	Set the attribute value
-        attr.set_value_date_quality(attr_AttributeFailureFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
+        set_value_date_quality(attr, attr_AttributeFailureFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqList
 }
 //--------------------------------------------------------

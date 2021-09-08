@@ -141,8 +141,6 @@ namespace HdbEventSubscriber_ns
         attribute_stopped_list_str.reserve(MAX_ATTRIBUTES);
         attribute_error_list_str.reserve(MAX_ATTRIBUTES);
         attribute_context_list_str.reserve(MAX_ATTRIBUTES);
-        last_stat.tv_sec = 0;
-        last_stat.tv_usec = 0;
     }
     //=============================================================================
     //=============================================================================
@@ -709,7 +707,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void HdbDevice::reset_freq_statistics()
     {
-        gettimeofday(&last_stat, nullptr);
+        last_stat = std::chrono::system_clock::now();
         shared->reset_freq_statistics();
         push_thread->reset_freq_statistics();
     }

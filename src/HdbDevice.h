@@ -79,7 +79,7 @@ class HdbDevice: public Tango::LogAdapter
 {
     private:
         std::string current_context;
-        timeval last_stat;
+        std::chrono::time_point<std::chrono::system_clock> last_stat;
 public:
 	//	Data members here
 	//-----------------------------------------
@@ -310,7 +310,7 @@ public:
 	 */
 	void pause_attribute(const string& attribute);
 
-        auto get_last_stat() -> timeval&
+        auto get_last_stat() -> std::chrono::time_point<std::chrono::system_clock>
         {
             return last_stat;
         };
