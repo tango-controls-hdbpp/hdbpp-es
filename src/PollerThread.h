@@ -62,7 +62,7 @@ namespace HdbEventSubscriber_ns
             void init_abort_loop() override;
             void run_thread_loop() override;
             void finalize_abort_loop() override;
-            auto get_abort_loop_period_ms() -> unsigned int override;
+            auto get_abort_loop_period() -> std::chrono::milliseconds override;
 
         public:
             PollerThread(HdbDevice *dev);

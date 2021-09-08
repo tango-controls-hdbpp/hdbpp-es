@@ -317,10 +317,8 @@ void HdbEventSubscriber::init_device()
             set_status(status);
             INFO_STREAM << status << endl;
         }
-        timespec now{};
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/s_to_ns_factor;
-        last_statistics_reset_time = dnow;
+        
+        last_statistics_reset_time = std::chrono::steady_clock::now();
 
         initialized = true;
 
@@ -842,10 +840,9 @@ void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_StatisticsResetTime) ENABLED START -----*/
-        timespec now{};
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/s_to_ns_factor;
-        *attr_StatisticsResetTime_read = dnow - last_statistics_reset_time;
+        auto now = std::chrono::steady_clock::now();
+        
+        *attr_StatisticsResetTime_read = (now - last_statistics_reset_time).count();
         //	Set the attribute value
         attr.set_value(attr_StatisticsResetTime_read);
 
@@ -1451,12 +1448,6 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::attribute_status) ENABLED START -----*/
 
         //	Add your own code
-        struct timespec tv;
-        struct tm *nowtm = nullptr;
-        char buf[64];
-        size_t strfret = 0;
-
-        time_t nowtime = 0;
         const string sig(argin);
         string signame;
         hdb_dev->fix_tango_host(sig, signame);
@@ -1484,7 +1475,7 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
         }
         attr_status << endl;
 
-        tv = hdb_dev->shared->get_last_okev(signame);
+        auto tv = hdb_dev->shared->get_last_okev(signame);
         
         uint32_t ok_ev = hdb_dev->shared->get_ok_event(signame);
 
@@ -1503,9 +1494,9 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
         attr_status << "DB ERRORS counter  : "<<nok_db<<" - "<< format_date(tv, nok_db);
         attr_status << endl;
 
-        attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->push_thread->get_avg_store_time(signame)<<"s";
+        attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->push_thread->get_avg_store_time(signame).count()<<"s";
         attr_status << endl;
-        attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_thread->get_avg_process_time(signame)<<"s";
+        attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_thread->get_avg_process_time(signame).count()<<"s";
         argout  = new char[attr_status.str().length()+1];
         strcpy(argout, attr_status.str().c_str());
 
@@ -1637,10 +1628,8 @@ void HdbEventSubscriber::reset_statistics()
 
         //	Add your own code
         hdb_dev->reset_statistics();
-        timespec now{};
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        double dnow = (now.tv_sec) + ((double)(now.tv_nsec))/s_to_ns_factor;
-        last_statistics_reset_time = dnow;
+        
+        last_statistics_reset_time = std::chrono::steady_clock::now();
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::reset_statistics
 }
@@ -1941,16 +1930,21 @@ void HdbEventSubscriber::add_dynamic_commands()
         hdb_dev->pause_attribute(attribute);
     }
     
-    auto HdbEventSubscriber::format_date(const timespec& tv, size_t ev) -> std::string
+    auto HdbEventSubscriber::format_date(const std::chrono::time_point<std::chrono::system_clock>& tv, size_t ev) -> std::string
     {
+        using namespace std::chrono_literals;
         if(ev != 0)
         {
-            std::tm nowtm = *localtime(&tv.tv_sec);
+            auto now_t = std::chrono::system_clock::to_time_t(tv);
+            std::chrono::system_clock::duration tp = tv.time_since_epoch();
+            tp -= std::chrono::duration_cast<std::chrono::seconds>(tp);
+
+
             std::ostringstream str_stream;
             str_stream.precision(6);
             str_stream.fill('0');
 
-            str_stream << std::put_time(&nowtm, "%Y-%m-%d %H:%M:%S") << std::left << tv.tv_nsec/us_to_ns_factor << std::endl;
+            str_stream << std::put_time(std::localtime(&now_t), "%Y-%m-%d %H:%M:%S") << std::left << tp/1ms  << std::endl;
 
             return str_stream.str();
         }

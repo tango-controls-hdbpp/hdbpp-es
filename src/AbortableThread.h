@@ -51,7 +51,7 @@ namespace HdbEventSubscriber_ns
         private:
 
             std::atomic_bool abort_flag;
-            double period = -1;
+            std::chrono::duration<double> period = std::chrono::seconds(-1);
 
             omni_mutex abort_mutex;
             omni_condition abort_condition;
@@ -63,11 +63,11 @@ namespace HdbEventSubscriber_ns
             virtual void init_abort_loop() = 0;
             virtual void run_thread_loop() = 0;
             virtual void finalize_abort_loop() = 0;
-            virtual auto get_abort_loop_period_ms() -> unsigned int = 0;
+            virtual auto get_abort_loop_period() -> std::chrono::milliseconds = 0;
 
             virtual void do_abort() {};
 
-            auto get_period() const -> double {return period;}
+            auto get_period() const -> std::chrono::duration<double> {return period;}
             auto is_aborted() const -> bool {return abort_flag.load();}
 
         public:
@@ -78,7 +78,7 @@ namespace HdbEventSubscriber_ns
             auto run_undetached(void *) -> void* override;
             void start() {start_undetached();}
 
-            void set_period(double period_s) {period = period_s;}
+            void set_period(const std::chrono::duration<double> period_s) {period = period_s;}
 
             //abort logic
             void abort();

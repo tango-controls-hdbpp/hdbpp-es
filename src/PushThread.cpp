@@ -43,7 +43,6 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 namespace HdbEventSubscriber_ns
 {
-    const unsigned int default_period = -1;
     HdbStat::HdbStat(): nokdb_counter(0)
         , nokdb_counter_freq(0)
         , okdb_counter(0)
@@ -155,17 +154,18 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void PushThread::reset_statistics()
     {
+        using namespace std::chrono_literals;
         omni_mutex_lock sync(sig_lock);
         for (auto& signal : signals)
         {
             signal.second.nokdb_counter = 0;
             signal.second.okdb_counter = 0;
-            signal.second.store_time_avg = 0;
-            signal.second.store_time_min = -1;
-            signal.second.store_time_max = -1;
-            signal.second.process_time_avg = 0;
-            signal.second.process_time_min = -1;
-            signal.second.process_time_max = -1;
+            signal.second.store_time_avg = 0s;
+            signal.second.store_time_min = -1s;
+            signal.second.store_time_max = -1s;
+            signal.second.process_time_avg = 0s;
+            signal.second.process_time_min = -1s;
+            signal.second.process_time_max = -1s;
         }
         hdb_dev->attr_AttributeMinStoreTime_read = -1;
         hdb_dev->attr_AttributeMaxStoreTime_read = -1;
@@ -373,7 +373,7 @@ namespace HdbEventSubscriber_ns
             signal.dberror = STATUS_DB_ERROR;
             if(error.length() > 0)
                 signal.dberror += ": " + error;
-            clock_gettime(CLOCK_MONOTONIC, &signal.last_nokdb);
+            signal.last_nokdb = std::chrono::system_clock::now();
         }
         else
         {
@@ -381,17 +381,17 @@ namespace HdbEventSubscriber_ns
             sig.nokdb_counter = 1;
             sig.nokdb_counter_freq = 1;
             sig.okdb_counter = 0;
-            sig.store_time_avg = 0.0;
-            sig.store_time_min = -1;
-            sig.store_time_max = -1;
-            sig.process_time_avg = 0.0;
-            sig.process_time_min = -1;
-            sig.process_time_max = -1;
+            sig.store_time_avg = std::chrono::duration<double>::zero();
+            sig.store_time_min = std::chrono::duration<double>::min();
+            sig.store_time_max = std::chrono::duration<double>::min();
+            sig.process_time_avg = std::chrono::duration<double>::zero();
+            sig.process_time_min = std::chrono::duration<double>::min();
+            sig.process_time_max = std::chrono::duration<double>::min();
             sig.dbstate = Tango::ALARM;
             sig.dberror = STATUS_DB_ERROR;
             if(error.length() > 0)
                 sig.dberror += ": " + error;
-            clock_gettime(CLOCK_MONOTONIC, &sig.last_nokdb);
+            sig.last_nokdb = std::chrono::system_clock::now();
             signals[signame] = sig;
         }
         sig_lock.unlock();
@@ -442,11 +442,11 @@ namespace HdbEventSubscriber_ns
      *	Get avg store time
      */
     //=============================================================================
-    auto PushThread::get_avg_store_time(const string &signame) -> double
+    auto PushThread::get_avg_store_time(const string &signame) -> std::chrono::duration<double>
     {
         sig_lock.lock();
 
-        double avg_store_time = get_signal(signame).store_time_avg;
+        auto avg_store_time = get_signal(signame).store_time_avg;
 
         sig_lock.unlock();
 
@@ -458,11 +458,11 @@ namespace HdbEventSubscriber_ns
      *	Get min store time
      */
     //=============================================================================
-    auto PushThread::get_min_store_time(const string &signame) -> double
+    auto PushThread::get_min_store_time(const string &signame) -> std::chrono::duration<double>
     {
         sig_lock.lock();
 
-        double min_store_time = get_signal(signame).store_time_min;
+        auto min_store_time = get_signal(signame).store_time_min;
 
         sig_lock.unlock();
 
@@ -474,11 +474,11 @@ namespace HdbEventSubscriber_ns
      *	Get max store time
      */
     //=============================================================================
-    auto PushThread::get_max_store_time(const string &signame) -> double
+    auto PushThread::get_max_store_time(const string &signame) -> std::chrono::duration<double>
     {
         sig_lock.lock();
 
-        double max_store_time = get_signal(signame).store_time_max;
+        auto max_store_time = get_signal(signame).store_time_max;
 
         sig_lock.unlock();
 
@@ -490,11 +490,11 @@ namespace HdbEventSubscriber_ns
      *	Get avg process time
      */
     //=============================================================================
-    auto PushThread::get_avg_process_time(const string &signame) -> double
+    auto PushThread::get_avg_process_time(const string &signame) -> std::chrono::duration<double>
     {
         sig_lock.lock();
 
-        double avg_process_time = get_signal(signame).process_time_avg;
+        auto avg_process_time = get_signal(signame).process_time_avg;
 
         sig_lock.unlock();
 
@@ -506,11 +506,11 @@ namespace HdbEventSubscriber_ns
      *	Get min process time
      */
     //=============================================================================
-    auto PushThread::get_min_process_time(const string &signame) -> double
+    auto PushThread::get_min_process_time(const string &signame) -> std::chrono::duration<double>
     {
         sig_lock.lock();
 
-        double min_process_time = get_signal(signame).process_time_min;
+        auto min_process_time = get_signal(signame).process_time_min;
 
         sig_lock.unlock();
 
@@ -522,11 +522,11 @@ namespace HdbEventSubscriber_ns
      *	Get max process time
      */
     //=============================================================================
-    auto PushThread::get_max_process_time(const string &signame) -> double
+    auto PushThread::get_max_process_time(const string &signame) -> std::chrono::duration<double>
     {
         sig_lock.lock();
 
-        double max_process_time = get_signal(signame).process_time_max;
+        auto max_process_time = get_signal(signame).process_time_max;
 
         sig_lock.unlock();
 
@@ -538,16 +538,14 @@ namespace HdbEventSubscriber_ns
      *	Get last nokdb timestamp
      */
     //=============================================================================
-    auto PushThread::get_last_nokdb(const string &signame) -> timespec
+    auto PushThread::get_last_nokdb(const string &signame) -> std::chrono::time_point<std::chrono::system_clock>
     {
         sig_lock.lock();
 
-        timespec last_nokdb = get_signal(signame).last_nokdb;
+        auto last_nokdb = get_signal(signame).last_nokdb;
 
         sig_lock.unlock();
-        //        timeval ret;
-        //        ret.tv_sec=0;
-        //        ret.tv_usec=0;
+        
         return last_nokdb;
     }
     //=============================================================================
@@ -555,8 +553,9 @@ namespace HdbEventSubscriber_ns
      *	reset state
      */
     //=============================================================================
-    void PushThread::set_ok_db(const string &signame, double store_time, double process_time)
+    void PushThread::set_ok_db(const string &signame, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time)
     {
+        using namespace std::chrono_literals;
         sig_lock.lock();
 
         HdbStat& signal = get_signal(signame);
@@ -567,24 +566,24 @@ namespace HdbEventSubscriber_ns
             signal.dberror = "";
             signal.store_time_avg = ((signal.store_time_avg * signal.okdb_counter) + store_time)/(signal.okdb_counter+1);
             //signal store min
-            if(signal.store_time_min == -1)
+            if(signal.store_time_min == std::chrono::duration<double>::min())
                 signal.store_time_min = store_time;
             if(store_time < signal.store_time_min)
                 signal.store_time_min = store_time;
             //signal store max
-            if(signal.store_time_max == -1)
+            if(signal.store_time_max == std::chrono::duration<double>::min())
                 signal.store_time_max = store_time;
             if(store_time > signal.store_time_max)
                 signal.store_time_max = store_time;
 
             signal.process_time_avg = ((signal.process_time_avg * signal.okdb_counter) + process_time)/(signal.okdb_counter+1);
             //signal process min
-            if(signal.process_time_min == -1)
+            if(signal.process_time_min == std::chrono::duration<double>::min())
                 signal.process_time_min = process_time;
             if(process_time < signal.process_time_min)
                 signal.process_time_min = process_time;
             //signal process max
-            if(signal.process_time_max == -1)
+            if(signal.process_time_max == std::chrono::duration<double>::min())
                 signal.process_time_max = process_time;
             if(process_time > signal.process_time_max)
                 signal.process_time_max = process_time;
@@ -606,26 +605,30 @@ namespace HdbEventSubscriber_ns
             sig.dberror = "";
             signals[signame] = sig;
         }
+
+        double store_time_count = store_time.count();
+        double process_time_count = process_time.count();
+
         //global store min
         if(hdb_dev->attr_AttributeMinStoreTime_read == -1)
-            hdb_dev->attr_AttributeMinStoreTime_read = store_time;
-        if(store_time < hdb_dev->attr_AttributeMinStoreTime_read)
-            hdb_dev->attr_AttributeMinStoreTime_read = store_time;
+            hdb_dev->attr_AttributeMinStoreTime_read = store_time_count;
+        if(store_time_count < hdb_dev->attr_AttributeMinStoreTime_read)
+            hdb_dev->attr_AttributeMinStoreTime_read = store_time_count;
         //global store max
         if(hdb_dev->attr_AttributeMaxStoreTime_read == -1)
-            hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
-        if(store_time > hdb_dev->attr_AttributeMaxStoreTime_read)
-            hdb_dev->attr_AttributeMaxStoreTime_read = store_time;
+            hdb_dev->attr_AttributeMaxStoreTime_read = store_time_count;
+        if(store_time_count > hdb_dev->attr_AttributeMaxStoreTime_read)
+            hdb_dev->attr_AttributeMaxStoreTime_read = store_time_count;
         //global process min
         if(hdb_dev->attr_AttributeMinProcessingTime_read == -1)
-            hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
-        if(process_time < hdb_dev->attr_AttributeMinProcessingTime_read)
-            hdb_dev->attr_AttributeMinProcessingTime_read = process_time;
+            hdb_dev->attr_AttributeMinProcessingTime_read = process_time_count;
+        if(process_time_count < hdb_dev->attr_AttributeMinProcessingTime_read)
+            hdb_dev->attr_AttributeMinProcessingTime_read = process_time_count;
         //global process max
         if(hdb_dev->attr_AttributeMaxProcessingTime_read == -1)
-            hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
-        if(process_time > hdb_dev->attr_AttributeMaxProcessingTime_read)
-            hdb_dev->attr_AttributeMaxProcessingTime_read = process_time;
+            hdb_dev->attr_AttributeMaxProcessingTime_read = process_time_count;
+        if(process_time_count > hdb_dev->attr_AttributeMaxProcessingTime_read)
+            hdb_dev->attr_AttributeMaxProcessingTime_read = process_time_count;
         sig_lock.unlock();
     }
 
@@ -739,7 +742,7 @@ namespace HdbEventSubscriber_ns
         while (!(cmds = get_next_cmds()).empty())
         {
             std::vector<std::tuple<Tango::EventData *, hdbpp::HdbEventDataType>> events;
-            std::vector<std::tuple<std::string, double>> signals;
+            std::vector<std::tuple<std::string, std::chrono::duration<double>>> signals;
             bool batch = batch_insert && cmds.size() > 1;
             for(const auto& cmd : cmds)
             {
@@ -747,7 +750,7 @@ namespace HdbEventSubscriber_ns
                 {
                     case DB_INSERT:
                         {
-                            double rcv_time = cmd->ev_data->get_date().tv_sec + (double)cmd->ev_data->get_date().tv_usec/s_to_us_factor;
+                            std::chrono::duration<double> rcv_time = std::chrono::seconds(cmd->ev_data->get_date().tv_sec) + std::chrono::milliseconds(cmd->ev_data->get_date().tv_usec);
                             if(batch)
                             {
                                 events.emplace_back(std::make_tuple(cmd->ev_data, cmd->ev_data_type));
@@ -756,17 +759,14 @@ namespace HdbEventSubscriber_ns
                             }
                             else
                             {
-                                timeval now{};
-                                gettimeofday(&now, nullptr);
-                                double dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                                auto start = std::chrono::steady_clock::now();
                                 try
                                 {
                                     mdb->insert_event(cmd->ev_data, cmd->ev_data_type);
 
-                                    gettimeofday(&now, nullptr);
-                                    double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                                    auto end = std::chrono::steady_clock::now();
                                     
-                                    set_ok_db(cmd->ev_data->attr_name, dnow-dstart, dnow-rcv_time);
+                                    set_ok_db(cmd->ev_data->attr_name, end-start, std::chrono::system_clock::now().time_since_epoch()-rcv_time);
                                 }
                                 catch(Tango::DevFailed  &e)
                                 {
@@ -847,40 +847,35 @@ namespace HdbEventSubscriber_ns
             }
             if(!events.empty())
             {
-                timeval now{};
-                gettimeofday(&now, nullptr);
-                double dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                auto start = std::chrono::steady_clock::now();
                 try
                 {
                     mdb->insert_events(events);
 
-                    gettimeofday(&now, nullptr);
-                    double dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                    auto end = std::chrono::steady_clock::now();
+                    
                     size_t n_signals = signals.size();
 
                     // We can't get the individual speed for each signal
                     for(const auto& sig : signals)
                     {
-                        set_ok_db(std::get<0>(sig), (dnow-dstart)/n_signals, (dnow-std::get<1>(sig))/n_signals);
+                        set_ok_db(std::get<0>(sig), (end-start)/n_signals, (std::chrono::system_clock::now().time_since_epoch()-std::get<1>(sig))/n_signals);
                     }
                 }
                 catch(Tango::DevFailed  &e)
                 {
                     for(size_t i = 0; i < events.size(); ++i)
                     {
-                        timeval now{};
-                        gettimeofday(&now, nullptr);
-                        double dstart = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                        auto start = std::chrono::steady_clock::now();
                         std::string& attr_name = std::get<0>(signals[i]);
-                        double rcv_time = std::get<1>(signals[i]);
+                        auto rcv_time = std::get<1>(signals[i]);
                         try
                         {
                             mdb->insert_event(std::get<0>(events[i]), std::get<1>(events[i]));
 
-                            gettimeofday(&now, nullptr);
-                            double  dnow = now.tv_sec + (double)now.tv_usec/s_to_us_factor;
+                            auto end = std::chrono::steady_clock::now();
 
-                            set_ok_db(attr_name, dnow-dstart, dnow-rcv_time);
+                            set_ok_db(attr_name, end-start, std::chrono::system_clock::now().time_since_epoch()-rcv_time);
                         }
                         catch(Tango::DevFailed  &e)
                         {
@@ -898,9 +893,10 @@ namespace HdbEventSubscriber_ns
         cout <<"PushThread::"<< __func__<<": exiting..."<<endl;
     }
 
-    auto PushThread::get_abort_loop_period_ms() -> unsigned int
+    auto PushThread::get_abort_loop_period() -> std::chrono::milliseconds
     {
-        return default_period;
+        using namespace std::chrono_literals;
+        return -1s;
     }
 
     auto PushThread::get_signal(const std::string& signame) -> HdbStat&

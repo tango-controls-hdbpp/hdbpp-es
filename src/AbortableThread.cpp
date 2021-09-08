@@ -68,35 +68,35 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto AbortableThread::timed_wait() -> int
     {
+        using namespace std::chrono_literals;
         omni_mutex_lock sync(abort_mutex);
         if(!abort_flag.load())
         {
-            unsigned long abs_sec = 0;
-            unsigned long abs_nsec = 0;
+            std::chrono::duration<double> time(0.);
 
-            unsigned long rel_sec = 0;
-            unsigned long rel_nsec = 0;
-
-            double time = 0.;
-
-            if(period > 0)
+            if(period > 0s)
             {
                 time = period;
             }
             else
             {
-                time = 0. + get_abort_loop_period_ms();
+                time = get_abort_loop_period();
             }
 
             // if timeout < 0 do not wait.
-            if(time > 0)
+            if(time > 0s)
             {
+                unsigned long abs_sec = 0;
+                unsigned long abs_nsec = 0;
+                
+                unsigned long rel_sec = 0;
+                unsigned long rel_nsec = 0;
+                
                 // Compute rel_sec and rel_nsec from the time in sec.
-                double int_time = 0;
-                double dec_time = std::modf(time, &int_time);
+                auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time);
 
-                rel_sec = static_cast<unsigned long>(int_time);
-                rel_nsec = static_cast<unsigned long>(dec_time * s_to_ns_factor);
+                rel_sec = seconds.count();
+                rel_nsec = std::chrono::duration_cast<std::chrono::nanoseconds>((time - seconds)).count();
 
                 omni_thread::get_time(&abs_sec, &abs_nsec, rel_sec, rel_nsec);
                 return abort_condition.timedwait(abs_sec, abs_nsec);

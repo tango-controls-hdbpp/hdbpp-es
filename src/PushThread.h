@@ -68,13 +68,13 @@ namespace HdbEventSubscriber_ns
         uint32_t okdb_counter;
         Tango::DevState dbstate;
         std::string dberror;
-        double process_time_avg;
-        double process_time_min;
-        double process_time_max;
-        double store_time_avg;
-        double store_time_min;
-        double store_time_max;
-        timespec last_nokdb;
+        std::chrono::duration<double> process_time_avg;
+        std::chrono::duration<double> process_time_min;
+        std::chrono::duration<double> process_time_max;
+        std::chrono::duration<double> store_time_avg;
+        std::chrono::duration<double> store_time_min;
+        std::chrono::duration<double> store_time_max;
+        std::chrono::time_point<std::chrono::system_clock> last_nokdb;
 
         public:
             HdbStat();
@@ -141,7 +141,7 @@ namespace HdbEventSubscriber_ns
             void init_abort_loop() override;
             void run_thread_loop() override;
             void finalize_abort_loop() override;
-            auto get_abort_loop_period_ms() -> unsigned int override;
+            auto get_abort_loop_period() -> std::chrono::milliseconds override;
             
             void do_abort() override;
 
@@ -202,35 +202,35 @@ namespace HdbEventSubscriber_ns
             /**
              *	Get avg store time
              */
-            auto get_avg_store_time(const string& signame) -> double;
+            auto get_avg_store_time(const string& signame) -> std::chrono::duration<double>;
             /**
              *	Get min store time
              */
-            auto get_min_store_time(const string& signame) -> double;
+            auto get_min_store_time(const string& signame) -> std::chrono::duration<double>;
             /**
              *	Get max store time
              */
-            auto get_max_store_time(const string& signame) -> double;
+            auto get_max_store_time(const string& signame) -> std::chrono::duration<double>;
             /**
              *	Get avg process time
              */
-            auto get_avg_process_time(const string& signame) -> double;
+            auto get_avg_process_time(const string& signame) -> std::chrono::duration<double>;
             /**
              *	Get min process time
              */
-            auto get_min_process_time(const string& signame) -> double;
+            auto get_min_process_time(const string& signame) -> std::chrono::duration<double>;
             /**
              *	Get max process time
              */
-            auto get_max_process_time(const string& signame) -> double;
+            auto get_max_process_time(const string& signame) -> std::chrono::duration<double>;
             /**
              *	Get last nokdb timestamp
              */
-            auto get_last_nokdb(const string& signame) -> timespec;
+            auto get_last_nokdb(const string& signame) -> std::chrono::time_point<std::chrono::system_clock>;
             /**
              *	reset state
              */
-            void set_ok_db(const string& signame, double store_time, double process_time);
+            void set_ok_db(const string& signame, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time);
 
             void  start_attr(const string& signame);
             void  pause_attr(const string& signame);

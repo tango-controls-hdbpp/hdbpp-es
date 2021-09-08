@@ -263,7 +263,7 @@ public:
 	/**
 	 *	Get last okev timestamp
 	 */
-	auto get_last_okev(const string &signame) -> timespec;
+	auto get_last_okev(const string &signame) -> std::chrono::time_point<std::chrono::system_clock>;
 	/**
 	 *	Get the error counter of event rx
 	 */
@@ -275,7 +275,7 @@ public:
 	/**
 	 *	Get last nokev timestamp
 	 */
-	auto get_last_nokev(const string &signame) -> timespec;
+	auto get_last_nokev(const string &signame) -> std::chrono::time_point<std::chrono::system_clock>;
 	/**
 	 *	Set state and status of timeout on periodic event
 	 */
@@ -303,7 +303,7 @@ public:
 	/**
 	 *	Check Archive periodic event period
 	 */
-	auto check_periodic_event_timeout(unsigned int delay_tolerance_ms) -> int;
+	auto check_periodic_event_timeout(const std::chrono::milliseconds& delay_tolerance_ms) -> std::chrono::milliseconds;
 	/**
 	 *	Reset statistic counters
 	 */

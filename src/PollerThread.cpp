@@ -27,15 +27,13 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 
 namespace HdbEventSubscriber_ns
 {
-    const unsigned int default_period = 3000;
-
     //=============================================================================
     //=============================================================================
     PollerThread::PollerThread(HdbDevice *dev): AbortableThread(dev->_device)
     {
         hdb_dev = dev;
-        set_period(dev->poller_period);
-        DEBUG_STREAM <<__func__<< "period="<< get_period() <<" dev->poller_period="<<dev->poller_period<<endl;
+        set_period(std::chrono::seconds(dev->poller_period));
+        DEBUG_STREAM <<__func__<< "period="<< get_period().count() <<" dev->poller_period="<<dev->poller_period<<endl;
     }
     
     //=============================================================================
@@ -153,9 +151,10 @@ namespace HdbEventSubscriber_ns
 
     //=============================================================================
     //=============================================================================
-    auto PollerThread::get_abort_loop_period_ms() -> unsigned int
+    auto PollerThread::get_abort_loop_period() -> std::chrono::milliseconds
     {
-        return default_period;
+        using namespace std::chrono_literals;
+        return 3s;
     }
 
     //=============================================================================

@@ -4,8 +4,8 @@
 
 namespace HdbEventSubscriber_ns
 {
-
-    double HdbSignal::stats_window = 0.;
+    // Init to 1 cause we make a division by this one
+    std::chrono::duration<double> HdbSignal::stats_window = std::chrono::seconds(1);
 
     HdbSignal::HdbSignal(Tango::DeviceImpl* dev
             , const std::string& signame
@@ -145,7 +145,7 @@ namespace HdbEventSubscriber_ns
         first_err = true;
         periodic_ev = -1;
         ttl = DEFAULT_TTL;
-        clock_gettime(CLOCK_MONOTONIC, &last_ev);
+        last_ev = std::chrono::system_clock::now();
     }
 
     auto HdbSignal::start() -> void
@@ -210,14 +210,14 @@ namespace HdbEventSubscriber_ns
         status = "Event received";
         ok_events.increment();
         first_err = true;
-        clock_gettime(CLOCK_MONOTONIC, &last_ev);
+        last_ev = std::chrono::system_clock::now();
     }
 
     auto HdbSignal::set_nok_event() -> void
     {
         WriterLock lock(siglock);
         nok_events.increment();
-        clock_gettime(CLOCK_MONOTONIC, &last_ev);
+        last_ev = std::chrono::system_clock::now();
     }
 
     auto HdbSignal::set_nok_periodic_event() -> void
@@ -246,15 +246,16 @@ namespace HdbEventSubscriber_ns
         return context.str();
     }
 
-    auto HdbSignal::check_periodic_event_timeout(const timespec& now, double delay_ms) -> double
+    auto HdbSignal::check_periodic_event_timeout(const std::chrono::time_point<std::chrono::system_clock>& now, const std::chrono::milliseconds& delay_ms) -> std::chrono::milliseconds
     {
-        double time_to_timeout_ms = 0;
+        using namespace std::chrono_literals;
+        std::chrono::milliseconds time_to_timeout_ms(0);
         {
             ReaderLock lock(siglock);
-            double diff_time_ms = (now.tv_sec - last_ev.tv_sec) * s_to_ms_factor + ((double)(now.tv_nsec - last_ev.tv_nsec))/ms_to_ns_factor;
-            time_to_timeout_ms = (double)(periodic_ev + delay_ms) - diff_time_ms;
+            auto diff_time_s = now - last_ev;
+            time_to_timeout_ms = std::chrono::duration_cast<std::chrono::milliseconds>((std::chrono::milliseconds(periodic_ev) + delay_ms) - diff_time_s);
         }
-        if(time_to_timeout_ms <= 0)
+        if(time_to_timeout_ms <= 0.ms)
         {
             WriterLock lock(siglock);
             evstate = Tango::ALARM;

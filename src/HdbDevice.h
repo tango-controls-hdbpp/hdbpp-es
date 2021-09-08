@@ -56,25 +56,6 @@
 
  //	constants definitions here.
  //-----------------------------------------------
-#ifndef	TIME_VAR
-#ifndef WIN32
-
-#	define	DECLARE_TIME_VAR	struct timeval
-#	define	GET_TIME(t)	gettimeofday(&t, NULL);
-#	define	ELAPSED(before, after)	\
-		1000.0*(after.tv_sec-before.tv_sec) + \
-		((double)after.tv_usec-before.tv_usec) / 1000
-
-#else
-
-#	define	DECLARE_TIME_VAR	struct _timeb
-#	define	GET_TIME(t)	_ftime(&t);
-#	define	ELAPSED(before, after)	\
-		1000*(after.time - before.time) + (after.millitm - before.millitm)
-
-#endif	/*	WIN32		*/
-#endif	/*	TIME_VAR	*/
-
 #define STATUS_SUBSCRIBED	string("Subscribed")
 #define STATUS_DB_ERROR		string("Storing Error")
 
@@ -421,8 +402,9 @@ void HdbDevice::push_events(const std::string& attr_name, T* data, bool sleep)
     catch(Tango::DevFailed &e){}
 
     // TODO is this needed ?
+    using namespace std::chrono_literals;
     if(sleep)
-        usleep(1 * ms_to_us_factor);
+        usleep(std::chrono::microseconds(1ms).count());
 }
 
 template<typename T>
@@ -436,8 +418,9 @@ void HdbDevice::push_events(const std::string& attr_name, T* data, long size, bo
     catch(Tango::DevFailed &e){}
 
     // TODO is this needed ?
+    using namespace std::chrono_literals;
     if(sleep)
-        usleep(1 * ms_to_us_factor);
+        usleep(std::chrono::microseconds(1ms).count());
 }
 }	// namespace_ns
 

@@ -1069,7 +1069,7 @@ namespace HdbEventSubscriber_ns
      * Get last okev timestamp
      */
     //=============================================================================
-    auto SharedData::get_last_okev(const string &signame) -> timespec
+    auto SharedData::get_last_okev(const string &signame) -> std::chrono::time_point<std::chrono::system_clock>
     {
         auto signal = get_signal(signame);
 
@@ -1102,7 +1102,7 @@ namespace HdbEventSubscriber_ns
      * Get last nokev timestamp
      */
     //=============================================================================
-    auto SharedData::get_last_nokev(const string& signame) -> timespec
+    auto SharedData::get_last_nokev(const string& signame) -> std::chrono::time_point<std::chrono::system_clock>
     {
         auto signal = get_signal(signame);
 
@@ -1179,12 +1179,14 @@ namespace HdbEventSubscriber_ns
      * Check Archive periodic event period
      */
     //=============================================================================
-    auto SharedData::check_periodic_event_timeout(unsigned int delay_tolerance_ms) -> int
+    auto SharedData::check_periodic_event_timeout(const std::chrono::milliseconds& delay_tolerance_ms) -> std::chrono::milliseconds
     {
+        using namespace std::chrono_literals;
         ReaderLock lock(veclock);
-        timespec now{};
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        double min_time_to_timeout_ms = ten_s_in_ms;
+        auto now = std::chrono::system_clock::now();
+        
+        std::chrono::milliseconds min_time_to_timeout_ms = 10s;
+        
         for (auto &signal : signals)
         {
             if(!signal->is_running())
@@ -1200,9 +1202,9 @@ namespace HdbEventSubscriber_ns
                 continue;
             }
 
-            double time_to_timeout_ms = signal->check_periodic_event_timeout(now, delay_tolerance_ms);
+            auto time_to_timeout_ms = signal->check_periodic_event_timeout(now, delay_tolerance_ms);
 
-            if(time_to_timeout_ms > 0 && (time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0))
+            if(time_to_timeout_ms > 0s && (time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0s))
                 min_time_to_timeout_ms = time_to_timeout_ms;
         }
         return min_time_to_timeout_ms;
@@ -1326,7 +1328,7 @@ namespace HdbEventSubscriber_ns
                     //unsigned long s,n;
                     //omni_thread::get_time(&s,&n,period,0);
                     //shared->condition.timedwait(s,n);
-                    shared->wait(period * s_to_ms_factor);
+                    shared->wait(std::chrono::milliseconds(std::chrono::seconds(period)).count());
                 }
                 //shared->unlock();
             }

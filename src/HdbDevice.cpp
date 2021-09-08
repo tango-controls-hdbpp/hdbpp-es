@@ -99,7 +99,7 @@ namespace HdbEventSubscriber_ns
         this->period = p;
         this->poller_period = pp;
         this->stats_window = s;
-        HdbSignal::stats_window = s;
+        HdbSignal::stats_window = std::chrono::seconds(s);
         this->check_periodic_delay = c;
         this->subscribe_change = ch;
         this->list_filename = fn;
@@ -173,7 +173,7 @@ namespace HdbEventSubscriber_ns
                 , [](PushThread* /*unused*/){});
         stats_thread = std::unique_ptr<StatsThread, std::function<void(StatsThread*)>>(new StatsThread(this)
                 , [](StatsThread* /*unused*/){});
-        stats_thread->set_period(stats_window);
+        stats_thread->set_period(std::chrono::seconds(stats_window));
         poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
                 , [](PollerThread* /*unused*/){});
 
@@ -470,13 +470,12 @@ namespace HdbEventSubscriber_ns
 #endif
             try
             {
-                DECLARE_TIME_VAR t0{};
-                DECLARE_TIME_VAR t1{};
-                GET_TIME(t0);
-                db->set_timeout_millis(ten_s_in_ms);
+                using namespace std::chrono_literals;
+                auto start = std::chrono::steady_clock::now();
+                db->set_timeout_millis(std::chrono::milliseconds(10s).count());
                 db->put_device_property(_device->get_name(), data);
-                GET_TIME(t1);
-                DEBUG_STREAM << __func__ << ": saving properties -> " << ELAPSED(t0, t1) << " ms" << endl;
+                auto end = std::chrono::steady_clock::now();
+                DEBUG_STREAM << __func__ << ": saving properties -> " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << endl;
             }
             catch(Tango::DevFailed &e)
             {

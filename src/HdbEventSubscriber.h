@@ -92,8 +92,8 @@ private:
         void start_attribute(const std::string& attribute);
         void pause_attribute(const std::string& attribute);
 
-        auto format_date(const timespec& tv, size_t ev) -> std::string;
-	double last_statistics_reset_time;
+        auto format_date(const std::chrono::time_point<std::chrono::system_clock>& tv, size_t ev) -> std::string;
+        std::chrono::time_point<std::chrono::steady_clock> last_statistics_reset_time;
 
 #ifdef _USE_FERMI_DB_RW
 private:
