@@ -100,7 +100,7 @@ namespace HdbEventSubscriber_ns
         this->poller_period = pp;
         this->stats_window = s;
         HdbSignal::stats_window = std::chrono::seconds(s);
-        this->check_periodic_delay = c;
+        HdbSignal::delay_periodic_event = std::chrono::milliseconds(c);
         this->subscribe_change = ch;
         this->list_filename = fn;
         _device = device;

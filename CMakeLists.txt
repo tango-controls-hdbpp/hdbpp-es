@@ -47,6 +47,9 @@ include(GNUInstallDirs)
 
 message(STATUS "Searching for libraries...")
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 # Variable to contain a list of all the libs we depend on
 set(HDBPP_ES_LIBRARIES) 
 
@@ -138,6 +141,7 @@ add_executable(hdbpp_es ${SRC_FILES})
 target_link_libraries(hdbpp_es 
     PRIVATE 
         TangoInterfaceLibrary 
+        Threads::Threads
 	${BACKEND_TARGET_SHARED})
 
 target_include_directories(hdbpp_es 

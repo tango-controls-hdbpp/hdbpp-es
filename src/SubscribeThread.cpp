@@ -1176,41 +1176,6 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     /**
-     * Check Archive periodic event period
-     */
-    //=============================================================================
-    auto SharedData::check_periodic_event_timeout(const std::chrono::milliseconds& delay_tolerance_ms) -> std::chrono::milliseconds
-    {
-        using namespace std::chrono_literals;
-        ReaderLock lock(veclock);
-        auto now = std::chrono::system_clock::now();
-        
-        std::chrono::milliseconds min_time_to_timeout_ms = 10s;
-        
-        for (auto &signal : signals)
-        {
-            if(!signal->is_running())
-            {
-                continue;
-            }
-            if(signal->get_state() != Tango::ON)
-            {
-                continue;
-            }
-            if(signal->get_periodic_event() <= 0)
-            {
-                continue;
-            }
-
-            auto time_to_timeout_ms = signal->check_periodic_event_timeout(now, delay_tolerance_ms);
-
-            if(time_to_timeout_ms > 0s && (time_to_timeout_ms < min_time_to_timeout_ms || min_time_to_timeout_ms == 0s))
-                min_time_to_timeout_ms = time_to_timeout_ms;
-        }
-        return min_time_to_timeout_ms;
-    }
-    //=============================================================================
-    /**
      * Reset statistic counters
      */
     //=============================================================================

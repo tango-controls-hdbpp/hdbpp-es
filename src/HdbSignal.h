@@ -6,6 +6,9 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <tango.h>
 
 
@@ -20,6 +23,7 @@ namespace HdbEventSubscriber_ns
 
         public:
         static std::chrono::duration<double> stats_window;
+        static std::chrono::milliseconds delay_periodic_event;
 
         std::string name;
 
@@ -82,6 +86,12 @@ namespace HdbEventSubscriber_ns
         {
             ReaderLock lock(siglock);
             return evstate == Tango::ALARM && is_running();
+        }
+
+        auto is_on() -> bool
+        {
+            ReaderLock lock(siglock);
+            return evstate == Tango::ON && is_running();
         }
 
         auto is_not_on_error() -> bool
@@ -151,16 +161,8 @@ namespace HdbEventSubscriber_ns
         auto set_periodic_event(int p) -> void
         {
             WriterLock lock(siglock);
-            periodic_ev = p;
+            event_checker->set_period(std::chrono::milliseconds(p));
         }
-
-        auto get_periodic_event() -> int
-        {
-            ReaderLock lock(siglock);
-            return periodic_ev;
-        }
-
-        auto check_periodic_event_timeout(const std::chrono::time_point<std::chrono::system_clock>& now, const std::chrono::milliseconds& delay_ms) -> std::chrono::milliseconds;
 
         auto reset_statistics() -> void
         {
@@ -192,26 +194,35 @@ namespace HdbEventSubscriber_ns
 
         auto set_running() -> void
         {
-            WriterLock lock(siglock);
-            running = true;
-            paused = false;
-            stopped = false;
+            {
+                WriterLock lock(siglock);
+                running = true;
+                paused = false;
+                stopped = false;
+            }
+            event_checker->notify();
         }
 
         auto set_paused() -> void
         {
-            WriterLock lock(siglock);
-            running = false;
-            paused = true;
-            stopped = false;
+            {
+                WriterLock lock(siglock);
+                running = false;
+                paused = true;
+                stopped = false;
+            }
+            event_checker->notify();
         }
 
         auto set_stopped() -> void
         {
-            WriterLock lock(siglock);
-            running = false;
-            paused = false;
-            stopped = true;
+            {
+                WriterLock lock(siglock);
+                running = false;
+                paused = false;
+                stopped = true;
+            }
+            event_checker->notify();
         }
 
         auto is_first() -> bool
@@ -240,16 +251,22 @@ namespace HdbEventSubscriber_ns
 
         auto set_error(const std::string& err) -> void
         {
-            WriterLock lock(siglock);
-            evstate  = Tango::ALARM;
-            status = err;
+            {
+                WriterLock lock(siglock);
+                evstate = Tango::ALARM;
+                status = err;
+            }
+            event_checker->notify();
         }
 
         auto set_on() -> void
         {
-            WriterLock lock(siglock);
-            evstate  = Tango::ON;
-            status = "Subscribed";
+            {
+                WriterLock lock(siglock);
+                evstate = Tango::ON;
+                status = "Subscribed";
+            }
+            event_checker->notify();
         }
 
         private:
@@ -299,6 +316,52 @@ namespace HdbEventSubscriber_ns
             };
         };
 
+        class PeriodicEventCheck
+        {
+
+            friend class HdbSignal;
+
+            public:
+            explicit PeriodicEventCheck(HdbSignal& sig): signal(sig)
+            {
+                period = std::chrono::milliseconds::min();
+                periodic_check = std::make_unique<std::thread>(&PeriodicEventCheck::check_periodic_event_timeout, this);
+                periodic_check->detach();
+            }
+
+            ~PeriodicEventCheck()
+            {
+                abort = true;
+                cv.notify_one();
+                if(periodic_check)
+                    periodic_check->join();
+            }
+            
+            void check_periodic_event_timeout();
+
+            void notify()
+            {
+                cv.notify_one();
+            };
+
+            auto set_period(std::chrono::milliseconds p) -> void
+            {
+                period = p;
+                notify();
+            };
+
+            HdbSignal& signal;
+            std::unique_ptr<std::thread> periodic_check;
+            std::chrono::milliseconds period;
+            std::mutex m;
+            std::condition_variable cv;
+            bool abort = false;
+            auto check_periodic_event() -> bool
+            {
+                return period > std::chrono::milliseconds::min() && signal.is_on();
+            };
+        };
+
         std::string devname;
         std::string attname;
         SignalConfig config;
@@ -314,14 +377,13 @@ namespace HdbEventSubscriber_ns
         bool isZMQ;
         EventCounter ok_events;
         EventCounter nok_events;
-        std::chrono::time_point<std::chrono::system_clock> last_ev;
-        int periodic_ev;
         bool running;
         bool paused;
         bool stopped;
         std::vector<std::string> contexts;
         std::vector<std::string> contexts_upper;
         unsigned int ttl;
+        std::unique_ptr<PeriodicEventCheck> event_checker;
         ReadersWritersLock siglock;
 
         void unsubscribe_event(const int event_id);

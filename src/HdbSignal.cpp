@@ -6,6 +6,7 @@ namespace HdbEventSubscriber_ns
 {
     // Init to 1 cause we make a division by this one
     std::chrono::duration<double> HdbSignal::stats_window = std::chrono::seconds(1);
+    std::chrono::milliseconds HdbSignal::delay_periodic_event = std::chrono::milliseconds::zero();
 
     HdbSignal::HdbSignal(Tango::DeviceImpl* dev
             , const std::string& signame
@@ -33,6 +34,7 @@ namespace HdbEventSubscriber_ns
         contexts_upper = ctxts;
         for(auto &it : contexts_upper)
             std::transform(it.begin(), it.end(), it.begin(), ::toupper);
+        event_checker = std::make_unique<PeriodicEventCheck>(*this);
     }
 
     void HdbSignal::remove_callback()
@@ -143,9 +145,7 @@ namespace HdbEventSubscriber_ns
         ok_events.reset();
         nok_events.reset();
         first_err = true;
-        periodic_ev = -1;
         ttl = DEFAULT_TTL;
-        last_ev = std::chrono::system_clock::now();
     }
 
     auto HdbSignal::start() -> void
@@ -210,14 +210,14 @@ namespace HdbEventSubscriber_ns
         status = "Event received";
         ok_events.increment();
         first_err = true;
-        last_ev = std::chrono::system_clock::now();
+        event_checker->notify();
     }
 
     auto HdbSignal::set_nok_event() -> void
     {
         WriterLock lock(siglock);
         nok_events.increment();
-        last_ev = std::chrono::system_clock::now();
+        event_checker->notify();
     }
 
     auto HdbSignal::set_nok_periodic_event() -> void
@@ -246,9 +246,22 @@ namespace HdbEventSubscriber_ns
         return context.str();
     }
 
-    auto HdbSignal::check_periodic_event_timeout(const std::chrono::time_point<std::chrono::system_clock>& now, const std::chrono::milliseconds& delay_ms) -> std::chrono::milliseconds
+    auto HdbSignal::PeriodicEventCheck::check_periodic_event_timeout() -> void
     {
         using namespace std::chrono_literals;
+        std::unique_lock<std::mutex> lk(m);
+        while(!abort)
+        {
+            if(!check_periodic_event())
+                cv.wait(lk, [this]{return !abort && check_periodic_event();});
+            if(!abort)
+            {
+                if(!cv.wait_for(lk, period + HdbSignal::delay_periodic_event, [this]{return !abort && !check_periodic_event();}))
+                    signal.set_nok_periodic_event();
+            }
+        }
+
+        /*
         std::chrono::milliseconds time_to_timeout_ms(0);
         {
             ReaderLock lock(siglock);
@@ -262,6 +275,7 @@ namespace HdbEventSubscriber_ns
             status = "Timeout on periodic event";
         }
         return time_to_timeout_ms;
+        */
     }
 
     auto HdbSignal::get_signal_config() -> HdbSignal::SignalConfig

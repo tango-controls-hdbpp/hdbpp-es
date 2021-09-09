@@ -301,10 +301,6 @@ public:
 	 */
 	void  set_conf_periodic_event(const string &signame, const string &period);
 	/**
-	 *	Check Archive periodic event period
-	 */
-	auto check_periodic_event_timeout(const std::chrono::milliseconds& delay_tolerance_ms) -> std::chrono::milliseconds;
-	/**
 	 *	Reset statistic counters
 	 */
 	void reset_statistics();
