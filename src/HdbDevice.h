@@ -49,6 +49,7 @@
 #include <tango.h>
 #include "Consts.h"
 #include <mutex>
+#include <shared_mutex>
 
 /**
  * @author	$Author: graziano $
@@ -81,6 +82,7 @@ class HdbDevice: public Tango::LogAdapter
         std::string current_context;
         std::chrono::time_point<std::chrono::system_clock> last_stat;
         std::mutex attributes_mutex;
+        std::shared_timed_mutex lists_mutex;
 public:
 	//	Data members here
 	//-----------------------------------------

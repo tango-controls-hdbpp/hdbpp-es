@@ -152,15 +152,17 @@ namespace HdbEventSubscriber_ns
         attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
         attr_AttributePausedNumber_read = attr_AttributeNumber_read;
 
-        AttributeFailureFreq = 0;
-        AttributeRecordFreq = 0;
-
-        for(size_t i = 0; i != MAX_ATTRIBUTES; ++i)
         {
-            AttributeRecordFreqList[i] = 0;
-            AttributeFailureFreqList[i] = 0;
-        }
+            std::unique_lock<shared_timed_mutex> lock(lists_mutex);
+            AttributeFailureFreq = 0;
+            AttributeRecordFreq = 0;
 
+            for(size_t i = 0; i != MAX_ATTRIBUTES; ++i)
+            {
+                AttributeRecordFreqList[i] = 0;
+                AttributeFailureFreqList[i] = 0;
+            }
+        }
         //	Create a thread to subscribe events
         shared = std::make_shared<SharedData>(this);
         thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
@@ -328,6 +330,7 @@ namespace HdbEventSubscriber_ns
 
     auto HdbDevice::remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void
     {
+        {
         std::lock_guard<std::mutex> lk(attributes_mutex);
         // Update the counters
         if(running)
@@ -338,6 +341,9 @@ namespace HdbEventSubscriber_ns
             attr_AttributeStoppedNumber_read--;
 
         attr_AttributeNumber_read--;
+        }
+
+        std::unique_lock<shared_timed_mutex> lk(lists_mutex);
 
         // Remove this attribute insert and error speed from the total.
         double freq = AttributeRecordFreqList[idx];
@@ -357,31 +363,36 @@ namespace HdbEventSubscriber_ns
 
     auto HdbDevice::update_freq_callback(unsigned int idx, bool ok, double freq) -> void
     {
-        std::lock_guard<std::mutex> lk(attributes_mutex);
-
         if(ok)
         {
+            std::shared_lock<shared_timed_mutex> lock(lists_mutex);
             double old_freq = AttributeRecordFreqList[idx];
             AttributeRecordFreqList[idx] += freq - old_freq;  
+            
+            std::lock_guard<std::mutex> lk(attributes_mutex);
             AttributeRecordFreq += freq - old_freq;
         }
         else
         {
+            std::shared_lock<shared_timed_mutex> lock(lists_mutex);
             double fail_freq = AttributeFailureFreqList[idx];
             AttributeFailureFreqList[idx] += freq - fail_freq;
+            std::lock_guard<std::mutex> lk(attributes_mutex);
             AttributeFailureFreq += freq - fail_freq;
         }
     }
     
     auto HdbDevice::update_freq_db_callback(unsigned int idx, bool ok, double freq) -> void
     {
-        std::lock_guard<std::mutex> lk(attributes_mutex);
         if(!ok)
         {
+            std::shared_lock<shared_timed_mutex> lock(lists_mutex);
             double old_freq = AttributeRecordFreqList[idx];
             double fail_freq = AttributeFailureFreqList[idx];
             AttributeRecordFreqList[idx] -= freq - old_freq;
             AttributeFailureFreqList[idx] += freq - fail_freq;
+        
+            std::lock_guard<std::mutex> lk(attributes_mutex);
             AttributeRecordFreq -= freq - old_freq;
             AttributeFailureFreq += freq - fail_freq;
         }
