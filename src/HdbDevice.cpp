@@ -55,7 +55,6 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 #include <sys/time.h>
 #include <netdb.h> //for getaddrinfo
 #include "PollerThread.h"
-#include "StatsThread.h"
 #include "PushThread.h"
 #include "SubscribeThread.h"
 #include "HdbSignal.h"
@@ -72,10 +71,8 @@ namespace HdbEventSubscriber_ns
     {
         INFO_STREAM << "	Deleting HdbDevice" << endl;
         DEBUG_STREAM << "	Stopping stats thread" << endl;
-        stats_thread->abort();
         poller_thread->abort();
         
-        stats_thread->join(nullptr);
         //DEBUG_STREAM << "	Stats thread Joined " << endl;
         poller_thread->join(nullptr);
         //DEBUG_STREAM << "	Polling thread Joined " << endl;
@@ -155,6 +152,15 @@ namespace HdbEventSubscriber_ns
         attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
         attr_AttributePausedNumber_read = attr_AttributeNumber_read;
 
+        AttributeFailureFreq = 0;
+        AttributeRecordFreq = 0;
+
+        for(size_t i = 0; i != MAX_ATTRIBUTES; ++i)
+        {
+            AttributeRecordFreqList[i] = 0;
+            AttributeFailureFreqList[i] = 0;
+        }
+
         //	Create a thread to subscribe events
         shared = std::make_shared<SharedData>(this);
         thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
@@ -169,15 +175,11 @@ namespace HdbEventSubscriber_ns
                     , Tango::Util::instance()->get_ds_inst_name()
                     , (dynamic_cast<HdbEventSubscriber *>(_device))->libConfiguration)
                 , [](PushThread* /*unused*/){});
-        stats_thread = std::unique_ptr<StatsThread, std::function<void(StatsThread*)>>(new StatsThread(this)
-                , [](StatsThread* /*unused*/){});
-        stats_thread->set_period(std::chrono::seconds(stats_window));
         poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
                 , [](PollerThread* /*unused*/){});
 
         build_signal_vector(list, defaultStrategy);
 
-        stats_thread->start();
         push_thread->start();
         poller_thread->start();
         thread->start();
@@ -281,8 +283,7 @@ namespace HdbEventSubscriber_ns
                         }
                     }
 
-                    shared->add(list_exploded[0], adjusted_contexts);
-                    push_thread->updatettl(list_exploded[0], ttl);
+                    shared->add(list_exploded[0], adjusted_contexts, ttl);
                 }
             }
             catch (Tango::DevFailed &e)
@@ -298,8 +299,7 @@ namespace HdbEventSubscriber_ns
     {
         std::string attr_name;
         fix_tango_host(signame, attr_name);
-        push_thread->add_attr(attr_name, data_type, data_format, write_type);
-        shared->add(attr_name, contexts, UPDATE_PROP, false);
+        shared->add(attr_name, contexts, data_type, data_format, write_type, UPDATE_PROP, false);
     }
     //=============================================================================
     //=============================================================================
@@ -308,8 +308,6 @@ namespace HdbEventSubscriber_ns
         std::string attr_name;
         fix_tango_host(signame, attr_name);
         shared->remove(attr_name, false);
-        push_thread->remove(attr_name);
-        push_thread->remove_attr(attr_name);
     }
     //=============================================================================
     //=============================================================================
@@ -326,8 +324,85 @@ namespace HdbEventSubscriber_ns
         std::string attr_name;
         fix_tango_host(signame, attr_name);
         shared->updatettl(attr_name, ttl);
-        push_thread->updatettl(attr_name, ttl);
     }
+
+    auto HdbDevice::remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void
+    {
+        std::lock_guard<std::mutex> lk(attributes_mutex);
+        // Update the counters
+        if(running)
+            attr_AttributeStartedNumber_read--;
+        if(paused)
+            attr_AttributePausedNumber_read--;
+        if(stopped)
+            attr_AttributeStoppedNumber_read--;
+
+        attr_AttributeNumber_read--;
+
+        // Remove this attribute insert and error speed from the total.
+        double freq = AttributeRecordFreqList[idx];
+        double fail_freq = AttributeFailureFreqList[idx];
+
+        AttributeRecordFreq -= freq;
+
+        AttributeFailureFreq -= fail_freq;
+
+        // Reindex the lists.
+        for(size_t i = idx; i < attr_AttributeNumber_read; ++i)
+        {
+            AttributeRecordFreqList[i] = AttributeRecordFreqList[i + 1];
+            AttributeFailureFreqList[i] = AttributeFailureFreqList[i + 1];
+        }
+    }
+
+    auto HdbDevice::update_freq_callback(unsigned int idx, bool ok, double freq) -> void
+    {
+        std::lock_guard<std::mutex> lk(attributes_mutex);
+
+        if(ok)
+        {
+            double old_freq = AttributeRecordFreqList[idx];
+            AttributeRecordFreqList[idx] += freq - old_freq;  
+            AttributeRecordFreq += freq - old_freq;
+        }
+        else
+        {
+            double fail_freq = AttributeFailureFreqList[idx];
+            AttributeFailureFreqList[idx] += freq - fail_freq;
+            AttributeFailureFreq += freq - fail_freq;
+        }
+    }
+    
+    auto HdbDevice::update_freq_db_callback(unsigned int idx, bool ok, double freq) -> void
+    {
+        std::lock_guard<std::mutex> lk(attributes_mutex);
+        if(!ok)
+        {
+            double old_freq = AttributeRecordFreqList[idx];
+            double fail_freq = AttributeFailureFreqList[idx];
+            AttributeRecordFreqList[idx] -= freq - old_freq;
+            AttributeFailureFreqList[idx] += freq - fail_freq;
+            AttributeRecordFreq -= freq - old_freq;
+            AttributeFailureFreq += freq - fail_freq;
+        }
+    }
+    auto HdbDevice::update_timing_callback(unsigned int idx, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void
+    {
+        auto fn = [](Tango::DevDouble& val, std::chrono::duration<double>& time)
+        {
+            if(val == -1)
+                val = time.count();
+            else
+                val = std::max(time.count(), val);
+        };
+
+        fn(attr_AttributeMinStoreTime_read, store_time);
+        fn(attr_AttributeMaxStoreTime_read, store_time);
+        fn(attr_AttributeMinProcessingTime_read, process_time);
+        fn(attr_AttributeMaxProcessingTime_read, process_time);
+    }
+
+
     //=============================================================================
     //=============================================================================
     void HdbDevice::get_hdb_signal_list(vector<string> & list)
@@ -448,7 +523,7 @@ namespace HdbEventSubscriber_ns
                 for (const auto &e : prop) out << e << "\n";
                 out.close();
             }
-            return;	
+            return;
         }
 
         Tango::DbData	data;
@@ -501,43 +576,19 @@ namespace HdbEventSubscriber_ns
            */
         if(!list_file_error.empty())
             return Tango::FAULT;
-        Tango::DevState	evstate =  shared->state();
-        Tango::DevState	dbstate =  push_thread->state();
-        if(evstate == Tango::ALARM || dbstate == Tango::ALARM)
-            return Tango::ALARM;
-        return Tango::ON;
+        return shared->state();
     }
     //=============================================================================
     //=============================================================================
     void HdbDevice::get_sig_on_error_list(vector<string> &sig_list)
     {
         shared->get_sig_on_error_list(sig_list);
-        vector<string> other_list;
-        shared->get_sig_not_on_error_list(other_list);
-        //check if signal not in event error is in db error
-        for(const auto &sig : other_list) //vector<string>::iterator it=other_list.begin(); it!=other_list.end(); it++)
-        {
-            if(push_thread->get_sig_state(sig) == Tango::ALARM)
-            {
-                sig_list.push_back(sig);
-            }
-        }
     }
     //=============================================================================
     //=============================================================================
-    void HdbDevice::get_sig_not_on_error_list(vector<string> & ret_sig_list)
+    void HdbDevice::get_sig_not_on_error_list(vector<string> & sig_list)
     {
-        vector<string> sig_list;
         shared->get_sig_not_on_error_list(sig_list);
-        ret_sig_list.clear();
-        //check if signal not in event error is in db error
-        for(const auto &signal : sig_list)
-        {
-            if(push_thread->get_sig_state(signal) != Tango::ALARM)
-            {
-                ret_sig_list.push_back(signal);
-            }
-        }
     }
     //=============================================================================
     //=============================================================================
@@ -555,33 +606,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto HdbDevice::get_error_list(vector<string> & error_list) -> bool
     {
-        bool changed = false;
-        vector<string> sig_list;
-        shared->get_sig_list(sig_list);
-        changed = shared->get_error_list(error_list);
-        vector<string> other_list;
-        shared->get_sig_not_on_error_list(other_list);
-        //check if signal not in event error is in db error
-        for(const auto &signal : other_list)
-        {
-            //looking for DB errors
-            if(push_thread->get_sig_state(signal) == Tango::ALARM)
-            {
-                //find *it in sig_list and replace string in error_list with "DB error"
-                auto itsig_list = find(sig_list.begin(), sig_list.end(), signal);
-                size_t idx = itsig_list - sig_list.begin();
-                if(itsig_list != sig_list.end() && idx < error_list.size())
-                {
-                    string dberr = push_thread->get_sig_status(signal);
-                    if(dberr != error_list[idx])
-                    {
-                        error_list[idx] = dberr;
-                        changed = true;
-                    }
-                }
-            }
-        }
-        return changed;
+        return shared->get_error_list(error_list);
     }
     //=============================================================================
     //=============================================================================
@@ -620,37 +645,13 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto HdbDevice::get_sig_on_error_num() -> int
     {
-        int on_ev_err = shared->get_sig_on_error_num();
-
-        vector<string> other_list;
-        shared->get_sig_not_on_error_list(other_list);
-        //check if signal not in event error is in db error
-        for(const auto &signal : other_list)
-        {
-            if(push_thread->get_sig_state(signal) == Tango::ALARM)
-            {
-                on_ev_err++;
-            }
-        }
-        return on_ev_err;
+        return shared->get_sig_on_error_num();
     }
     //=============================================================================
     //=============================================================================
     auto HdbDevice::get_sig_not_on_error_num() -> int
     {
-        int not_on_ev_err = shared->get_sig_not_on_error_num();
-
-        vector<string> sig_list;
-        shared->get_sig_not_on_error_list(sig_list);
-        //check if signal not in event error is in db error
-        for(const auto &signal : sig_list)
-        {
-            if(push_thread->get_sig_state(signal) == Tango::ALARM)
-            {
-                not_on_ev_err--;
-            }
-        }
-        return not_on_ev_err;
+        return shared->get_sig_not_on_error_num();
     }
     //=============================================================================
     //=============================================================================
@@ -668,15 +669,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto HdbDevice::get_sig_status(const string &signame) -> string
     {
-        string ev_status = shared->get_sig_status(signame);
-
-        //looking for DB errors
-        if(push_thread->get_sig_state(signame) == Tango::ALARM)
-        {
-            ev_status = push_thread->get_sig_status(signame);
-        }
-
-        return ev_status;
+        return shared->get_sig_status(signame);
     }
     //=============================================================================
     //=============================================================================
@@ -701,15 +694,11 @@ namespace HdbEventSubscriber_ns
     void HdbDevice::reset_statistics()
     {
         shared->reset_statistics();
-        push_thread->reset_statistics();
-    }
-    //=============================================================================
-    //=============================================================================
-    void HdbDevice::reset_freq_statistics()
-    {
-        last_stat = std::chrono::system_clock::now();
-        shared->reset_freq_statistics();
-        push_thread->reset_freq_statistics();
+        
+        attr_AttributeMinStoreTime_read = -1;
+        attr_AttributeMaxStoreTime_read = -1;
+        attr_AttributeMinProcessingTime_read = -1;
+        attr_AttributeMaxProcessingTime_read = -1;
     }
     //=============================================================================
     //=============================================================================
@@ -744,7 +733,6 @@ namespace HdbEventSubscriber_ns
 
             hdbpp::HdbEventDataType ev_data_type;
             ev_data_type.attr_name = data->attr_name;
-
             try
             {
                 auto conf = signal->get_signal_config();
@@ -754,6 +742,7 @@ namespace HdbEventSubscriber_ns
                 ev_data_type.write_type = conf.write_type;
                 ev_data_type.max_dim_x = conf.max_dim_x;
                 ev_data_type.max_dim_y = conf.max_dim_y;
+            
             }
             catch (Tango::DevFailed &e)
             {
@@ -889,8 +878,8 @@ namespace HdbEventSubscriber_ns
 
             auto *ev_data = new Tango::EventData(data->device,data->attr_name, data->event, dev_attr_copy, data->errors);
 
-            auto cmd = std::make_shared<HdbCmdData>(ev_data, ev_data_type);
-            hdb_dev->push_thread->push_back_cmd(cmd);
+            auto cmd = std::make_unique<HdbCmdData>(*signal, ev_data, ev_data_type);
+            hdb_dev->push_thread->push_back_cmd(std::move(cmd));
         }
         catch(Tango::DevFailed &e)
         {
@@ -919,9 +908,10 @@ namespace HdbEventSubscriber_ns
         }
         hdbpp::HdbEventDataType ev_data_type;
         ev_data_type.attr_name = data->attr_name;
+        std::shared_ptr<HdbSignal> signal = hdb_dev->shared->get_signal(data->attr_name);
         try
         {
-            auto signal = hdb_dev->shared->get_signal(data->attr_name);
+            signal = hdb_dev->shared->get_signal(data->attr_name);
         } catch(Tango::DevFailed &e)
         {
             ERROR_STREAM << __func__<<": AttrConfEvent '"<<data->attr_name<<"' NOT FOUND in signal list" << endl;
@@ -953,9 +943,9 @@ namespace HdbEventSubscriber_ns
         *attr_conf = *(data->attr_conf);
 
         auto *ev_data = new Tango::AttrConfEventData(data->device,data->attr_name, data->event, attr_conf, data->errors);
-        auto cmd = std::make_shared<HdbCmdData>(ev_data, ev_data_type);
+        auto cmd = std::make_unique<HdbCmdData>(*signal, ev_data, ev_data_type);
 
-        hdb_dev->push_thread->push_back_cmd(cmd);
+        hdb_dev->push_thread->push_back_cmd(std::move(cmd));
     }
     //=============================================================================
     //=============================================================================
@@ -1127,7 +1117,6 @@ namespace HdbEventSubscriber_ns
         }
         if(is_paused || is_stopped)
         {
-            push_thread->start_attr(signame);
             shared->start(signame);
         }
     }
@@ -1156,7 +1145,6 @@ namespace HdbEventSubscriber_ns
         if(is_running || is_paused)
         {
             shared->stop(attr_name);
-            push_thread->stop_attr(attr_name);
         }
 
     }
@@ -1183,7 +1171,6 @@ namespace HdbEventSubscriber_ns
         if(is_running)
         {
             shared->pause(signame);
-            push_thread->pause_attr(signame);
         }
         else
         {

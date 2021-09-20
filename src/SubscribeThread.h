@@ -90,6 +90,9 @@ private:
 
         vector<std::shared_ptr<HdbSignal>>	signals;
 	ReadersWritersLock      veclock;
+	
+        void add(std::shared_ptr<HdbSignal> signal, int to_do, bool start);
+	auto add(const string &signame, const vector<string>& contexts, bool start) -> std::shared_ptr<HdbSignal>;
 public:
 	int		action;
 	//omni_condition condition;
@@ -104,9 +107,8 @@ public:
 	/**
 	 * Add a new signal.
 	 */
-	void add(const string &signame, const vector<string> & contexts);
-	void add(const string &signame, const vector<string> & contexts, int to_do, bool start);
-	void add(std::shared_ptr<HdbSignal> signal, const vector<string> & contexts, int to_do, bool start);
+	void add(const string &signame, const vector<string> & contexts, unsigned int ttl);
+	void add(const string &signame, const vector<string> & contexts, int data_type, int data_format, int write_type, int to_do, bool start);
 	/**
 	 * Remove a signal in the list.
 	 */
@@ -280,7 +282,43 @@ public:
 	 *	Set state and status of timeout on periodic event
 	 */
 	void  set_nok_periodic_event(const string& signame);
-	/**
+        /**
+         *	Get the error counter of db saving
+         */
+        auto get_nok_db(const string& signame) -> uint32_t;
+        /**
+         *	Get the error counter of db saving for freq stats
+         */
+        auto get_nok_db_freq(const string& signame) -> uint32_t;
+        /**
+         *	Get avg store time
+         */
+        auto get_avg_store_time(const string& signame) -> std::chrono::duration<double>;
+        /**
+         *	Get min store time
+         */
+        auto get_min_store_time(const string& signame) -> std::chrono::duration<double>;
+        /**
+         *	Get max store time
+         */
+        auto get_max_store_time(const string& signame) -> std::chrono::duration<double>;
+        /**
+         *	Get avg process time
+         */
+        auto get_avg_process_time(const string& signame) -> std::chrono::duration<double>;
+        /**
+         *	Get min process time
+         */
+        auto get_min_process_time(const string& signame) -> std::chrono::duration<double>;
+        /**
+         *	Get max process time
+         */
+        auto get_max_process_time(const string& signame) -> std::chrono::duration<double>;
+        /**
+         *	Get last nokdb timestamp
+         */
+        auto get_last_nokdb(const string& signame) -> std::chrono::time_point<std::chrono::system_clock>;
+        /**
 	 *	Return the status of specified signal
 	 */
 	auto get_sig_status(const string &signame) -> string;
@@ -304,10 +342,6 @@ public:
 	 *	Reset statistic counters
 	 */
 	void reset_statistics();
-	/**
-	 *	Reset freq statistic counters
-	 */
-	void reset_freq_statistics();
 	/**
 	 *	Return ALARM if at list one signal is not subscribed.
 	 */

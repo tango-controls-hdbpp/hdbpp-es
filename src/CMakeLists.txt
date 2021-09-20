@@ -10,7 +10,6 @@ set(SRC_FILES ${SRC_FILES}
     ${CMAKE_CURRENT_SOURCE_DIR}/HdbEventSubscriberStateMachine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PollerThread.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/PushThread.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/StatsThread.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/SubscribeThread.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/HdbSignal.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp

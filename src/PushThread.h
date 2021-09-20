@@ -61,42 +61,6 @@ namespace HdbEventSubscriber_ns
 {
 
 
-    struct HdbStat
-    {
-        uint32_t nokdb_counter;
-        uint32_t nokdb_counter_freq;
-        uint32_t okdb_counter;
-        Tango::DevState dbstate;
-        std::string dberror;
-        std::chrono::duration<double> process_time_avg;
-        std::chrono::duration<double> process_time_min;
-        std::chrono::duration<double> process_time_max;
-        std::chrono::duration<double> store_time_avg;
-        std::chrono::duration<double> store_time_min;
-        std::chrono::duration<double> store_time_max;
-        std::chrono::time_point<std::chrono::system_clock> last_nokdb;
-
-        public:
-            HdbStat();
-            HdbStat& operator=(const HdbStat& stat)
-            {
-                nokdb_counter = stat.nokdb_counter;
-                nokdb_counter_freq = stat.nokdb_counter_freq;
-                okdb_counter = stat.okdb_counter;
-                dbstate = stat.dbstate;
-                dberror = stat.dberror;
-                process_time_avg = stat.process_time_avg;
-                process_time_min = stat.process_time_min;
-                process_time_max = stat.process_time_max;
-                store_time_avg = stat.store_time_avg;
-                store_time_min = stat.store_time_min;
-                store_time_max = stat.store_time_max;
-                last_nokdb = stat.last_nokdb;
-                return *this;
-            };
-        private:
-            HdbStat(const HdbStat&) = delete;
-    };
     
     class HdbDevice;
 
@@ -115,24 +79,18 @@ namespace HdbEventSubscriber_ns
             /**
              *	Manage data to write.
              */
-            std::deque<std::shared_ptr<HdbCmdData>> events;
+            std::deque<std::unique_ptr<HdbCmdData>> events;
             /**
              *	Manage exceptions if any
              */
-            vector<Tango::DevFailed>	except;
+            vector<Tango::DevFailed> except;
 
-            omni_mutex sig_lock;
             omni_mutex new_data_mutex;
             omni_condition new_data;
-            std::map<const std::string, HdbStat> signals;
 
             std::unique_ptr<hdbpp::AbstractDB> mdb;
 
             size_t max_waiting;
-
-            HdbStat NO_SIGNAL;
-
-            auto get_signal(const std::string& signame) -> HdbStat&;
 
             bool batch_insert = false;
 
@@ -151,101 +109,21 @@ namespace HdbEventSubscriber_ns
              */
             PushThread(HdbDevice *dev, const string& ds_name, const vector<string>& configuration);
 
-            void push_back_cmd(const std::shared_ptr<HdbCmdData>& argin);
+            void push_back_cmd(const std::unique_ptr<HdbCmdData> argin);
             //void push_back_cmd(Tango::EventData argin);
             //	void remove_cmd();
             auto nb_cmd_waiting() -> size_t;
-            auto get_next_cmds() -> std::vector<std::shared_ptr<HdbCmdData>>;
+            auto get_next_cmds() -> std::vector<std::unique_ptr<HdbCmdData>>;
 
             auto get_max_waiting() -> size_t;
             void get_sig_list_waiting(vector<string> &);
-            void reset_statistics();
-            void reset_freq_statistics();
 
-            void remove(const string& signame);
-            /**
-             *	Return the list of signals on error
-             */
-            auto get_sig_on_error_list() -> vector<string>;
-            /**
-             *	Return the list of signals not on error
-             */
-            auto get_sig_not_on_error_list() -> vector<string>;
-            /**
-             *	Return the number of signals on error
-             */
-            auto get_sig_on_error_num() -> int;
-            /**
-             *	Return the number of signals not on error
-             */
-            auto get_sig_not_on_error_num() -> int;
-            /**
-             *	Return the db state of the signal
-             */
-            auto get_sig_state(const string& signame) -> Tango::DevState;
-            /**
-             *	Return the db error status of the signal
-             */
-            auto get_sig_status(const string& signame) -> std::string;
-            /**
-             *	Increment the error counter of db saving
-             */
-            void set_nok_db(const string& signame, const string& error);
-            /**
-             *	Get the error counter of db saving
-             */
-            auto get_nok_db(const string& signame) -> uint32_t;
-            /**
-             *	Get the error counter of db saving for freq stats
-             */
-            auto get_nok_db_freq(const string& signame) -> uint32_t;
-            /**
-             *	Get avg store time
-             */
-            auto get_avg_store_time(const string& signame) -> std::chrono::duration<double>;
-            /**
-             *	Get min store time
-             */
-            auto get_min_store_time(const string& signame) -> std::chrono::duration<double>;
-            /**
-             *	Get max store time
-             */
-            auto get_max_store_time(const string& signame) -> std::chrono::duration<double>;
-            /**
-             *	Get avg process time
-             */
-            auto get_avg_process_time(const string& signame) -> std::chrono::duration<double>;
-            /**
-             *	Get min process time
-             */
-            auto get_min_process_time(const string& signame) -> std::chrono::duration<double>;
-            /**
-             *	Get max process time
-             */
-            auto get_max_process_time(const string& signame) -> std::chrono::duration<double>;
-            /**
-             *	Get last nokdb timestamp
-             */
-            auto get_last_nokdb(const string& signame) -> std::chrono::time_point<std::chrono::system_clock>;
-            /**
-             *	reset state
-             */
-            void set_ok_db(const string& signame, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time);
-
-            void  start_attr(const string& signame);
-            void  pause_attr(const string& signame);
-            void  stop_attr(const string& signame);
-            void  remove_attr(const string& signame);
-            void  add_attr(const string& signame, int data_type, int data_format, int write_type);
-            void  start_all();
-            void  pause_all();
-            void  stop_all();
-            void  updatettl(const string &signame, unsigned int ttl);
-
-            /**
-             *	Return ALARM if at list one signal is not saving in DB.
-             */
-            auto state() -> Tango::DevState;
+            void start_attr(HdbSignal& signal);
+            void pause_attr(HdbSignal& signal);
+            void stop_attr(HdbSignal& signal);
+            void remove_attr(HdbSignal& signal);
+            void add_attr(HdbSignal& signal, int data_type, int data_format, int write_type);
+            void updatettl(HdbSignal& signal, unsigned int ttl);
 
     };
 

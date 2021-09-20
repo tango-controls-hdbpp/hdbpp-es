@@ -9,6 +9,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 #include <tango.h>
 
 
@@ -27,7 +28,9 @@ namespace HdbEventSubscriber_ns
 
         std::string name;
 
-        explicit HdbSignal(Tango::DeviceImpl* dev, const std::string& name, const std::vector<std::string>& contexts);
+        std::atomic_uint idx;
+
+        explicit HdbSignal(HdbDevice* dev, const std::string& name, const std::vector<std::string>& contexts);
 
         struct SignalConfig
         {
@@ -85,7 +88,8 @@ namespace HdbEventSubscriber_ns
         auto is_on_error() -> bool
         {
             ReaderLock lock(siglock);
-            return evstate == Tango::ALARM && is_running();
+            ReaderLock lk(dblock);
+            return (evstate == Tango::ALARM && is_running()) || dbstate == Tango::ALARM;
         }
 
         auto is_on() -> bool
@@ -97,10 +101,47 @@ namespace HdbEventSubscriber_ns
         auto is_not_on_error() -> bool
         {
             ReaderLock lock(siglock);
-            return evstate == Tango::ON || (evstate == Tango::ALARM && !is_running());
+            ReaderLock lk(dblock);
+            return (evstate == Tango::ON || (evstate == Tango::ALARM && !is_running())) && dbstate != Tango::ALARM;
         }
 
         auto get_error() -> std::string;
+
+        auto get_avg_store_time() -> std::chrono::duration<double>
+        {
+            ReaderLock lock(dblock);
+            return store_time_avg;
+        }
+
+        auto get_min_store_time() -> std::chrono::duration<double>
+        {
+            ReaderLock lock(dblock);
+            return store_time_min;
+        }
+
+        auto get_max_store_time() -> std::chrono::duration<double>
+        {
+            ReaderLock lock(dblock);
+            return store_time_max;
+        }
+
+        auto get_avg_process_time() -> std::chrono::duration<double>
+        {
+            ReaderLock lock(dblock);
+            return process_time_avg;
+        }
+
+        auto get_min_process_time() -> std::chrono::duration<double>
+        {
+            ReaderLock lock(dblock);
+            return process_time_min;
+        }
+
+        auto get_max_process_time() -> std::chrono::duration<double>
+        {
+            ReaderLock lock(dblock);
+            return process_time_max;
+        }
 
         auto get_ok_events() -> unsigned int
         {
@@ -111,11 +152,20 @@ namespace HdbEventSubscriber_ns
         {
             return get_events(nok_events);
         }
+        
+        auto get_nok_db() -> unsigned int
+        {
+            return get_events(nokdb_events);
+        }
+        
+        auto get_ok_db() -> unsigned int
+        {
+            return get_events(okdb_events);
+        }
 
         auto get_total_events() -> unsigned int
         {
-            ReaderLock lock(siglock);
-            return ok_events.counter + nok_events.counter;
+            return get_ok_events() + get_nok_events();
         }
 
         auto get_last_ok_event() -> std::chrono::time_point<std::chrono::system_clock>
@@ -128,6 +178,11 @@ namespace HdbEventSubscriber_ns
             return get_last_event(nok_events);
         }
 
+        auto get_last_nok_db() -> std::chrono::time_point<std::chrono::system_clock>
+        {
+            return get_last_event(nokdb_events);
+        }
+        
         auto get_ok_events_freq() -> double
         {
             return get_events_freq(ok_events);
@@ -137,6 +192,16 @@ namespace HdbEventSubscriber_ns
         {
             return get_events_freq(nok_events);
         }
+        
+        auto get_nok_db_freq() -> double
+        {
+            return get_events_freq(nokdb_events);
+        }
+        
+        auto get_ok_db_freq() -> double
+        {
+            return get_events_freq(okdb_events);
+        }
 
         auto set_ok_event() -> void;
 
@@ -144,15 +209,29 @@ namespace HdbEventSubscriber_ns
 
         auto set_nok_periodic_event() -> void;
 
+        auto set_nok_db(const std::string& error) -> void;
+        
+        auto set_ok_db(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void;
+
         auto get_status() -> std::string
         {
             ReaderLock lock(siglock);
-            return status;
+            ReaderLock lk(dblock);
+            std::stringstream ret;
+            ret << status;
+            if(dbstate == Tango::ALARM)
+            {
+                ret << std::endl << dberror;
+            }
+            return ret.str();
         }
 
         auto get_state() -> Tango::DevState
         {
             ReaderLock lock(siglock);
+            ReaderLock lk(dblock);
+            if(dbstate == Tango::ALARM)
+                return Tango::ALARM;
             return evstate;
         }
 
@@ -166,16 +245,18 @@ namespace HdbEventSubscriber_ns
 
         auto reset_statistics() -> void
         {
-            WriterLock lock(siglock);
             ok_events.reset();
             nok_events.reset();
-        }
-
-        auto reset_freq_statistics() -> void
-        {
-            WriterLock lock(siglock);
-            ok_events.timestamps.clear();
-            nok_events.timestamps.clear();
+            nokdb_events.reset();
+            okdb_events.reset();
+            
+            WriterLock lock(dblock);
+            store_time_avg = std::chrono::duration<double>::zero();
+            store_time_min = std::chrono::duration<double>::min();
+            store_time_max = std::chrono::duration<double>::min();
+            process_time_avg = std::chrono::duration<double>::zero();
+            process_time_min = std::chrono::duration<double>::min();
+            process_time_max = std::chrono::duration<double>::min();
         }
 
         auto get_signal_config() -> SignalConfig;
@@ -270,36 +351,47 @@ namespace HdbEventSubscriber_ns
         }
 
         private:
+
         class EventCounter
         {
             friend class HdbSignal;
 
-            unsigned int counter;
+            std::atomic_uint counter;
             std::deque<std::chrono::time_point<std::chrono::system_clock>> timestamps;
+            mutable std::mutex timestamps_mutex;
+
+            EventCounter():counter(0)
+            {
+            }
 
             void increment()
             {
                 ++counter;
-                auto now = std::chrono::system_clock::now();
-
-                if(timestamps.size()>0)
                 {
-                    auto first = timestamps.front();
-                    std::chrono::duration<double> interval = now - first;
-                    if(interval > stats_window)
-                        timestamps.pop_front();
+                    std::lock_guard<mutex> lk(timestamps_mutex);
+                    auto now = std::chrono::system_clock::now();
+
+                    if(timestamps.size()>0)
+                    {
+                        auto first = timestamps.front();
+                        std::chrono::duration<double> interval = now - first;
+                        if(interval > stats_window)
+                            timestamps.pop_front();
+                    }
+                    timestamps.push_back(now);
                 }
-                timestamps.push_back(now);
             }
 
             public:
             double get_freq() const
             {
+                std::lock_guard<mutex> lk(timestamps_mutex);
                 return timestamps.size()/stats_window.count();
             }
 
             double get_freq_inst() const
             {
+                std::lock_guard<mutex> lk(timestamps_mutex);
                 if(timestamps.size() > 1)
                 {
                     auto last_val = timestamps.back();
@@ -308,6 +400,15 @@ namespace HdbEventSubscriber_ns
                     return 1./(last_val - second_last).count();
                 }
                 return 0.;
+            }
+
+            auto get_last_event() const -> std::chrono::time_point<std::chrono::system_clock>
+            {
+                std::lock_guard<mutex> lk(timestamps_mutex);
+                if(timestamps.size()>0)
+                    return timestamps.back();
+                struct std::chrono::time_point<std::chrono::system_clock> ret;
+                return ret;
             }
 
             void reset()
@@ -323,6 +424,7 @@ namespace HdbEventSubscriber_ns
 
             public:
             explicit PeriodicEventCheck(HdbSignal& sig): signal(sig)
+                                                         , abort(false)
             {
                 period = std::chrono::milliseconds::min();
                 periodic_check = std::make_unique<std::thread>(&PeriodicEventCheck::check_periodic_event_timeout, this);
@@ -346,7 +448,10 @@ namespace HdbEventSubscriber_ns
 
             auto set_period(std::chrono::milliseconds p) -> void
             {
-                period = p;
+                {
+                    std::lock_guard<mutex> lk(m);
+                    period = p;
+                }
                 notify();
             };
 
@@ -355,10 +460,11 @@ namespace HdbEventSubscriber_ns
             std::chrono::milliseconds period;
             std::mutex m;
             std::condition_variable cv;
-            bool abort = false;
+            std::atomic_bool abort;
+            
             auto check_periodic_event() -> bool
             {
-                return period > std::chrono::milliseconds::min() && signal.is_on();
+                return period > std::chrono::milliseconds::zero() && signal.is_on();
             };
         };
 
@@ -377,6 +483,19 @@ namespace HdbEventSubscriber_ns
         bool isZMQ;
         EventCounter ok_events;
         EventCounter nok_events;
+        
+        // DB insertion stats and state
+        EventCounter nokdb_events;
+        EventCounter okdb_events;
+        Tango::DevState dbstate;
+        std::string dberror;
+        std::chrono::duration<double> process_time_avg;
+        std::chrono::duration<double> process_time_min;
+        std::chrono::duration<double> process_time_max;
+        std::chrono::duration<double> store_time_avg;
+        std::chrono::duration<double> store_time_min;
+        std::chrono::duration<double> store_time_max;
+        
         bool running;
         bool paused;
         bool stopped;
@@ -384,35 +503,34 @@ namespace HdbEventSubscriber_ns
         std::vector<std::string> contexts_upper;
         unsigned int ttl;
         std::unique_ptr<PeriodicEventCheck> event_checker;
+
+        std::function<void(unsigned int idx, bool ok, double freq)> update_freq_callback;
+        std::function<void(unsigned int idx, bool ok, double freq)> update_freq_db_callback;
+        std::function<void(unsigned int idx, std::chrono::duration<double> store, std::chrono::duration<double> process)> update_timing_callback;
+
         ReadersWritersLock siglock;
+        ReadersWritersLock dblock;
 
         void unsubscribe_event(const int event_id);
 
         auto get_events(const EventCounter& c) -> unsigned int
         {
-            ReaderLock lock(siglock);
-            return c.counter;
+            return c.counter.load();
         }
 
         auto get_events_freq(const EventCounter& c) -> double
         {
-            ReaderLock lock(siglock);
             return c.get_freq();
         }
 
         auto get_events_freq_inst(const EventCounter& c) -> double
         {
-            ReaderLock lock(siglock);
             return c.get_freq_inst();
         }
 
         auto get_last_event(const EventCounter& c) -> std::chrono::time_point<std::chrono::system_clock>
         {
-            ReaderLock lock(siglock);
-            if(c.timestamps.size()>0)
-                return c.timestamps.back();
-            struct std::chrono::time_point<std::chrono::system_clock> ret;
-            return ret;
+            return c.get_last_event();
         }
 
     };

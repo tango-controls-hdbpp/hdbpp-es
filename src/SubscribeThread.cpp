@@ -42,6 +42,7 @@
 
 #include "SubscribeThread.h"
 #include <HdbDevice.h>
+#include "PushThread.h"
 #include <HdbEventSubscriber.h>
 #include "HdbSignal.h"
 #include "Consts.h"
@@ -114,33 +115,46 @@ namespace HdbEventSubscriber_ns
         // Remove in signals list (vector)
         auto sig = get_signal(signame);
 
+        hdb_dev->push_thread->remove_attr(*sig);
+        
         if(stop)
         {
             unsubscribe_events(sig);
         }
         else
         {
-            WriterLock lock(veclock);
-            auto pos = signals.begin();
-
-            for(size_t i = 0; i < signals.size(); ++i, pos++)
+            size_t idx = 0;
+            bool running = false;
+            bool paused = false;
+            bool stopped = false;
             {
-                std::shared_ptr<HdbSignal> sig = signals[i];
-                if(is_same_signal_name(sig->name, signame))
+                WriterLock lock(veclock);
+                auto pos = signals.begin();
+
+                for(size_t i = 0; i < signals.size(); ++i, pos++)
                 {
-                    if(sig->is_running())
-                        hdb_dev->attr_AttributeStartedNumber_read--;
-                    if(sig->is_paused())
-                        hdb_dev->attr_AttributePausedNumber_read--;
-                    if(sig->is_stopped())
-                        hdb_dev->attr_AttributeStoppedNumber_read--;
-                    hdb_dev->attr_AttributeNumber_read--;
-                    signals.erase(pos);
-                    DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
-                    break;
+                    std::shared_ptr<HdbSignal> sig = signals[i];
+                    if(is_same_signal_name(sig->name, signame))
+                    {
+                        // devalidate its index in case it tries to access one of the list
+                        sig->idx = MAX_ATTRIBUTES-1;
+                        idx = i;
+                        running = sig->is_running();
+                        paused = sig->is_paused();
+                        stopped = sig->is_stopped();
+                        
+                        signals.erase(pos);
+                        DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
+                        break;
+                    }
+                }
+                for(; pos != signals.end(); pos++)
+                {
+                    (*pos)->idx--;
                 }
             }
-            pos = signals.begin();
+            
+            hdb_dev->remove_attribute(idx, running, paused, stopped);
 
             // then, update property
             {
@@ -149,7 +163,7 @@ namespace HdbEventSubscriber_ns
                 if(action <= UPDATE_PROP)
                     action++;
             }
-            //put_signal_property(); //TODO: wakeup thread and let it do it? -> signal()
+
             signal();
         }
     }
@@ -182,15 +196,16 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void SharedData::start(const string& signame)
     {
-        vector<string> contexts; //TODO: not used in add(..., true)!!!
         auto signal = get_signal(signame);
+
+        hdb_dev->push_thread->start_attr(*signal);
 
         if(!signal->is_running())
         {
             if(signal->is_stopped())
             {
                 hdb_dev->attr_AttributeStoppedNumber_read--;
-                add(signal, contexts, NOTHING, true);
+                add(signal, NOTHING, true);
             }
 
             if(signal->is_paused())
@@ -211,6 +226,8 @@ namespace HdbEventSubscriber_ns
     {
         auto signal = get_signal(signame);
 
+        hdb_dev->push_thread->pause_attr(*signal);
+
         if(!signal->is_paused())
         {
             hdb_dev->attr_AttributePausedNumber_read++;
@@ -229,6 +246,8 @@ namespace HdbEventSubscriber_ns
     void SharedData::stop(const string& signame)
     {
         auto signal = get_signal(signame);
+
+        hdb_dev->push_thread->stop_attr(*signal);
 
         if(!signal->is_stopped())
         {
@@ -430,16 +449,18 @@ namespace HdbEventSubscriber_ns
      * Add a new signal.
      */
     //=============================================================================
-    void SharedData::add(const string& signame, const vector<string> & contexts)
+    void SharedData::add(const string& signame, const vector<string> & contexts, unsigned int ttl)
     {
-        add(signame, contexts, NOTHING, false);
+        auto signal = add(signame, contexts, false);
+        add(signal, NOTHING, false);
+        hdb_dev->push_thread->updatettl(*signal, ttl);
     }
     //=============================================================================
     /**
      * Add a new signal.
      */
     //=============================================================================
-    void SharedData::add(std::shared_ptr<HdbSignal> sig, const vector<string> & contexts, int to_do, bool start)
+    void SharedData::add(std::shared_ptr<HdbSignal> sig, int to_do, bool start)
     {
         sig->init();
         if(start)
@@ -467,9 +488,18 @@ namespace HdbEventSubscriber_ns
      * Add a new signal.
      */
     //=============================================================================
-    void SharedData::add(const string& signame, const vector<string> & contexts, int to_do, bool start)
+    void SharedData::add(const string &signame, const vector<string> & contexts, int data_type, int data_format, int write_type, int to_do, bool start)
     {
-        DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " to_do="<<to_do<<" start="<<(start ? "Y" : "N")<< endl;
+        auto signal = add(signame, contexts, start);
+
+        hdb_dev->push_thread->add_attr(*signal, data_type, data_format, write_type);
+
+        add(signal, to_do, start);
+    }
+
+    std::shared_ptr<HdbSignal> SharedData::add(const string& signame, const vector<string> & contexts, bool start)
+    {
+        DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " start="<<(start ? "Y" : "N")<< endl;
 
         // Check if already subscribed
         bool found = false;
@@ -491,11 +521,12 @@ namespace HdbEventSubscriber_ns
 
         if (!found)
         {
-            signal = std::make_shared<HdbSignal>(hdb_dev->_device, signame, contexts);
+            signal = std::make_shared<HdbSignal>(hdb_dev, signame, contexts);
 
             veclock.writerIn();
             // Add in vector
             signals.push_back(signal);
+            signal->idx = signals.size() - 1;
             hdb_dev->attr_AttributeNumber_read++;
 
             if(!start)
@@ -504,7 +535,7 @@ namespace HdbEventSubscriber_ns
             veclock.writerOut();
         }
 
-        add(signal, contexts, to_do, start);
+        return signal;
 
         //condition.signal();
     }
@@ -543,6 +574,7 @@ namespace HdbEventSubscriber_ns
 
         auto sig = get_signal(signame);
 
+        hdb_dev->push_thread->updatettl(*sig, ttl);
         //DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<signame<<" found="<<(found ? "Y" : "N") << endl;
 
         sig->set_ttl(ttl);
@@ -578,8 +610,7 @@ namespace HdbEventSubscriber_ns
             {
                 try
                 {
-                    vector<string> contexts; //TODO: not used in add(..., true)!!!
-                    add(sig, contexts, NOTHING, true);
+                    add(sig, NOTHING, true);
 
                 }
                 catch (Tango::DevFailed &e)
@@ -1119,6 +1150,107 @@ namespace HdbEventSubscriber_ns
 
         signal->set_nok_periodic_event();
     }
+
+    //=============================================================================
+    /**
+     *	Get the error counter of db saving
+     */
+    //=============================================================================
+    auto SharedData::get_nok_db(const string &signame) -> uint32_t
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_nok_db();
+    }
+    //=============================================================================
+    /**
+     *	Get the error counter of db saving for freq stats
+     */
+    //=============================================================================
+    auto SharedData::get_nok_db_freq(const string &signame) -> uint32_t
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_nok_db_freq();
+    }
+    //=============================================================================
+    /**
+     *	Get avg store time
+     */
+    //=============================================================================
+    auto SharedData::get_avg_store_time(const string &signame) -> std::chrono::duration<double>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_avg_store_time();
+    }
+    //=============================================================================
+    /**
+     *	Get min store time
+     */
+    //=============================================================================
+    auto SharedData::get_min_store_time(const string &signame) -> std::chrono::duration<double>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_min_store_time();
+    }
+    //=============================================================================
+    /**
+     *	Get max store time
+     */
+    //=============================================================================
+    auto SharedData::get_max_store_time(const string &signame) -> std::chrono::duration<double>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_max_store_time();
+    }
+    //=============================================================================
+    /**
+     *	Get avg process time
+     */
+    //=============================================================================
+    auto SharedData::get_avg_process_time(const string &signame) -> std::chrono::duration<double>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_avg_process_time();
+    }
+    //=============================================================================
+    /**
+     *	Get min process time
+     */
+    //=============================================================================
+    auto SharedData::get_min_process_time(const string &signame) -> std::chrono::duration<double>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_min_process_time();
+    }
+    //=============================================================================
+    /**
+     *	Get max process time
+     */
+    //=============================================================================
+    auto SharedData::get_max_process_time(const string &signame) -> std::chrono::duration<double>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_max_process_time();
+    }
+    //=============================================================================
+    /**
+     *	Get last nokdb timestamp
+     */
+    //=============================================================================
+    auto SharedData::get_last_nokdb(const string &signame) -> std::chrono::time_point<std::chrono::system_clock>
+    {
+        auto signal = get_signal(signame);
+
+        return signal->get_last_nok_db();    
+    }
+
     //=============================================================================
     /**
      * Return the status of specified signal
@@ -1185,19 +1317,6 @@ namespace HdbEventSubscriber_ns
         for (auto &signal : signals)
         {
             signal->reset_statistics();
-        }
-    }
-    //=============================================================================
-    /**
-     * Reset freq statistic counters
-     */
-    //=============================================================================
-    void SharedData::reset_freq_statistics()
-    {
-        ReaderLock lock(veclock);
-        for (auto &signal : signals)
-        {
-            signal->reset_freq_statistics();
         }
     }
     //=============================================================================

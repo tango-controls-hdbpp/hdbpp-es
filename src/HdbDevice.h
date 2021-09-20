@@ -48,6 +48,7 @@
 
 #include <tango.h>
 #include "Consts.h"
+#include <mutex>
 
 /**
  * @author	$Author: graziano $
@@ -64,7 +65,6 @@ namespace HdbEventSubscriber_ns
 {
 
 class PollerThread;
-class StatsThread;
 class PushThread;
 class SubscribeThread;
 class SharedData;
@@ -80,12 +80,12 @@ class HdbDevice: public Tango::LogAdapter
     private:
         std::string current_context;
         std::chrono::time_point<std::chrono::system_clock> last_stat;
+        std::mutex attributes_mutex;
 public:
 	//	Data members here
 	//-----------------------------------------
 	std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>> thread;
 	std::unique_ptr<PushThread, std::function<void(PushThread*)>> push_thread;
-	std::unique_ptr<StatsThread, std::function<void(StatsThread*)>> stats_thread;
 	std::unique_ptr<PollerThread, std::function<void(PollerThread*)>> poller_thread;
 	int					period;
 	int					poller_period;
@@ -278,10 +278,6 @@ public:
 	 */
 	 void reset_statistics();
 	/**
-	 *	Reset statistic freq counters
-	 */
-	 void reset_freq_statistics();
-	/**
 	 *	Return the complete, started  and stopped lists of signals
 	 */
 	bool  get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list, Tango::DevULong *ttl_list);
@@ -336,6 +332,16 @@ public:
         template<typename T>
         void push_events(const std::string& att_name, T* data, long size, bool sleep = false);
 
+        /**
+         * To be called after an attribute has been removed to update the various attributes.
+         * Ex: decrease number of attribute, remove it from the stats and reindex lists.
+         */
+        auto remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void;
+        
+        auto update_freq_callback(unsigned int idx, bool ok, double freq) -> void;
+        auto update_freq_db_callback(unsigned int idx, bool ok, double freq) -> void;
+        auto update_timing_callback(unsigned int idx, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void;
+
 protected :	
 	/**
 	 * Read signal list in database as property.
@@ -361,7 +367,7 @@ protected :
 	 */
 	void store_string(string &name, vector<string> values, int time);
 
-private:	
+private:
 	/**
 	 *	Returns the tango host and signal name (tango host has been added since tango 7.1.1)
 	 */

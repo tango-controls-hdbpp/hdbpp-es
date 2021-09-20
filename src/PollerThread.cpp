@@ -41,8 +41,6 @@ namespace HdbEventSubscriber_ns
     void PollerThread::init_abort_loop()
     {
         INFO_STREAM << "PollerThread id="<<omni_thread::self()->id()<<endl;
-        hdb_dev->AttributeRecordFreq = -1;
-        hdb_dev->AttributeFailureFreq = -1;
     }
 
     //=============================================================================

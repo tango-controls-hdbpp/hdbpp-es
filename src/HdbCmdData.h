@@ -24,66 +24,74 @@
 #include "hdb++/AbstractDB.h"
 #include <tango.h>
 #include <string>
+#include "HdbSignal.h"
 
 namespace HdbEventSubscriber_ns
 {
 
-class  HdbCmdData
-{
-public:
-
-	HdbCmdData(Tango::EventData *ev_data_, hdbpp::HdbEventDataType ev_data_type_) :
-        ev_data(ev_data_), 
-        ev_data_param (nullptr),
-        ev_data_type(ev_data_type_),
-        op_code(DB_INSERT) {}
-
-	HdbCmdData(Tango::AttrConfEventData *ev_data_param_, hdbpp::HdbEventDataType ev_data_type_) :
-        ev_data(nullptr),
-        ev_data_param(ev_data_param_),
-        ev_data_type(ev_data_type_),
-        op_code(DB_INSERT_PARAM) {}
-
-	HdbCmdData(uint8_t op_code_, const std::string &attr_name_) :
-        op_code(op_code_),
-        attr_name(attr_name_),
-        ev_data(nullptr),
-        ev_data_param(nullptr) {}
-
-	HdbCmdData(uint8_t op_code_, unsigned int ttl_, const std::string &attr_name_) : 
-        op_code(op_code_),
-        attr_name(attr_name_),
-        ttl(ttl_),
-        ev_data(nullptr),
-        ev_data_param(nullptr) {}
-
-	HdbCmdData(uint8_t op_code_, int data_type_, int data_format_, int write_type_, const std::string &attr_name_) : 
-        op_code(op_code_),
-        attr_name(attr_name_),
-        data_type(data_type_),
-        data_format(data_format_),
-        write_type(write_type_),
-        ev_data(nullptr),
-        ev_data_param(nullptr) {}
-
-    ~HdbCmdData()
+    class  HdbCmdData
     {
-        if(ev_data) 
-            delete ev_data; 
-            
-        if(ev_data_param) 
-            delete ev_data_param;
-    }
+        public:
 
-	Tango::EventData *ev_data;
-	Tango::AttrConfEventData *ev_data_param;
-	hdbpp::HdbEventDataType ev_data_type;
-	uint8_t op_code;
-	unsigned int  ttl;
-	std::string attr_name;
-	int data_type;
-	int data_format;
-	int write_type;
-};
+            HdbCmdData(HdbSignal& signal, Tango::EventData *ev_data_, hdbpp::HdbEventDataType ev_data_type_) :
+                ev_data(ev_data_), 
+                ev_data_param (nullptr),
+                ev_data_type(ev_data_type_),
+                op_code(DB_INSERT),
+                signal(signal)
+        {}
+
+            HdbCmdData(HdbSignal& signal, Tango::AttrConfEventData *ev_data_param_, hdbpp::HdbEventDataType ev_data_type_) :
+                ev_data(nullptr),
+                ev_data_param(ev_data_param_),
+                ev_data_type(ev_data_type_),
+                op_code(DB_INSERT_PARAM),
+                signal(signal)
+        {}
+
+            HdbCmdData(HdbSignal& signal, uint8_t op_code_) :
+                op_code(op_code_),
+                ev_data(nullptr),
+                ev_data_param(nullptr),
+                signal(signal)
+        {}
+
+            HdbCmdData(HdbSignal& signal, uint8_t op_code_, unsigned int ttl_) : 
+                op_code(op_code_),
+                ttl(ttl_),
+                ev_data(nullptr),
+                ev_data_param(nullptr),
+                signal(signal)
+        {}
+
+            HdbCmdData(HdbSignal& signal, uint8_t op_code_, int data_type_, int data_format_, int write_type_) : 
+                op_code(op_code_),
+                data_type(data_type_),
+                data_format(data_format_),
+                write_type(write_type_),
+                ev_data(nullptr),
+                ev_data_param(nullptr),
+                signal(signal)
+        {}
+
+            ~HdbCmdData()
+            {
+                if(ev_data) 
+                    delete ev_data; 
+
+                if(ev_data_param) 
+                    delete ev_data_param;
+            }
+
+            Tango::EventData *ev_data;
+            Tango::AttrConfEventData *ev_data_param;
+            hdbpp::HdbEventDataType ev_data_type;
+            uint8_t op_code;
+            unsigned int  ttl;
+            HdbSignal& signal;
+            int data_type;
+            int data_format;
+            int write_type;
+    };
 }	// namespace_ns
 #endif // _HDB_CMD_DATA_H

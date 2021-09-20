@@ -63,7 +63,6 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 #include <tango.h>
 #include <HdbEventSubscriber.h>
 #include <HdbEventSubscriberClass.h>
-#include "StatsThread.h"
 #include "SubscribeThread.h"
 #include "PushThread.h"
 #include "Consts.h"
@@ -1426,7 +1425,6 @@ void HdbEventSubscriber::attribute_remove(Tango::DevString argin)
         if(is_running || is_paused)
         {
             hdb_dev->shared->stop(signame);
-            hdb_dev->push_thread->stop_attr(signame);
         }
         hdb_dev->remove(signame);
 
@@ -1488,15 +1486,15 @@ Tango::DevString HdbEventSubscriber::attribute_status(Tango::DevString argin)
         attr_status << "Event NOK counter  : "<<nok_ev<<" - "<< format_date(tv, nok_ev);
         attr_status << endl;
 
-        tv = hdb_dev->push_thread->get_last_nokdb(signame);
-        uint32_t nok_db = hdb_dev->push_thread->get_nok_db(signame);
+        tv = hdb_dev->shared->get_last_nokdb(signame);
+        uint32_t nok_db = hdb_dev->shared->get_nok_db(signame);
         
         attr_status << "DB ERRORS counter  : "<<nok_db<<" - "<< format_date(tv, nok_db);
         attr_status << endl;
 
-        attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->push_thread->get_avg_store_time(signame).count()<<"s";
+        attr_status << "Storing time AVG   : "<<fixed<<hdb_dev->shared->get_avg_store_time(signame).count()<<"s";
         attr_status << endl;
-        attr_status << "Processing time AVG: "<<fixed<<hdb_dev->push_thread->get_avg_process_time(signame).count()<<"s";
+        attr_status << "Processing time AVG: "<<fixed<<hdb_dev->shared->get_avg_process_time(signame).count()<<"s";
         argout  = new char[attr_status.str().length()+1];
         strcpy(argout, attr_status.str().c_str());
 
