@@ -351,6 +351,12 @@ public:
 	auto get_if_stop() -> bool;
 	void stop_thread();
 	void wait_initialized();
+
+        auto get_record_freq() -> double;
+        auto get_failure_freq() -> double;
+        auto get_record_freq_list(std::vector<double>& ret) -> void;
+        auto get_failure_freq_list(std::vector<double>& ret) -> void;
+        auto get_event_number_list(std::vector<unsigned int>& ret) -> void;
 };
 
 

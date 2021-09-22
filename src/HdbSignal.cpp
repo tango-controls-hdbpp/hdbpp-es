@@ -8,6 +8,12 @@ namespace HdbEventSubscriber_ns
     std::chrono::duration<double> HdbSignal::stats_window = std::chrono::seconds(1);
     std::chrono::milliseconds HdbSignal::delay_periodic_event = std::chrono::milliseconds::zero();
 
+    std::chrono::duration<double> HdbSignal::min_process_time = std::chrono::duration<double>::max();
+    std::chrono::duration<double> HdbSignal::max_process_time = std::chrono::duration<double>::min();
+    std::chrono::duration<double> HdbSignal::min_store_time = std::chrono::duration<double>::max();
+    std::chrono::duration<double> HdbSignal::max_store_time = std::chrono::duration<double>::min();
+    std::mutex HdbSignal::static_mutex;
+    
     HdbSignal::HdbSignal(HdbDevice* dev
             , const std::string& signame
             , const std::vector<std::string>& ctxts) : LogAdapter(dev->_device)
@@ -45,9 +51,6 @@ namespace HdbEventSubscriber_ns
         using std::placeholders::_1;
         using std::placeholders::_2;
         using std::placeholders::_3;
-        update_freq_callback = std::bind(&HdbDevice::update_freq_callback, dev, _1, _2, _3);
-        update_freq_db_callback = std::bind(&HdbDevice::update_freq_db_callback, dev, _1, _2, _3);
-        update_timing_callback = std::bind(&HdbDevice::update_timing_callback, dev, _1, _2, _3);
     }
 
     void HdbSignal::remove_callback()
@@ -211,6 +214,7 @@ namespace HdbEventSubscriber_ns
         {
             return status;
         }
+        ReaderLock lk(dblock);
         if(dbstate == Tango::ALARM)
         {
             return dberror;
@@ -232,15 +236,12 @@ namespace HdbEventSubscriber_ns
 
         event_checker->notify();
         }
-
-        update_freq_callback(idx, true, ok_events.get_freq());
     }
 
     auto HdbSignal::set_nok_event() -> void
     {
         nok_events.increment();
         event_checker->notify();
-        update_freq_callback(idx, false, nok_events.get_freq());
     }
 
     auto HdbSignal::set_nok_periodic_event() -> void
@@ -260,32 +261,36 @@ namespace HdbEventSubscriber_ns
         if(error.length() > 0)
             dberror += ": " + error;
         }
-        update_freq_db_callback(idx, false, nokdb_events.get_freq());
     }
 
     auto HdbSignal::set_ok_db(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void
     {
         {
-        WriterLock lock(dblock);
+            WriterLock lock(dblock);
 
-        dbstate = Tango::ON;
-        dberror = "";
-        
-        store_time_avg = ((store_time_avg * okdb_events.counter.load()) + store_time)/(okdb_events.counter+1);
-        //stat store min
-        store_time_min = std::min(store_time, store_time_min);
-        //stat store max
-        store_time_max = std::max(store_time, store_time_max);
+            dbstate = Tango::ON;
+            dberror = "";
 
-        process_time_avg = ((process_time_avg * okdb_events.counter.load()) + process_time)/(okdb_events.counter+1);
-        //stat process min
-        process_time_min = std::min(process_time, process_time_min);
-        //stat process max
-        process_time_max = std::max(process_time, process_time_max);
+            store_time_avg = ((store_time_avg * okdb_events.counter.load()) + store_time)/(okdb_events.counter+1);
+            //stat store min
+            store_time_min = std::min(store_time, store_time_min);
+            //stat store max
+            store_time_max = std::max(store_time, store_time_max);
+
+            process_time_avg = ((process_time_avg * okdb_events.counter.load()) + process_time)/(okdb_events.counter+1);
+            //stat process min
+            process_time_min = std::min(process_time, process_time_min);
+            //stat process max
+            process_time_max = std::max(process_time, process_time_max);
+        }
+        {
+            std::lock_guard<std::mutex> lock(HdbSignal::static_mutex);
+            min_process_time = std::min(min_process_time, process_time);
+            max_process_time = std::max(max_process_time, process_time);
+            min_store_time = std::min(min_store_time, store_time);
+            max_store_time = std::max(max_store_time, store_time);
         }
         okdb_events.increment();
-        update_freq_db_callback(idx, true, okdb_events.get_freq());
-        update_timing_callback(idx, store_time, process_time);
     }
 
     auto HdbSignal::get_contexts() -> std::string
@@ -313,8 +318,8 @@ namespace HdbEventSubscriber_ns
         std::unique_lock<std::mutex> lk(m);
         while(!abort)
         {
-            if(!check_periodic_event())
-                cv.wait(lk, [this]{return !abort && check_periodic_event();});
+            while(!check_periodic_event() && !abort)
+                cv.wait(lk);
             while (!abort && check_periodic_event()) {
                 if(cv.wait_for(lk, period + HdbSignal::delay_periodic_event) == std::cv_status::timeout)
                 {

@@ -137,8 +137,6 @@ namespace HdbEventSubscriber_ns
                     if(is_same_signal_name(sig->name, signame))
                     {
                         // devalidate its index in case it tries to access one of the list
-                        sig->idx = MAX_ATTRIBUTES-1;
-                        idx = i;
                         running = sig->is_running();
                         paused = sig->is_paused();
                         stopped = sig->is_stopped();
@@ -147,10 +145,6 @@ namespace HdbEventSubscriber_ns
                         DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
                         break;
                     }
-                }
-                for(; pos != signals.end(); pos++)
-                {
-                    (*pos)->idx--;
                 }
             }
             
@@ -526,7 +520,6 @@ namespace HdbEventSubscriber_ns
             veclock.writerIn();
             // Add in vector
             signals.push_back(signal);
-            signal->idx = signals.size() - 1;
             hdb_dev->attr_AttributeNumber_read++;
 
             if(!start)
@@ -1318,6 +1311,7 @@ namespace HdbEventSubscriber_ns
         {
             signal->reset_statistics();
         }
+        HdbSignal::reset_min_max();
     }
     //=============================================================================
     /**
@@ -1366,6 +1360,58 @@ namespace HdbEventSubscriber_ns
             init_condition.wait();
         }
         init_mutex.unlock();
+    }
+
+    auto SharedData::get_record_freq() -> double
+    {
+        ReaderLock lock(veclock);
+        double ret = 0.;
+        for(const auto& sig : signals)
+        {
+            ret += sig->get_ok_events_freq() - sig->get_nok_db_freq();
+        }
+        return ret;
+    }
+
+    auto SharedData::get_failure_freq() -> double
+    {
+        ReaderLock lock(veclock);
+        double ret = 0.;
+        for(const auto& sig : signals)
+        {
+            ret += sig->get_nok_events_freq() + sig->get_nok_db_freq();
+        }
+        return ret;
+    }
+
+    auto SharedData::get_record_freq_list(std::vector<double>& ret) -> void
+    {
+        ReaderLock lock(veclock);
+        ret.clear();
+        for(const auto& sig : signals)
+        {
+            ret.push_back(sig->get_ok_events_freq() - sig->get_nok_db_freq());
+        }
+    }
+
+    auto SharedData::get_failure_freq_list(std::vector<double>& ret) -> void
+    {
+        ReaderLock lock(veclock);
+        ret.clear();
+        for(const auto& sig : signals)
+        {
+            ret.push_back(sig->get_nok_events_freq() + sig->get_nok_db_freq());
+        }
+    }
+
+    auto SharedData::get_event_number_list(std::vector<unsigned int>& ret) -> void
+    {
+        ReaderLock lock(veclock);
+        ret.clear();
+        for(const auto& sig : signals)
+        {
+            ret.push_back(sig->get_ok_events() + sig->get_nok_events());
+        }
     }
 
     //=============================================================================

@@ -25,10 +25,8 @@ namespace HdbEventSubscriber_ns
         public:
         static std::chrono::duration<double> stats_window;
         static std::chrono::milliseconds delay_periodic_event;
-
+        
         std::string name;
-
-        std::atomic_uint idx;
 
         explicit HdbSignal(HdbDevice* dev, const std::string& name, const std::vector<std::string>& contexts);
 
@@ -142,6 +140,30 @@ namespace HdbEventSubscriber_ns
             ReaderLock lock(dblock);
             return process_time_max;
         }
+        
+        static auto get_global_min_store_time() -> std::chrono::duration<double>
+        {
+            std::lock_guard<std::mutex> lk(static_mutex);
+            return min_store_time;
+        }
+        
+        static auto get_global_max_store_time() -> std::chrono::duration<double>
+        {
+            std::lock_guard<std::mutex> lk(static_mutex);
+            return max_store_time;
+        }
+        
+        static auto get_global_min_process_time() -> std::chrono::duration<double>
+        {
+            std::lock_guard<std::mutex> lk(static_mutex);
+            return min_process_time;
+        }
+        
+        static auto get_global_max_process_time() -> std::chrono::duration<double>
+        {
+            std::lock_guard<std::mutex> lk(static_mutex);
+            return max_process_time;
+        }
 
         auto get_ok_events() -> unsigned int
         {
@@ -241,6 +263,15 @@ namespace HdbEventSubscriber_ns
         {
             WriterLock lock(siglock);
             event_checker->set_period(std::chrono::milliseconds(p));
+        }
+
+        static auto reset_min_max() -> void
+        {
+            std::lock_guard<std::mutex> lk(static_mutex);
+            min_process_time = std::chrono::duration<double>::max();
+            max_process_time = std::chrono::duration<double>::min();
+            min_store_time = std::chrono::duration<double>::max();
+            max_store_time = std::chrono::duration<double>::min();
         }
 
         auto reset_statistics() -> void
@@ -428,7 +459,6 @@ namespace HdbEventSubscriber_ns
             {
                 period = std::chrono::milliseconds::min();
                 periodic_check = std::make_unique<std::thread>(&PeriodicEventCheck::check_periodic_event_timeout, this);
-                periodic_check->detach();
             }
 
             ~PeriodicEventCheck()
@@ -466,8 +496,21 @@ namespace HdbEventSubscriber_ns
             {
                 return period > std::chrono::milliseconds::zero() && signal.is_on();
             };
+            
+            private:
+            PeriodicEventCheck(const PeriodicEventCheck&) = delete;
+            PeriodicEventCheck& operator=(PeriodicEventCheck const&) = delete;
         };
 
+        static std::chrono::duration<double> min_process_time;
+        static std::chrono::duration<double> max_process_time;
+        static std::chrono::duration<double> min_store_time;
+        static std::chrono::duration<double> max_store_time;
+        static std::mutex static_mutex;
+
+        ReadersWritersLock siglock;
+        ReadersWritersLock dblock;
+        
         std::string devname;
         std::string attname;
         SignalConfig config;
@@ -502,14 +545,9 @@ namespace HdbEventSubscriber_ns
         std::vector<std::string> contexts;
         std::vector<std::string> contexts_upper;
         unsigned int ttl;
+        
         std::unique_ptr<PeriodicEventCheck> event_checker;
 
-        std::function<void(unsigned int idx, bool ok, double freq)> update_freq_callback;
-        std::function<void(unsigned int idx, bool ok, double freq)> update_freq_db_callback;
-        std::function<void(unsigned int idx, std::chrono::duration<double> store, std::chrono::duration<double> process)> update_timing_callback;
-
-        ReadersWritersLock siglock;
-        ReadersWritersLock dblock;
 
         void unsubscribe_event(const int event_id);
 

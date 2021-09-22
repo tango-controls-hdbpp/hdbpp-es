@@ -72,7 +72,7 @@ namespace HdbEventSubscriber_ns
         //	Add data at end of vector
         if(!is_aborted())
         {
-            size_t events_size = 0; 
+            size_t events_size = 0;
             {
                 omni_mutex_lock lock(new_data_mutex);
                 events.push_back(std::move(argin));
@@ -80,9 +80,6 @@ namespace HdbEventSubscriber_ns
                 //	Check if nb waiting more the stored one.
                 if (events_size > max_waiting)
                     max_waiting = events_size;
-                
-                hdb_dev->AttributePendingNumber = events_size;
-                hdb_dev->AttributeMaxPendingNumber = max_waiting;
             }
 
 #if 0	//TODO: sometimes deadlock: Not able to acquire serialization (dev, class or process) monitor
@@ -140,8 +137,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto PushThread::get_next_cmds() -> std::vector<std::unique_ptr<HdbCmdData>>
     {
-        size_t events_size = 0; 
-        
+        size_t events_size = 0;
         omni_mutex_lock sync(new_data_mutex);
             
         events_size = events.size();
@@ -170,9 +166,6 @@ namespace HdbEventSubscriber_ns
             events.pop_front();
         }
         
-        // We cleared the list, so this should be 0.
-        hdb_dev->AttributePendingNumber = 0;
-
         return cmds;
     }
 

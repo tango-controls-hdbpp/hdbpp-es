@@ -251,7 +251,7 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
     <attributes name="AttributeOkNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -261,7 +261,7 @@
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
     <attributes name="AttributeNokNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -271,7 +271,7 @@
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
     <attributes name="AttributePendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -281,7 +281,7 @@
       <evArchiveCriteria relChange="" absChange="2" period="3600000"/>
     </attributes>
     <attributes name="AttributeNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -371,7 +371,7 @@
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
     <attributes name="AttributeStartedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -381,7 +381,7 @@
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
     <attributes name="AttributeStoppedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -391,7 +391,7 @@
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
     <attributes name="AttributeMaxPendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -409,7 +409,7 @@
       <properties description="Seconds elapsed since the last statistics reset" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
     <attributes name="AttributePausedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>
@@ -521,7 +521,7 @@
       <evArchiveCriteria relChange="" absChange="" period="3600000"/>
     </attributes>
     <attributes name="AttributeEventNumberList" attType="Spectrum" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="10000" maxY="" allocReadMember="false" isDynamic="false">
-      <dataType xsi:type="pogoDsl:IntType"/>
+      <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
       <dataReadyEvent fire="false" libCheckCriteria="true"/>

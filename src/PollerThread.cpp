@@ -21,6 +21,7 @@ static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hd
 //-=============================================================================
 
 #include "PollerThread.h"
+#include "HdbSignal.h"
 #include <HdbDevice.h>
 #include <HdbEventSubscriber.h>
 #include "SubscribeThread.h"
@@ -60,16 +61,23 @@ namespace HdbEventSubscriber_ns
           delete [] hdb_dev->AttributeFailureFreqList;
           hdb_dev->AttributeFailureFreqList = new Tango::DevDouble[attribute_list_tmp.size()];*/
         
-        hdb_dev->push_events("AttributePendingNumber", &hdb_dev->AttributePendingNumber, true);
+        max_store_time = HdbSignal::get_global_max_store_time().count();
+        min_store_time = HdbSignal::get_global_min_store_time().count();
+        max_process_time = HdbSignal::get_global_max_store_time().count();
+        min_process_time = HdbSignal::get_global_min_store_time().count();
+       
+        max_waiting = hdb_dev->get_max_waiting();
+        current_waiting = hdb_dev->nb_cmd_waiting(); 
+        hdb_dev->push_events("AttributePendingNumber", &current_waiting, true);
         hdb_dev->push_events("AttributeNumber", &hdb_dev->attr_AttributeNumber_read, true);
         hdb_dev->push_events("AttributeStartedNumber", &hdb_dev->attr_AttributeStartedNumber_read, true);
         hdb_dev->push_events("AttributePausedNumber", &hdb_dev->attr_AttributePausedNumber_read, true);
         hdb_dev->push_events("AttributeStoppedNumber", &hdb_dev->attr_AttributeStoppedNumber_read, true);
-        hdb_dev->push_events("AttributeMaxPendingNumber", &hdb_dev->AttributeMaxPendingNumber, true);
-        hdb_dev->push_events("AttributeMaxStoreTime", &hdb_dev->attr_AttributeMaxStoreTime_read, true);
-        hdb_dev->push_events("AttributeMinStoreTime", &hdb_dev->attr_AttributeMinStoreTime_read, true);
-        hdb_dev->push_events("AttributeMaxProcessingTime", &hdb_dev->attr_AttributeMaxProcessingTime_read, true);
-        hdb_dev->push_events("AttributeMinProcessingTime", &hdb_dev->attr_AttributeMinProcessingTime_read, true);
+        hdb_dev->push_events("AttributeMaxPendingNumber", &max_waiting, true);
+        hdb_dev->push_events("AttributeMaxStoreTime", &max_store_time, true);
+        hdb_dev->push_events("AttributeMinStoreTime", &min_store_time, true);
+        hdb_dev->push_events("AttributeMaxProcessingTime", &max_process_time, true);
+        hdb_dev->push_events("AttributeMinProcessingTime", &min_process_time, true);
         hdb_dev->push_events("Context", dynamic_cast<HdbEventSubscriber *>(hdb_dev->_device)->attr_Context_read, true);
 
         if (hdb_dev->shared->is_initialized())
@@ -135,9 +143,9 @@ namespace HdbEventSubscriber_ns
         
         hdb_dev->push_events("AttributeErrorList", &hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size, true);
 
-        hdb_dev->get_event_number_list();
+        hdb_dev->get_event_number_list(evts);
         
-        hdb_dev->push_events("AttributeEventNumberList", &hdb_dev->AttributeEventNumberList[0], hdb_dev->attr_AttributeNumber_read, true);
+        hdb_dev->push_events("AttributeEventNumberList", evts.data(), evts.size(), true);
     }
 
     //=============================================================================

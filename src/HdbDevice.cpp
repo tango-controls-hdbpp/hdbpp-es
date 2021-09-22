@@ -1,4 +1,3 @@
-static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/HdbDevice.cpp,v 1.8 2014-03-06 15:21:42 graziano Exp $";
 //+=============================================================================
 //
 // file :         HdbEventHandler.cpp
@@ -76,17 +75,17 @@ namespace HdbEventSubscriber_ns
         //DEBUG_STREAM << "	Stats thread Joined " << endl;
         poller_thread->join(nullptr);
         //DEBUG_STREAM << "	Polling thread Joined " << endl;
+        DEBUG_STREAM << "	Stopping push thread" << endl;
+        push_thread->abort();
+        DEBUG_STREAM << "	Push thread Stopped " << endl;
+        push_thread->join(nullptr);
+        //DEBUG_STREAM << "	Push thread Joined " << endl;
         DEBUG_STREAM << "	Stopping subscribe thread" << endl;
         shared->stop_thread();
         DEBUG_STREAM << "	Subscribe thread Stopped " << endl;
         thread->join(nullptr);
         //DEBUG_STREAM << "	Subscribe thread Joined " << endl;
         //usleep(hundred_s_in_ms);
-        DEBUG_STREAM << "	Stopping push thread" << endl;
-        push_thread->abort();
-        DEBUG_STREAM << "	Push thread Stopped " << endl;
-        push_thread->join(nullptr);
-        //DEBUG_STREAM << "	Push thread Joined " << endl;
     }
     //=============================================================================
     //=============================================================================
@@ -152,26 +151,11 @@ namespace HdbEventSubscriber_ns
         attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
         attr_AttributePausedNumber_read = attr_AttributeNumber_read;
 
-        {
-            std::unique_lock<shared_timed_mutex> lock(lists_mutex);
-            AttributeFailureFreq = 0;
-            AttributeRecordFreq = 0;
-
-            for(size_t i = 0; i != MAX_ATTRIBUTES; ++i)
-            {
-                AttributeRecordFreqList[i] = 0;
-                AttributeFailureFreqList[i] = 0;
-            }
-        }
         //	Create a thread to subscribe events
         shared = std::make_shared<SharedData>(this);
         thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
                 , [](SubscribeThread* /*unused*/){});
 
-        attr_AttributeMinStoreTime_read = -1;
-        attr_AttributeMaxStoreTime_read = -1;
-        attr_AttributeMinProcessingTime_read = -1;
-        attr_AttributeMaxProcessingTime_read = -1;
         push_thread = std::unique_ptr<PushThread, std::function<void(PushThread*)>>(
                 new PushThread(this
                     , Tango::Util::instance()->get_ds_inst_name()
@@ -331,88 +315,38 @@ namespace HdbEventSubscriber_ns
     auto HdbDevice::remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void
     {
         {
-        std::lock_guard<std::mutex> lk(attributes_mutex);
-        // Update the counters
-        if(running)
-            attr_AttributeStartedNumber_read--;
-        if(paused)
-            attr_AttributePausedNumber_read--;
-        if(stopped)
-            attr_AttributeStoppedNumber_read--;
-
-        attr_AttributeNumber_read--;
-        }
-
-        std::unique_lock<shared_timed_mutex> lk(lists_mutex);
-
-        // Remove this attribute insert and error speed from the total.
-        double freq = AttributeRecordFreqList[idx];
-        double fail_freq = AttributeFailureFreqList[idx];
-
-        AttributeRecordFreq -= freq;
-
-        AttributeFailureFreq -= fail_freq;
-
-        // Reindex the lists.
-        for(size_t i = idx; i < attr_AttributeNumber_read; ++i)
-        {
-            AttributeRecordFreqList[i] = AttributeRecordFreqList[i + 1];
-            AttributeFailureFreqList[i] = AttributeFailureFreqList[i + 1];
-        }
-    }
-
-    auto HdbDevice::update_freq_callback(unsigned int idx, bool ok, double freq) -> void
-    {
-        if(ok)
-        {
-            std::shared_lock<shared_timed_mutex> lock(lists_mutex);
-            double old_freq = AttributeRecordFreqList[idx];
-            AttributeRecordFreqList[idx] += freq - old_freq;  
-            
             std::lock_guard<std::mutex> lk(attributes_mutex);
-            AttributeRecordFreq += freq - old_freq;
-        }
-        else
-        {
-            std::shared_lock<shared_timed_mutex> lock(lists_mutex);
-            double fail_freq = AttributeFailureFreqList[idx];
-            AttributeFailureFreqList[idx] += freq - fail_freq;
-            std::lock_guard<std::mutex> lk(attributes_mutex);
-            AttributeFailureFreq += freq - fail_freq;
-        }
-    }
-    
-    auto HdbDevice::update_freq_db_callback(unsigned int idx, bool ok, double freq) -> void
-    {
-        if(!ok)
-        {
-            std::shared_lock<shared_timed_mutex> lock(lists_mutex);
-            double old_freq = AttributeRecordFreqList[idx];
-            double fail_freq = AttributeFailureFreqList[idx];
-            AttributeRecordFreqList[idx] -= freq - old_freq;
-            AttributeFailureFreqList[idx] += freq - fail_freq;
-        
-            std::lock_guard<std::mutex> lk(attributes_mutex);
-            AttributeRecordFreq -= freq - old_freq;
-            AttributeFailureFreq += freq - fail_freq;
-        }
-    }
-    auto HdbDevice::update_timing_callback(unsigned int idx, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void
-    {
-        auto fn = [](Tango::DevDouble& val, std::chrono::duration<double>& time)
-        {
-            if(val == -1)
-                val = time.count();
-            else
-                val = std::max(time.count(), val);
-        };
+            // Update the counters
+            if(running)
+                attr_AttributeStartedNumber_read--;
+            if(paused)
+                attr_AttributePausedNumber_read--;
+            if(stopped)
+                attr_AttributeStoppedNumber_read--;
 
-        fn(attr_AttributeMinStoreTime_read, store_time);
-        fn(attr_AttributeMaxStoreTime_read, store_time);
-        fn(attr_AttributeMinProcessingTime_read, process_time);
-        fn(attr_AttributeMaxProcessingTime_read, process_time);
+            attr_AttributeNumber_read--;
+        }
     }
 
+    auto HdbDevice::get_record_freq() -> double
+    {
+        return shared->get_record_freq();
+    }
+
+    auto HdbDevice::get_failure_freq() -> double
+    {
+        return shared->get_failure_freq();
+    }
+
+    auto HdbDevice::get_record_freq_list(std::vector<double>& ret) -> void
+    {
+        return shared->get_record_freq_list(ret);
+    }
+
+    auto HdbDevice::get_failure_freq_list(std::vector<double>& ret) -> void
+    {
+        return shared->get_failure_freq_list(ret);
+    }
 
     //=============================================================================
     //=============================================================================
@@ -621,36 +555,9 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     //=============================================================================
-    void  HdbDevice::get_event_number_list()
+    auto HdbDevice::get_event_number_list(std::vector<unsigned int>& ret) -> void
     {
-        vector<string> attribute_list_tmp;
-        get_sig_list(attribute_list_tmp);
-        for (size_t i=0 ; i<attribute_list_tmp.size() ; i++)
-        {
-            string signame(attribute_list_tmp[i]);
-            /*try
-              {
-              shared->veclock.readerIn();
-              bool is_stopped = shared->is_stopped(signame);
-              shared->veclock.readerOut();
-              if(is_stopped)
-              continue;
-              }catch(Tango::DevFailed &e)
-              {
-              shared->veclock.readerOut();
-              continue;
-              }*/
-            long ok_ev_t=0;
-            long nok_ev_t=0;
-            try
-            {
-                ok_ev_t = shared->get_ok_event(signame);
-                nok_ev_t = shared->get_nok_event(signame);
-            }
-            catch(Tango::DevFailed &e)
-            {}
-            AttributeEventNumberList[i] = ok_ev_t + nok_ev_t;
-        }
+        return shared->get_event_number_list(ret);
     }
     //=============================================================================
     //=============================================================================
@@ -705,11 +612,6 @@ namespace HdbEventSubscriber_ns
     void HdbDevice::reset_statistics()
     {
         shared->reset_statistics();
-        
-        attr_AttributeMinStoreTime_read = -1;
-        attr_AttributeMaxStoreTime_read = -1;
-        attr_AttributeMinProcessingTime_read = -1;
-        attr_AttributeMaxProcessingTime_read = -1;
     }
     //=============================================================================
     //=============================================================================

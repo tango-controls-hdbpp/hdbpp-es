@@ -57,6 +57,14 @@ namespace HdbEventSubscriber_ns
             static auto is_list_changed(const vector<string> & newlist, vector<string> &oldlist) -> bool;
             static void update_array(Tango::DevString (&out)[MAX_ATTRIBUTES], size_t& out_size, const vector<string>& in);
 
+        double max_store_time;
+        double min_store_time;
+        double max_process_time;
+        double min_process_time;
+        size_t max_waiting;
+        size_t current_waiting;
+        std::vector<unsigned int> evts;
+        
         protected:
 
             void init_abort_loop() override;

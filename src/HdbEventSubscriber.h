@@ -95,6 +95,9 @@ private:
         auto format_date(const std::chrono::time_point<std::chrono::system_clock>& tv, size_t ev) -> std::string;
         std::chrono::time_point<std::chrono::steady_clock> last_statistics_reset_time;
 
+        std::vector<double> records_freq;
+        std::vector<double> failures_freq;
+        std::vector<unsigned int> events_number;
 #ifdef _USE_FERMI_DB_RW
 private:
 	string host_rw;
@@ -130,10 +133,10 @@ public:
 
 //	Attribute data members
 public:
-	Tango::DevLong	*attr_AttributeOkNumber_read;
-	Tango::DevLong	*attr_AttributeNokNumber_read;
-	Tango::DevLong	*attr_AttributePendingNumber_read;
-	Tango::DevLong	*attr_AttributeNumber_read;
+	Tango::DevULong	*attr_AttributeOkNumber_read;
+	Tango::DevULong	*attr_AttributeNokNumber_read;
+	Tango::DevULong	*attr_AttributePendingNumber_read;
+	Tango::DevULong	*attr_AttributeNumber_read;
 	Tango::DevDouble	*attr_AttributeMaxStoreTime_read;
 	Tango::DevDouble	*attr_AttributeMinStoreTime_read;
 	Tango::DevDouble	*attr_AttributeMaxProcessingTime_read;
@@ -142,11 +145,11 @@ public:
 	Tango::DevDouble	*attr_AttributeRecordFreqInst_read;
 	Tango::DevDouble	*attr_AttributeFailureFreq_read;
 	Tango::DevDouble	*attr_AttributeFailureFreqInst_read;
-	Tango::DevLong	*attr_AttributeStartedNumber_read;
-	Tango::DevLong	*attr_AttributeStoppedNumber_read;
-	Tango::DevLong	*attr_AttributeMaxPendingNumber_read;
+	Tango::DevULong	*attr_AttributeStartedNumber_read;
+	Tango::DevULong	*attr_AttributeStoppedNumber_read;
+	Tango::DevULong	*attr_AttributeMaxPendingNumber_read;
 	Tango::DevDouble	*attr_StatisticsResetTime_read;
-	Tango::DevLong	*attr_AttributePausedNumber_read;
+	Tango::DevULong	*attr_AttributePausedNumber_read;
 	Tango::DevString	*attr_Context_read;
 	Tango::DevString	*attr_AttributeList_read;
 	Tango::DevString	*attr_AttributeOkList_read;
@@ -158,7 +161,7 @@ public:
 	Tango::DevDouble	*attr_AttributeFailureFreqInstList_read;
 	Tango::DevString	*attr_AttributeStartedList_read;
 	Tango::DevString	*attr_AttributeStoppedList_read;
-	Tango::DevLong	*attr_AttributeEventNumberList_read;
+	Tango::DevULong	*attr_AttributeEventNumberList_read;
 	Tango::DevString	*attr_AttributeErrorList_read;
 	Tango::DevString	*attr_AttributePausedList_read;
 	Tango::DevString	*attr_AttributeStrategyList_read;

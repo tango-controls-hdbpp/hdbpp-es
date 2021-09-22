@@ -65,7 +65,7 @@ class AttributeOkNumberAttrib: public Tango::Attr
 {
 public:
 	AttributeOkNumberAttrib():Attr("AttributeOkNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributeOkNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeOkNumber(att);}
@@ -78,7 +78,7 @@ class AttributeNokNumberAttrib: public Tango::Attr
 {
 public:
 	AttributeNokNumberAttrib():Attr("AttributeNokNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributeNokNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeNokNumber(att);}
@@ -91,7 +91,7 @@ class AttributePendingNumberAttrib: public Tango::Attr
 {
 public:
 	AttributePendingNumberAttrib():Attr("AttributePendingNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributePendingNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributePendingNumber(att);}
@@ -104,7 +104,7 @@ class AttributeNumberAttrib: public Tango::Attr
 {
 public:
 	AttributeNumberAttrib():Attr("AttributeNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributeNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeNumber(att);}
@@ -221,7 +221,7 @@ class AttributeStartedNumberAttrib: public Tango::Attr
 {
 public:
 	AttributeStartedNumberAttrib():Attr("AttributeStartedNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributeStartedNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeStartedNumber(att);}
@@ -234,7 +234,7 @@ class AttributeStoppedNumberAttrib: public Tango::Attr
 {
 public:
 	AttributeStoppedNumberAttrib():Attr("AttributeStoppedNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributeStoppedNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeStoppedNumber(att);}
@@ -247,7 +247,7 @@ class AttributeMaxPendingNumberAttrib: public Tango::Attr
 {
 public:
 	AttributeMaxPendingNumberAttrib():Attr("AttributeMaxPendingNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributeMaxPendingNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeMaxPendingNumber(att);}
@@ -273,7 +273,7 @@ class AttributePausedNumberAttrib: public Tango::Attr
 {
 public:
 	AttributePausedNumberAttrib():Attr("AttributePausedNumber",
-			Tango::DEV_LONG, Tango::READ) {};
+			Tango::DEV_ULONG, Tango::READ) {};
 	~AttributePausedNumberAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributePausedNumber(att);}
@@ -431,7 +431,7 @@ class AttributeEventNumberListAttrib: public Tango::SpectrumAttr
 {
 public:
 	AttributeEventNumberListAttrib():SpectrumAttr("AttributeEventNumberList",
-			Tango::DEV_LONG, Tango::READ, 10000) {};
+			Tango::DEV_ULONG, Tango::READ, 10000) {};
 	~AttributeEventNumberListAttrib() {};
 	virtual void read(Tango::DeviceImpl *dev,Tango::Attribute &att)
 		{(static_cast<HdbEventSubscriber *>(dev))->read_AttributeEventNumberList(att);}

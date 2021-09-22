@@ -82,8 +82,13 @@ class HdbDevice: public Tango::LogAdapter
         std::string current_context;
         std::chrono::time_point<std::chrono::system_clock> last_stat;
         std::mutex attributes_mutex;
-        std::shared_timed_mutex lists_mutex;
-public:
+	
+#ifdef _USE_FERMI_DB_RW
+	string host_rw;
+	long port_rw;
+#endif
+
+    public:
 	//	Data members here
 	//-----------------------------------------
 	std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>> thread;
@@ -104,25 +109,12 @@ public:
 	Tango::DeviceImpl *_device;
         std::map<std::string, std::string> domain_map;
 
-	Tango::DevDouble	AttributeRecordFreq;
-	Tango::DevDouble	AttributeFailureFreq;
-	Tango::DevDouble	AttributeRecordFreqList[MAX_ATTRIBUTES];
-	Tango::DevDouble	AttributeFailureFreqList[MAX_ATTRIBUTES];
-	Tango::DevLong		AttributeEventNumberList[MAX_ATTRIBUTES];
-	Tango::DevLong		AttributePendingNumber;
-	Tango::DevLong		AttributeMaxPendingNumber;
-
-	Tango::DevLong	attr_AttributeOkNumber_read;
-	Tango::DevLong	attr_AttributeNokNumber_read;
-	Tango::DevLong	attr_AttributeNumber_read;
-	Tango::DevLong	attr_AttributeStartedNumber_read;
-	Tango::DevLong	attr_AttributePausedNumber_read;
-	Tango::DevLong	attr_AttributeStoppedNumber_read;
-
-	Tango::DevDouble	attr_AttributeMaxStoreTime_read;
-	Tango::DevDouble	attr_AttributeMinStoreTime_read;
-	Tango::DevDouble	attr_AttributeMaxProcessingTime_read;
-	Tango::DevDouble	attr_AttributeMinProcessingTime_read;
+	Tango::DevULong	attr_AttributeOkNumber_read;
+	Tango::DevULong	attr_AttributeNokNumber_read;
+	Tango::DevULong	attr_AttributeNumber_read;
+	Tango::DevULong	attr_AttributeStartedNumber_read;
+	Tango::DevULong	attr_AttributePausedNumber_read;
+	Tango::DevULong	attr_AttributeStoppedNumber_read;
 
 	Tango::DevString	attr_AttributeList_read[MAX_ATTRIBUTES];
 	Tango::DevString	attr_AttributeOkList_read[MAX_ATTRIBUTES];
@@ -159,12 +151,6 @@ public:
 	map<string,string> contexts_map_upper;
 	string defaultStrategy;
 
-#ifdef _USE_FERMI_DB_RW
-private:
-	string host_rw;
-	long port_rw;
-public:
-#endif
 	/**
 	 * Constructs a newly allocated Command object.
 	 *
@@ -230,7 +216,7 @@ public:
 	/**
 	 *	Populate the list of event received numbers
 	 */
-	void  get_event_number_list();
+	auto get_event_number_list(std::vector<unsigned int>& ret) -> void;
 	/**
 	 *	Return the number of signals on error
 	 */
@@ -340,9 +326,10 @@ public:
          */
         auto remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void;
         
-        auto update_freq_callback(unsigned int idx, bool ok, double freq) -> void;
-        auto update_freq_db_callback(unsigned int idx, bool ok, double freq) -> void;
-        auto update_timing_callback(unsigned int idx, std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void;
+        auto get_record_freq() -> double;
+        auto get_failure_freq() -> double;
+        auto get_record_freq_list(std::vector<double>& ret) -> void;
+        auto get_failure_freq_list(std::vector<double>& ret) -> void;
 
 protected :	
 	/**

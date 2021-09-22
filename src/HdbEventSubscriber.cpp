@@ -203,6 +203,15 @@ void HdbEventSubscriber::delete_device()
         INFO_STREAM << "-------- Delete device's allocated object done !--------" << endl;
         //Tango::client_leavefunc();
 
+        delete[] attr_AttributeMaxStoreTime_read;
+        delete[] attr_AttributeMinStoreTime_read;
+        delete[] attr_AttributeMaxProcessingTime_read;
+        delete[] attr_AttributeMinProcessingTime_read;
+        delete[] attr_AttributeFailureFreq_read;
+        delete[] attr_AttributeRecordFreq_read;
+        delete[] attr_AttributeMaxPendingNumber_read;
+        delete[] attr_AttributePendingNumber_read;
+
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
 	delete[] attr_StatisticsResetTime_read;
 	delete[] attr_Context_read;
@@ -232,6 +241,17 @@ void HdbEventSubscriber::init_device()
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
 	attr_Context_read = new Tango::DevString[1];
 	attr_ContextsList_read = new Tango::DevString[1000];
+
+        attr_AttributeMaxStoreTime_read = new Tango::DevDouble[1];
+        attr_AttributeMinStoreTime_read = new Tango::DevDouble[1];
+        attr_AttributeMaxProcessingTime_read = new Tango::DevDouble[1];
+        attr_AttributeMinProcessingTime_read = new Tango::DevDouble[1];
+        attr_AttributeFailureFreq_read = new Tango::DevDouble[1];
+        attr_AttributeRecordFreq_read = new Tango::DevDouble[1];
+
+        attr_AttributeMaxPendingNumber_read = new Tango::DevULong[1];
+        attr_AttributePendingNumber_read = new Tango::DevULong[1];
+
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
         //	Initialize device
         initialized = false;
@@ -287,12 +307,6 @@ void HdbEventSubscriber::init_device()
             ERROR_STREAM << "HdbEventSubscriber::init_device(): FAILED due to bad DefaultStrategy configuration: " << defaultStrategy << " is not present in ContextsList";
             exit(-1);
         }
-
-        attr_AttributeRecordFreq_read = &hdb_dev->AttributeRecordFreq;
-        attr_AttributeFailureFreq_read = &hdb_dev->AttributeFailureFreq;
-        attr_AttributeRecordFreqList_read = &hdb_dev->AttributeRecordFreqList[0];
-        attr_AttributeFailureFreqList_read = &hdb_dev->AttributeFailureFreqList[0];
-        attr_AttributeEventNumberList_read = &hdb_dev->AttributeEventNumberList[0];
 
         try
         {
@@ -602,7 +616,8 @@ void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingNumber) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(&hdb_dev->AttributePendingNumber);
+        *attr_AttributePendingNumber_read = hdb_dev->nb_cmd_waiting();
+        attr.set_value(attr_AttributePendingNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePendingNumber
 }
@@ -639,7 +654,8 @@ void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxStoreTime) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeMaxStoreTime_read);
+        *attr_AttributeMaxStoreTime_read = HdbSignal::get_global_max_store_time().count();
+        attr.set_value(attr_AttributeMaxStoreTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxStoreTime
 }
@@ -657,7 +673,8 @@ void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinStoreTime) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeMinStoreTime_read);
+        *attr_AttributeMinStoreTime_read = HdbSignal::get_global_min_store_time().count();
+        attr.set_value(attr_AttributeMinStoreTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMinStoreTime
 }
@@ -675,7 +692,8 @@ void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxProcessingTime) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeMaxProcessingTime_read);
+        *attr_AttributeMaxProcessingTime_read = HdbSignal::get_global_max_process_time().count();
+        attr.set_value(attr_AttributeMaxProcessingTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxProcessingTime
 }
@@ -693,7 +711,8 @@ void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinProcessingTime) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeMinProcessingTime_read);
+        *attr_AttributeMinProcessingTime_read = HdbSignal::get_global_min_process_time().count();
+        attr.set_value(attr_AttributeMinProcessingTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMinProcessingTime
 }
@@ -711,10 +730,13 @@ void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreq) ENABLED START -----*/
         //	Set the attribute value
-        if(*attr_AttributeRecordFreq_read == -1)
+        *attr_AttributeRecordFreq_read = hdb_dev->get_record_freq();
+        if(*attr_AttributeRecordFreq_read == 0)
             attr.set_quality(Tango::ATTR_INVALID);
         else
+        {
             set_value_date_quality(attr, attr_AttributeRecordFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
+        }
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreq
 }
@@ -750,10 +772,13 @@ void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreq) ENABLED START -----*/
         //	Set the attribute value
-        if(*attr_AttributeFailureFreq_read == -1)
+        *attr_AttributeFailureFreq_read = hdb_dev->get_failure_freq();
+        if(*attr_AttributeFailureFreq_read == 0)
             attr.set_quality(Tango::ATTR_INVALID);
         else
+        {
             set_value_date_quality(attr, attr_AttributeFailureFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
+        }
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreq
 }
 //--------------------------------------------------------
@@ -823,7 +848,8 @@ void HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxPendingNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxPendingNumber) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->AttributeMaxPendingNumber);
+        *attr_AttributeMaxPendingNumber_read = hdb_dev->get_max_waiting();
+        attr.set_value(attr_AttributeMaxPendingNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxPendingNumber
 }
 //--------------------------------------------------------
@@ -1006,10 +1032,13 @@ void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqList) ENABLED START -----*/
-        if(*attr_AttributeRecordFreq_read == -1)
+        if(hdb_dev->get_record_freq() == 0)
             attr.set_quality(Tango::ATTR_INVALID);
-        //	Set the attribute value
-        set_value_date_quality(attr, attr_AttributeRecordFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
+        else
+        {
+            hdb_dev->get_record_freq_list(records_freq);
+            set_value_date_quality(attr, records_freq.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, records_freq.size());
+        }
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqList
 }
@@ -1044,10 +1073,13 @@ void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqList) ENABLED START -----*/
-        if(*attr_AttributeFailureFreq_read == -1)
+        if(hdb_dev->get_failure_freq() == 0)
             attr.set_quality(Tango::ATTR_INVALID);
-        //	Set the attribute value
-        set_value_date_quality(attr, attr_AttributeFailureFreqList_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID, hdb_dev->attr_AttributeNumber_read);
+        else
+        {
+            hdb_dev->get_failure_freq_list(failures_freq);
+            set_value_date_quality(attr, failures_freq.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, failures_freq.size());
+        }
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqList
 }
 //--------------------------------------------------------
@@ -1117,7 +1149,8 @@ void HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeEventNumberList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeEventNumberList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(attr_AttributeEventNumberList_read, hdb_dev->attr_AttributeNumber_read);
+        hdb_dev->get_event_number_list(events_number);
+        attr.set_value(events_number.data(), events_number.size());
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeEventNumberList
 }
