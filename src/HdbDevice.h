@@ -83,11 +83,6 @@ class HdbDevice: public Tango::LogAdapter
         std::chrono::time_point<std::chrono::system_clock> last_stat;
         std::mutex attributes_mutex;
 	
-#ifdef _USE_FERMI_DB_RW
-	string host_rw;
-	long port_rw;
-#endif
-
     public:
 	//	Data members here
 	//-----------------------------------------

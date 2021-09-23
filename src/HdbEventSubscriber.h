@@ -98,12 +98,6 @@ private:
         std::vector<double> records_freq;
         std::vector<double> failures_freq;
         std::vector<unsigned int> events_number;
-#ifdef _USE_FERMI_DB_RW
-private:
-	string host_rw;
-	long port_rw;
-#endif
-
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::Data Members
 

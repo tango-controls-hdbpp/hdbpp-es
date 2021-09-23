@@ -100,23 +100,6 @@ namespace HdbEventSubscriber_ns
         this->subscribe_change = ch;
         this->list_filename = fn;
         _device = device;
-#ifdef _USE_FERMI_DB_RW
-        host_rw = "";
-        auto db = std::make_unique<Tango::Database>();
-        try
-        {
-            Tango::DbData db_data;
-            db_data.push_back((Tango::DbDatum("Host")));
-            db_data.push_back((Tango::DbDatum("Port")));
-            db->get_property("Database",db_data);
-
-            db_data[0] >> host_rw;
-            db_data[1] >> port_rw;
-        }catch(Tango::DevFailed &e)
-        {
-            ERROR_STREAM << __FUNCTION__ << " Error reading Database property='" << e.errors[0].desc << "'";
-        }
-#endif
 
         list_from_file = false;
         attribute_list_str_size = 0;
@@ -475,17 +458,7 @@ namespace HdbEventSubscriber_ns
         data.push_back(Tango::DbDatum("AttributeList"));
         data[0]  <<  prop;
         {
-#ifndef _USE_FERMI_DB_RW
             auto db = std::make_unique<Tango::Database>();
-#else
-            //save properties using host_rw e port_rw to connect to database
-            std::unique_ptr<Tango::Database> db;
-            if(host_rw != "")
-                db = std::make_unique<Tango::Database>(host_rw,port_rw);
-            else
-                db = std::make_unique<Tango::Database>();
-            DEBUG_STREAM << __func__<<": connecting to db "<<host_rw<<":"<<port_rw;
-#endif
             try
             {
                 using namespace std::chrono_literals;
