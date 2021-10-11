@@ -398,30 +398,36 @@ namespace HdbEventSubscriber_ns
             void increment()
             {
                 ++counter;
-                {
-                    std::lock_guard<mutex> lk(timestamps_mutex);
-                    auto now = std::chrono::system_clock::now();
+                auto now = check_timestamps_in_window();
 
-                    if(timestamps.size()>0)
-                    {
-                        auto first = timestamps.front();
-                        std::chrono::duration<double> interval = now - first;
-                        if(interval > stats_window)
-                            timestamps.pop_front();
-                    }
-                    timestamps.push_back(now);
+                std::lock_guard<mutex> lk(timestamps_mutex);
+                timestamps.push_back(now);
+            }
+
+            auto check_timestamps_in_window() -> std::chrono::time_point<std::chrono::system_clock>
+            {
+                auto now = std::chrono::system_clock::now();
+                std::chrono::duration<double> interval = std::chrono::duration<double>::max();
+
+                std::lock_guard<mutex> lk(timestamps_mutex);
+                while(timestamps.size() > 0 && (interval = now - timestamps.front()) > stats_window)
+                { 
+                    timestamps.pop_front();
                 }
+                return now;
             }
 
             public:
-            double get_freq() const
+            double get_freq()
             {
+                check_timestamps_in_window();
                 std::lock_guard<mutex> lk(timestamps_mutex);
                 return timestamps.size()/stats_window.count();
             }
 
-            double get_freq_inst() const
+            double get_freq_inst()
             {
+                check_timestamps_in_window();
                 std::lock_guard<mutex> lk(timestamps_mutex);
                 if(timestamps.size() > 1)
                 {
@@ -433,8 +439,9 @@ namespace HdbEventSubscriber_ns
                 return 0.;
             }
 
-            auto get_last_event() const -> std::chrono::time_point<std::chrono::system_clock>
+            auto get_last_event() -> std::chrono::time_point<std::chrono::system_clock>
             {
+                check_timestamps_in_window();
                 std::lock_guard<mutex> lk(timestamps_mutex);
                 if(timestamps.size()>0)
                     return timestamps.back();
@@ -445,7 +452,11 @@ namespace HdbEventSubscriber_ns
             void reset()
             {
                 counter = 0;
+                std::lock_guard<mutex> lk(timestamps_mutex);
+                timestamps.clear();
             };
+
+
         };
 
         class PeriodicEventCheck
@@ -556,17 +567,17 @@ namespace HdbEventSubscriber_ns
             return c.counter.load();
         }
 
-        auto get_events_freq(const EventCounter& c) -> double
+        auto get_events_freq(EventCounter& c) -> double
         {
             return c.get_freq();
         }
 
-        auto get_events_freq_inst(const EventCounter& c) -> double
+        auto get_events_freq_inst(EventCounter& c) -> double
         {
             return c.get_freq_inst();
         }
 
-        auto get_last_event(const EventCounter& c) -> std::chrono::time_point<std::chrono::system_clock>
+        auto get_last_event(EventCounter& c) -> std::chrono::time_point<std::chrono::system_clock>
         {
             return c.get_last_event();
         }
