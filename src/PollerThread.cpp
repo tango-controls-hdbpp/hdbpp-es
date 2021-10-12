@@ -1,4 +1,3 @@
-static const char *RcsId = "$Header: /home/cvsadm/cvsroot/fermi/servers/hdb++/hdb++es/src/PollerThread.cpp,v 1.6 2014-03-06 15:21:43 graziano Exp $";
 //+=============================================================================
 //
 // file :         PollerThread.cpp
@@ -63,16 +62,13 @@ namespace HdbEventSubscriber_ns
         
         max_store_time = HdbSignal::get_global_max_store_time().count();
         min_store_time = HdbSignal::get_global_min_store_time().count();
-        max_process_time = HdbSignal::get_global_max_store_time().count();
-        min_process_time = HdbSignal::get_global_min_store_time().count();
+        max_process_time = HdbSignal::get_global_max_process_time().count();
+        min_process_time = HdbSignal::get_global_min_process_time().count();
        
         max_waiting = hdb_dev->get_max_waiting();
         current_waiting = hdb_dev->nb_cmd_waiting(); 
         hdb_dev->push_events("AttributePendingNumber", &current_waiting, true);
         hdb_dev->push_events("AttributeNumber", &hdb_dev->attr_AttributeNumber_read, true);
-        hdb_dev->push_events("AttributeStartedNumber", &hdb_dev->attr_AttributeStartedNumber_read, true);
-        hdb_dev->push_events("AttributePausedNumber", &hdb_dev->attr_AttributePausedNumber_read, true);
-        hdb_dev->push_events("AttributeStoppedNumber", &hdb_dev->attr_AttributeStoppedNumber_read, true);
         hdb_dev->push_events("AttributeMaxPendingNumber", &max_waiting, true);
         hdb_dev->push_events("AttributeMaxStoreTime", &max_store_time, true);
         hdb_dev->push_events("AttributeMinStoreTime", &min_store_time, true);

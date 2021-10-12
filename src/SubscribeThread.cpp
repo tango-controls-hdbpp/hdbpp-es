@@ -124,9 +124,6 @@ namespace HdbEventSubscriber_ns
         else
         {
             size_t idx = 0;
-            bool running = false;
-            bool paused = false;
-            bool stopped = false;
             {
                 WriterLock lock(veclock);
                 auto pos = signals.begin();
@@ -137,10 +134,6 @@ namespace HdbEventSubscriber_ns
                     if(is_same_signal_name(sig->name, signame))
                     {
                         // devalidate its index in case it tries to access one of the list
-                        running = sig->is_running();
-                        paused = sig->is_paused();
-                        stopped = sig->is_stopped();
-                        
                         signals.erase(pos);
                         DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
                         break;
@@ -148,8 +141,6 @@ namespace HdbEventSubscriber_ns
                 }
             }
             
-            hdb_dev->remove_attribute(idx, running, paused, stopped);
-
             // then, update property
             {
                 omni_mutex_lock sync(*this);
@@ -194,21 +185,7 @@ namespace HdbEventSubscriber_ns
 
         hdb_dev->push_thread->start_attr(*signal);
 
-        if(!signal->is_running())
-        {
-            if(signal->is_stopped())
-            {
-                hdb_dev->attr_AttributeStoppedNumber_read--;
-                add(signal, NOTHING, true);
-            }
-
-            if(signal->is_paused())
-                hdb_dev->attr_AttributePausedNumber_read--;
-
-            hdb_dev->attr_AttributeStartedNumber_read++;
-
-            signal->set_running();
-        }
+        signal->set_running();
     }
 
     //=============================================================================
@@ -222,15 +199,7 @@ namespace HdbEventSubscriber_ns
 
         hdb_dev->push_thread->pause_attr(*signal);
 
-        if(!signal->is_paused())
-        {
-            hdb_dev->attr_AttributePausedNumber_read++;
-            if(signal->is_running())
-                hdb_dev->attr_AttributeStartedNumber_read--;
-            if(signal->is_stopped())
-                hdb_dev->attr_AttributeStoppedNumber_read--;
-            signal->set_paused();
-        }
+        signal->set_paused();
     }
     //=============================================================================
     /**
@@ -243,38 +212,7 @@ namespace HdbEventSubscriber_ns
 
         hdb_dev->push_thread->stop_attr(*signal);
 
-        if(!signal->is_stopped())
-        {
-            hdb_dev->attr_AttributeStoppedNumber_read++;
-            if(signal->is_running())
-            {
-                hdb_dev->attr_AttributeStartedNumber_read--;
-                try
-                {
-                    unsubscribe_events(signal);
-                }
-                catch (Tango::DevFailed &e)
-                {
-                    //Tango::Except::print_exception(e);
-                    INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
-                }
-            }
-            if(signal->is_paused())
-            {
-                hdb_dev->attr_AttributePausedNumber_read--;
-                try
-                {
-                    unsubscribe_events(signal);
-                }
-                catch (Tango::DevFailed &e)
-                {
-                    //Tango::Except::print_exception(e);
-                    INFO_STREAM << "SharedData::stop: error removing  " << signame << endl;
-                }
-            }
-
-            signal->set_stopped();
-        }
+        signal->set_stopped();
     }
     //=============================================================================
     /**
@@ -288,9 +226,6 @@ namespace HdbEventSubscriber_ns
         {
             signal->set_running();
         }
-        hdb_dev->attr_AttributeStoppedNumber_read=0;
-        hdb_dev->attr_AttributePausedNumber_read=0;
-        hdb_dev->attr_AttributeStartedNumber_read=signals.size();
     }
     //=============================================================================
     /**
@@ -304,9 +239,6 @@ namespace HdbEventSubscriber_ns
         {
             signal->set_paused();
         }
-        hdb_dev->attr_AttributeStoppedNumber_read=0;
-        hdb_dev->attr_AttributePausedNumber_read=signals.size();
-        hdb_dev->attr_AttributeStartedNumber_read=0;
     }
     //=============================================================================
     /**
@@ -320,9 +252,6 @@ namespace HdbEventSubscriber_ns
         {
             signal->set_stopped();
         }
-        hdb_dev->attr_AttributeStoppedNumber_read=signals.size();
-        hdb_dev->attr_AttributePausedNumber_read=0;
-        hdb_dev->attr_AttributeStartedNumber_read=0;
     }
     //=============================================================================
     /**
@@ -613,7 +542,7 @@ namespace HdbEventSubscriber_ns
                 }
 
 
-                sig->subscribe_events(hdb_dev);
+                sig->subscribe_events();
             }
         }
         veclock.readerOut();

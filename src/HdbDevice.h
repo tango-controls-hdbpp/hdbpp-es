@@ -49,6 +49,9 @@
 #include <tango.h>
 #include "Consts.h"
 #include <mutex>
+#include <thread>
+#include <condition_variable>
+#include <atomic>
 #include <shared_mutex>
 
 /**
@@ -81,7 +84,10 @@ class HdbDevice: public Tango::LogAdapter
     private:
         std::string current_context;
         std::chrono::time_point<std::chrono::system_clock> last_stat;
-        std::mutex attributes_mutex;
+        std::unique_ptr<std::thread> attr_states_events;
+        std::mutex attr_states_mutex;
+        std::condition_variable attr_states_cv;
+        std::atomic_bool attr_states_abort;
 	
     public:
 	//	Data members here
@@ -310,17 +316,13 @@ class HdbDevice: public Tango::LogAdapter
 	 */
 	static void string_explode(const string &str, const string &separator, vector<string>& results);
 
+        auto notify_attr_states_updated() -> void;
+        
         template<typename T>
         void push_events(const std::string& att_name, T* data, bool sleep = false);
         template<typename T>
         void push_events(const std::string& att_name, T* data, long size, bool sleep = false);
 
-        /**
-         * To be called after an attribute has been removed to update the various attributes.
-         * Ex: decrease number of attribute, remove it from the stats and reindex lists.
-         */
-        auto remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void;
-        
         auto get_record_freq() -> double;
         auto get_failure_freq() -> double;
         auto get_record_freq_list(std::vector<double>& ret) -> void;
@@ -360,6 +362,8 @@ private:
 	 *	Remove domain
 	 */
 	static auto remove_domain(const string &str) -> string;
+
+        auto push_attr_states_events() -> void;
 };
 
 

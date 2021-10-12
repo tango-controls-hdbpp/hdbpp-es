@@ -13,12 +13,17 @@ namespace HdbEventSubscriber_ns
     std::chrono::duration<double> HdbSignal::min_store_time = std::chrono::duration<double>::max();
     std::chrono::duration<double> HdbSignal::max_store_time = std::chrono::duration<double>::min();
     std::mutex HdbSignal::static_mutex;
+
+    std::atomic_ulong HdbSignal::paused_number(0);
+    std::atomic_ulong HdbSignal::started_number(0);
+    std::atomic_ulong HdbSignal::stopped_number(0);
     
     HdbSignal::HdbSignal(HdbDevice* dev
             , const std::string& signame
             , const std::vector<std::string>& ctxts) : LogAdapter(dev->_device)
                                                        , name(signame)
                                                        , config_set(false)
+                                                       , dev(dev)
     {
         // on name, split device name and attrib name
         string::size_type idx = name.find_last_of('/');
@@ -34,9 +39,7 @@ namespace HdbEventSubscriber_ns
         attname = name.substr(idx+1);
         status = "NOT connected";
         attr = nullptr;
-        running = false;
-        stopped = true;
-        paused = false;
+        state = SignalState::STOPPED;
         contexts = ctxts;
         contexts_upper = ctxts;
         for(auto &it : contexts_upper)
@@ -51,6 +54,31 @@ namespace HdbEventSubscriber_ns
         using std::placeholders::_1;
         using std::placeholders::_2;
         using std::placeholders::_3;
+
+        stopped_number++;
+    }
+
+    HdbSignal::~HdbSignal()
+    {
+        ReaderLock lck(siglock);
+        switch(state)
+        {
+            case SignalState::PAUSED:
+                {
+                    paused_number--;
+                    break;
+                }
+            case SignalState::RUNNING:
+                {
+                    started_number--;
+                    break;
+                }
+            case SignalState::STOPPED:
+                {
+                    stopped_number--;
+                    break;
+                }
+        }
     }
 
     void HdbSignal::remove_callback()
@@ -65,7 +93,7 @@ namespace HdbEventSubscriber_ns
         attr.reset(nullptr);
     }
 
-    auto HdbSignal::subscribe_events(HdbDevice* dev) -> void
+    auto HdbSignal::subscribe_events() -> void
     {
         if(attr)
         {
@@ -221,6 +249,93 @@ namespace HdbEventSubscriber_ns
         }
 
         return "";
+    }
+
+    auto HdbSignal::set_running() -> void
+    {
+        auto prev_state = update_state(SignalState::RUNNING);
+        
+        if(prev_state == SignalState::STOPPED)
+        {
+            init();
+            start();
+            subscribe_events();
+        }
+    }
+
+    auto HdbSignal::set_paused() -> void
+    {
+        update_state(SignalState::PAUSED);
+    }
+
+    auto HdbSignal::set_stopped() -> void
+    {
+        if(update_state(SignalState::STOPPED) != SignalState::STOPPED)
+        {
+            try
+            {
+                remove_callback();
+            }
+            catch (Tango::DevFailed &e)
+            {
+                INFO_STREAM << "__func__" << "Error unsubscribing to events for attribute " << name << endl;
+            }
+        }
+    }
+    
+    auto HdbSignal::update_state(const SignalState& new_state) -> SignalState
+    {
+        SignalState prev_state;
+        {
+            WriterLock lock(siglock);
+            // Nothing to do, return
+            if(state == new_state)
+                return state;
+
+            prev_state = state;
+            state = new_state;
+        }
+        switch(prev_state)
+        {
+            case SignalState::RUNNING:
+                {
+                started_number--;
+                break;
+                }
+            case SignalState::PAUSED:
+                {
+                paused_number--;
+                break;
+                }
+            case SignalState::STOPPED:
+                {
+                stopped_number--;
+                break;
+                }
+        }
+
+        switch(new_state)
+        {
+            case SignalState::RUNNING:
+                {
+                started_number++;
+                break;
+                }
+            case SignalState::PAUSED:
+                {
+                paused_number++;
+                break;
+                }
+            case SignalState::STOPPED:
+                {
+                stopped_number++;
+                break;
+                }
+        }
+        event_checker->notify();
+        dev->notify_attr_states_updated();
+
+        return prev_state;
     }
 
     auto HdbSignal::set_ok_event() -> void

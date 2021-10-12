@@ -72,6 +72,11 @@ namespace HdbEventSubscriber_ns
         DEBUG_STREAM << "	Stopping stats thread" << endl;
         poller_thread->abort();
         
+        attr_states_abort = true;
+        attr_states_cv.notify_one();
+        if(attr_states_events)
+            attr_states_events->join();
+        
         //DEBUG_STREAM << "	Stats thread Joined " << endl;
         poller_thread->join(nullptr);
         //DEBUG_STREAM << "	Polling thread Joined " << endl;
@@ -100,6 +105,8 @@ namespace HdbEventSubscriber_ns
         this->subscribe_change = ch;
         this->list_filename = fn;
         _device = device;
+
+        attr_states_events = std::make_unique<std::thread>(&HdbDevice::push_attr_states_events, this);
 
         list_from_file = false;
         attribute_list_str_size = 0;
@@ -293,22 +300,6 @@ namespace HdbEventSubscriber_ns
         std::string attr_name;
         fix_tango_host(signame, attr_name);
         shared->updatettl(attr_name, ttl);
-    }
-
-    auto HdbDevice::remove_attribute(size_t idx, bool running, bool paused, bool stopped) -> void
-    {
-        {
-            std::lock_guard<std::mutex> lk(attributes_mutex);
-            // Update the counters
-            if(running)
-                attr_AttributeStartedNumber_read--;
-            if(paused)
-                attr_AttributePausedNumber_read--;
-            if(stopped)
-                attr_AttributeStoppedNumber_read--;
-
-            attr_AttributeNumber_read--;
-        }
     }
 
     auto HdbDevice::get_record_freq() -> double
@@ -1362,6 +1353,31 @@ namespace HdbEventSubscriber_ns
             }
             while(found != string::npos);
         }
+    }
+
+    auto HdbDevice::notify_attr_states_updated() -> void
+    {
+        attr_states_cv.notify_one();
+    }
+
+    auto HdbDevice::push_attr_states_events() -> void
+    {
+        std::unique_lock<std::mutex> lk(attr_states_mutex);
+        while(!attr_states_abort)
+        {
+            attr_states_cv.wait(lk);
+            if(!attr_states_abort)
+            {
+                attr_AttributePausedNumber_read = HdbSignal::get_paused_number();
+                attr_AttributeStartedNumber_read = HdbSignal::get_started_number();
+                attr_AttributeStoppedNumber_read = HdbSignal::get_stopped_number();
+
+                push_events("AttributeStartedNumber", &attr_AttributeStartedNumber_read);
+                push_events("AttributePausedNumber", &attr_AttributePausedNumber_read);
+                push_events("AttributeStoppedNumber", &attr_AttributeStoppedNumber_read);
+            }
+        }
+
     }
 
     //=============================================================================

@@ -30,6 +30,8 @@ namespace HdbEventSubscriber_ns
 
         explicit HdbSignal(HdbDevice* dev, const std::string& name, const std::vector<std::string>& contexts);
 
+        ~HdbSignal();
+
         struct SignalConfig
         {
             int write_type;
@@ -39,9 +41,14 @@ namespace HdbEventSubscriber_ns
             Tango::AttrDataFormat data_format;
         };
 
+        enum class SignalState
+        {
+            RUNNING, STOPPED, PAUSED
+        };
+
         void remove_callback();
 
-        void subscribe_events(HdbDevice* dev);
+        void subscribe_events();
 
         auto is_current_context(const std::string& context) -> bool;        
 
@@ -66,7 +73,7 @@ namespace HdbEventSubscriber_ns
         auto is_running() -> bool
         {
             ReaderLock lock(siglock);
-            return running; 
+            return state == SignalState::RUNNING; 
         }
 
         auto is_not_subscribed() -> bool
@@ -295,47 +302,20 @@ namespace HdbEventSubscriber_ns
         auto is_paused() -> bool
         {
             ReaderLock lock(siglock);
-            return paused; 
+            return state == SignalState::PAUSED; 
         }
 
         auto is_stopped() -> bool
         {
             ReaderLock lock(siglock);
-            return stopped; 
+            return state == SignalState::STOPPED; 
         }
 
-        auto set_running() -> void
-        {
-            {
-                WriterLock lock(siglock);
-                running = true;
-                paused = false;
-                stopped = false;
-            }
-            event_checker->notify();
-        }
+        auto set_running() -> void;
 
-        auto set_paused() -> void
-        {
-            {
-                WriterLock lock(siglock);
-                running = false;
-                paused = true;
-                stopped = false;
-            }
-            event_checker->notify();
-        }
+        auto set_paused() -> void;
 
-        auto set_stopped() -> void
-        {
-            {
-                WriterLock lock(siglock);
-                running = false;
-                paused = false;
-                stopped = true;
-            }
-            event_checker->notify();
-        }
+        auto set_stopped() -> void;
 
         auto is_first() -> bool
         {
@@ -381,6 +361,21 @@ namespace HdbEventSubscriber_ns
             event_checker->notify();
         }
 
+        static auto get_started_number() -> unsigned long
+        {
+            return HdbSignal::started_number;
+        }
+        
+        static auto get_paused_number() -> unsigned long
+        {
+            return HdbSignal::paused_number;
+        }
+        
+        static auto get_stopped_number() -> unsigned long
+        {
+            return HdbSignal::stopped_number;
+        }
+        
         private:
 
         class EventCounter
@@ -518,6 +513,10 @@ namespace HdbEventSubscriber_ns
         static std::chrono::duration<double> min_store_time;
         static std::chrono::duration<double> max_store_time;
         static std::mutex static_mutex;
+        
+        static std::atomic_ulong paused_number;
+        static std::atomic_ulong started_number;
+        static std::atomic_ulong stopped_number;
 
         ReadersWritersLock siglock;
         ReadersWritersLock dblock;
@@ -550,14 +549,15 @@ namespace HdbEventSubscriber_ns
         std::chrono::duration<double> store_time_min;
         std::chrono::duration<double> store_time_max;
         
-        bool running;
-        bool paused;
-        bool stopped;
+        SignalState state;
+        
         std::vector<std::string> contexts;
         std::vector<std::string> contexts_upper;
         unsigned int ttl;
         
         std::unique_ptr<PeriodicEventCheck> event_checker;
+
+        HdbDevice* dev;
 
 
         void unsubscribe_event(const int event_id);
@@ -582,6 +582,11 @@ namespace HdbEventSubscriber_ns
             return c.get_last_event();
         }
 
+        /** Update the state if needed.
+         *  Returns the previous state.
+         * 
+         **/
+        auto update_state(const SignalState& new_state) -> SignalState;
     };
 };
 #endif // HDBSIGNAL_H
