@@ -60,21 +60,11 @@ namespace HdbEventSubscriber_ns
           delete [] hdb_dev->AttributeFailureFreqList;
           hdb_dev->AttributeFailureFreqList = new Tango::DevDouble[attribute_list_tmp.size()];*/
         
-        max_store_time = HdbSignal::get_global_max_store_time().count();
-        min_store_time = HdbSignal::get_global_min_store_time().count();
-        max_process_time = HdbSignal::get_global_max_process_time().count();
-        min_process_time = HdbSignal::get_global_min_process_time().count();
-       
         max_waiting = hdb_dev->get_max_waiting();
         current_waiting = hdb_dev->nb_cmd_waiting(); 
-        hdb_dev->push_events("AttributePendingNumber", &current_waiting, true);
-        hdb_dev->push_events("AttributeNumber", &hdb_dev->attr_AttributeNumber_read, true);
-        hdb_dev->push_events("AttributeMaxPendingNumber", &max_waiting, true);
-        hdb_dev->push_events("AttributeMaxStoreTime", &max_store_time, true);
-        hdb_dev->push_events("AttributeMinStoreTime", &min_store_time, true);
-        hdb_dev->push_events("AttributeMaxProcessingTime", &max_process_time, true);
-        hdb_dev->push_events("AttributeMinProcessingTime", &min_process_time, true);
-        hdb_dev->push_events("Context", dynamic_cast<HdbEventSubscriber *>(hdb_dev->_device)->attr_Context_read, true);
+        hdb_dev->push_events("AttributePendingNumber", &current_waiting);
+        hdb_dev->push_events("AttributeMaxPendingNumber", &max_waiting);
+        hdb_dev->push_events("Context", dynamic_cast<HdbEventSubscriber *>(hdb_dev->_device)->attr_Context_read);
 
         if (hdb_dev->shared->is_initialized())
         {
@@ -87,8 +77,8 @@ namespace HdbEventSubscriber_ns
             hdb_dev->attr_AttributeNokNumber_read = 0;
         }
         
-        hdb_dev->push_events("AttributeOkNumber", &hdb_dev->attr_AttributeOkNumber_read, true);
-        hdb_dev->push_events("AttributeNokNumber", &hdb_dev->attr_AttributeNokNumber_read, true);
+        hdb_dev->push_events("AttributeOkNumber", &hdb_dev->attr_AttributeOkNumber_read);
+        hdb_dev->push_events("AttributeNokNumber", &hdb_dev->attr_AttributeNokNumber_read);
 
         bool changed = hdb_dev->get_lists(hdb_dev->attribute_list_str, hdb_dev->attribute_started_list_str, hdb_dev->attribute_paused_list_str, hdb_dev->attribute_stopped_list_str, hdb_dev->attribute_context_list_str, hdb_dev->attr_AttributeTTLList_read);
         if(changed)
@@ -104,31 +94,31 @@ namespace HdbEventSubscriber_ns
         }
 
 
-        hdb_dev->push_events("AttributeList", &hdb_dev->attr_AttributeList_read[0], hdb_dev->attribute_list_str_size, true);
-        hdb_dev->push_events("AttributeStartedList", &hdb_dev->attr_AttributeStartedList_read[0], hdb_dev->attribute_started_list_str_size, true);
-        hdb_dev->push_events("AttributePausedList", &hdb_dev->attr_AttributePausedList_read[0], hdb_dev->attribute_paused_list_str_size, true);
-        hdb_dev->push_events("AttributeStoppedList", &hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size, true);
-        hdb_dev->push_events("AttributeStrategyList", &hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size, true);
+        hdb_dev->push_events("AttributeList", &hdb_dev->attr_AttributeList_read[0], hdb_dev->attribute_list_str_size);
+        hdb_dev->push_events("AttributeStartedList", &hdb_dev->attr_AttributeStartedList_read[0], hdb_dev->attribute_started_list_str_size);
+        hdb_dev->push_events("AttributePausedList", &hdb_dev->attr_AttributePausedList_read[0], hdb_dev->attribute_paused_list_str_size);
+        hdb_dev->push_events("AttributeStoppedList", &hdb_dev->attr_AttributeStoppedList_read[0], hdb_dev->attribute_stopped_list_str_size);
+        hdb_dev->push_events("AttributeStrategyList", &hdb_dev->attr_AttributeContextList_read[0], hdb_dev->attribute_context_list_str_size);
 
-        hdb_dev->push_events("AttributeTTLList", &hdb_dev->attr_AttributeTTLList_read[0], hdb_dev->attribute_list_str_size, true);
+        hdb_dev->push_events("AttributeTTLList", &hdb_dev->attr_AttributeTTLList_read[0], hdb_dev->attribute_list_str_size);
 
         hdb_dev->get_sig_not_on_error_list(hdb_dev->attribute_ok_list_str);
 
         update_array(hdb_dev->attr_AttributeOkList_read, hdb_dev->attribute_ok_list_str_size, hdb_dev->attribute_ok_list_str);
         
-        hdb_dev->push_events("AttributeOkList", &hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size, true);
+        hdb_dev->push_events("AttributeOkList", &hdb_dev->attr_AttributeOkList_read[0], hdb_dev->attribute_ok_list_str_size);
 
         hdb_dev->get_sig_on_error_list(hdb_dev->attribute_nok_list_str);
        
         update_array(hdb_dev->attr_AttributeNokList_read, hdb_dev->attribute_nok_list_str_size, hdb_dev->attribute_nok_list_str);
         
-        hdb_dev->push_events("AttributeNokList", &hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size, true);
+        hdb_dev->push_events("AttributeNokList", &hdb_dev->attr_AttributeNokList_read[0], hdb_dev->attribute_nok_list_str_size);
 
         hdb_dev->get_sig_list_waiting(hdb_dev->attribute_pending_list_str);
         
         update_array(hdb_dev->attr_AttributePendingList_read, hdb_dev->attribute_pending_list_str_size, hdb_dev->attribute_pending_list_str);
         
-        hdb_dev->push_events("AttributePendingList", &hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size, true);
+        hdb_dev->push_events("AttributePendingList", &hdb_dev->attr_AttributePendingList_read[0], hdb_dev->attribute_pending_list_str_size);
 
         changed = hdb_dev->get_error_list(hdb_dev->attribute_error_list_str);
         
@@ -137,11 +127,11 @@ namespace HdbEventSubscriber_ns
             update_array(hdb_dev->attr_AttributeErrorList_read, hdb_dev->attribute_error_list_str_size, hdb_dev->attribute_error_list_str);
         }
         
-        hdb_dev->push_events("AttributeErrorList", &hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size, true);
+        hdb_dev->push_events("AttributeErrorList", &hdb_dev->attr_AttributeErrorList_read[0], hdb_dev->attribute_error_list_str_size);
 
         hdb_dev->get_event_number_list(evts);
         
-        hdb_dev->push_events("AttributeEventNumberList", evts.data(), evts.size(), true);
+        hdb_dev->push_events("AttributeEventNumberList", evts.data(), evts.size());
     }
 
     //=============================================================================

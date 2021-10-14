@@ -49,18 +49,29 @@
 
 namespace HdbEventSubscriber_ns
 {
-    SharedData::SharedData(HdbDevice *dev): Tango::LogAdapter(dev->_device)
+    SharedData::SharedData(HdbDevice *dev, std::chrono::seconds window, std::chrono::milliseconds period): Tango::LogAdapter(dev->_device)
+                                            , stats_window(window)
+                                            , delay_periodic_event(period)
                                             , initialized(false)
                                             , init_condition(&init_mutex)
     {
         hdb_dev=dev;
         action=NOTHING;
         stop_it=false;
+        paused_number = 0;
+        started_number = 0;
+        stopped_number = 0;
+        timing_events = std::make_unique<std::thread>(&SharedData::push_timing_events, this);
+        event_checker = std::make_unique<PeriodicEventCheck>(*this);
     }
 
     SharedData::~SharedData()
     {
         init_condition.broadcast();
+        event_checker->abort_periodic_check();
+        stop_all();
+        WriterLock lock(veclock);
+        signals.clear();
     }
 
     //=============================================================================
@@ -110,69 +121,40 @@ namespace HdbEventSubscriber_ns
      * Remove a signal in the list.
      */
     //=============================================================================
-    void SharedData::remove(const string& signame, bool stop)
+    void SharedData::remove(const string& signame)
     {
         // Remove in signals list (vector)
         auto sig = get_signal(signame);
 
         hdb_dev->push_thread->remove_attr(*sig);
-        
-        if(stop)
-        {
-            unsubscribe_events(sig);
-        }
-        else
-        {
-            size_t idx = 0;
-            {
-                WriterLock lock(veclock);
-                auto pos = signals.begin();
 
-                for(size_t i = 0; i < signals.size(); ++i, pos++)
+        size_t idx = 0;
+        {
+            WriterLock lock(veclock);
+            auto pos = signals.begin();
+
+            for(size_t i = 0; i < signals.size(); ++i, pos++)
+            {
+                std::shared_ptr<HdbSignal> sig = (signals)[i];
+                if(is_same_signal_name(sig->name, signame))
                 {
-                    std::shared_ptr<HdbSignal> sig = signals[i];
-                    if(is_same_signal_name(sig->name, signame))
-                    {
-                        // devalidate its index in case it tries to access one of the list
-                        signals.erase(pos);
-                        DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
-                        break;
-                    }
+                    // devalidate its index in case it tries to access one of the list
+                    signals.erase(pos);
+                    DEBUG_STREAM <<"SharedData::"<< __func__<<": removed " << signame << endl;
+                    break;
                 }
             }
-            
-            // then, update property
-            {
-                omni_mutex_lock sync(*this);
-                DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<"++" << endl;
-                if(action <= UPDATE_PROP)
-                    action++;
-            }
+        }
 
-            signal();
-        }
-    }
-    //=============================================================================
-    /**
-     * Unsubscribe events for a signal
-     */
-    //=============================================================================
-    void SharedData::unsubscribe_events(std::shared_ptr<HdbSignal> sig)
-    {
-        std::string signame = sig->name;
-        try
+        // then, update property
         {
-            DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribing events... "<< signame << endl;
-            sig->remove_callback();
-            DEBUG_STREAM <<"SharedData::"<< __func__<<": unsubscribed events... "<< signame << endl;
+            omni_mutex_lock sync(*this);
+            DEBUG_STREAM <<"SubscribeThread::"<< __func__<<": going to increase action... action="<<action<<"++" << endl;
+            if(action <= UPDATE_PROP)
+                action++;
         }
-        catch (Tango::DevFailed &e)
-        {
-            // Do nothing
-            // Unregister failed means Register has also failed
-            //sig->siglock->writerIn();
-            INFO_STREAM <<"SharedData::"<< __func__<<": Exception unsubscribing " << signame << " err=" << e.errors[0].desc << endl;
-        }
+
+        signal();
     }
     //=============================================================================
     /**
@@ -346,29 +328,6 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     /**
-     * Remove a signal in the list.
-     */
-    //=============================================================================
-    void SharedData::clear_signals()
-    {
-        DEBUG_STREAM <<"SharedData::"<<__func__<< "    entering..."<< endl;
-        veclock.readerIn();
-        vector<std::shared_ptr<HdbSignal>> local_signals(signals);
-        veclock.readerOut();
-
-        {
-            WriterLock lock(veclock);
-            signals.clear();
-        }
-
-        for (const auto &signal : local_signals)
-        {
-            signal->remove_callback();
-        }
-        DEBUG_STREAM <<"SharedData::"<< __func__<< ": exiting..."<<endl;
-    }
-    //=============================================================================
-    /**
      * Add a new signal.
      */
     //=============================================================================
@@ -444,16 +403,12 @@ namespace HdbEventSubscriber_ns
 
         if (!found)
         {
-            signal = std::make_shared<HdbSignal>(hdb_dev, signame, contexts);
-
+            signal = std::make_shared<HdbSignal>(hdb_dev, *this, signame, contexts);
             veclock.writerIn();
+            
             // Add in vector
             signals.push_back(signal);
-            hdb_dev->attr_AttributeNumber_read++;
-
-            if(!start)
-                hdb_dev->attr_AttributeStoppedNumber_read++;
-
+            
             veclock.writerOut();
         }
 
@@ -785,7 +740,7 @@ namespace HdbEventSubscriber_ns
         size_t i = 0;
         for (i=0 ; i<signals.size() && i < old_size ; i++)
         {
-            string err = signals[i]->get_error();
+            string err = (signals)[i]->get_error();
 
             if(err != list[i])
             {
@@ -802,7 +757,7 @@ namespace HdbEventSubscriber_ns
         {
             for (size_t i=old_size ; i<signals.size() ; i++)
             {
-                string err = signals[i]->get_error();
+                string err = (signals)[i]->get_error();
 
                 list.push_back(err);
                 changed = true;
@@ -862,21 +817,21 @@ namespace HdbEventSubscriber_ns
         size_t i = 0;
         for (i=0 ; i<signals.size() && i< old_s_list_size; i++)
         {
-            string signame(signals[i]->name);
+            string signame((signals)[i]->name);
             if(signame != s_list[i])
             {
                 s_list[i] = signame;
                 changed = true;
             }
 
-            auto ttl = signals[i]->get_ttl();
+            auto ttl = (signals)[i]->get_ttl();
             if(ttl_list[i] != ttl)
             {
                 ttl_list[i] = ttl;
                 changed = true;
             }
 
-            std::string context = signals[i]->get_contexts();
+            std::string context = (signals)[i]->get_contexts();
 
             if(context != s_context_list[i])
             {
@@ -896,10 +851,10 @@ namespace HdbEventSubscriber_ns
             for (i=old_s_list_size ; i<signals.size() ; i++)
             {
                 changed = true;
-                string signame(signals[i]->name);
+                string signame((signals)[i]->name);
                 s_list.push_back(signame);
 
-                string context = signals[i]->get_contexts();;
+                string context = (signals)[i]->get_contexts();;
                 s_context_list.push_back(context);
             }
         }
@@ -1226,7 +1181,7 @@ namespace HdbEventSubscriber_ns
     {
         auto signal = get_signal(signame);
 
-        signal->set_periodic_event(atoi(period.c_str()));
+        event_checker->set_period(signal, std::chrono::milliseconds(atoi(period.c_str())));
     }
     //=============================================================================
     /**
@@ -1240,7 +1195,7 @@ namespace HdbEventSubscriber_ns
         {
             signal->reset_statistics();
         }
-        HdbSignal::reset_min_max();
+        reset_min_max();
     }
     //=============================================================================
     /**
@@ -1342,7 +1297,150 @@ namespace HdbEventSubscriber_ns
             ret.push_back(sig->get_ok_events() + sig->get_nok_events());
         }
     }
+    
+    auto SharedData::get_global_min_store_time() -> std::chrono::duration<double>
+    {
+        std::lock_guard<std::mutex> lk(timing_mutex);
+        return min_store_time;
+    }
 
+    auto SharedData::get_global_max_store_time() -> std::chrono::duration<double>
+    {
+        std::lock_guard<std::mutex> lk(timing_mutex);
+        return max_store_time;
+    }
+
+    auto SharedData::get_global_min_process_time() -> std::chrono::duration<double>
+    {
+        std::lock_guard<std::mutex> lk(timing_mutex);
+        return min_process_time;
+    }
+
+    auto SharedData::get_global_max_process_time() -> std::chrono::duration<double>
+    {
+        std::lock_guard<std::mutex> lk(timing_mutex);
+        return max_process_time;
+    }
+
+    auto SharedData::get_started_number() -> unsigned long
+    {
+        return started_number;
+    }
+
+    auto SharedData::get_paused_number() -> unsigned long
+    {
+        return paused_number;
+    }
+
+    auto SharedData::get_stopped_number() -> unsigned long
+    {
+        return stopped_number;
+    }
+    
+    auto SharedData::size() -> size_t
+    {
+        ReaderLock lock(veclock);
+        return signals.size();
+    }
+    
+            auto SharedData::reset_min_max() -> void
+            {
+                std::lock_guard<std::mutex> lk(timing_mutex);
+                min_process_time = std::chrono::duration<double>::max();
+                max_process_time = std::chrono::duration<double>::min();
+                min_store_time = std::chrono::duration<double>::max();
+                max_store_time = std::chrono::duration<double>::min();
+            }
+
+    auto SharedData::update_timing(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void
+    {
+        bool updated = false;
+        {
+            std::lock_guard<std::mutex> lock(timing_mutex);
+            if(process_time < min_process_time)
+            {
+                updated = true;
+                min_process_time = process_time;
+            }
+            else if(process_time > max_process_time)
+            {
+                updated = true;
+                max_process_time = process_time;
+            }
+            if(store_time < min_store_time)
+            {
+                updated = true;
+                min_store_time = store_time;
+            }
+            else if(store_time > max_store_time)
+            {
+                updated = true;
+                max_store_time = store_time;
+            }
+        }
+        if(updated)
+            timing_cv.notify_one();
+    }
+    
+    auto SharedData::push_timing_events() -> void
+    {
+        std::unique_lock<std::mutex> lk(timing_mutex);
+        while(!timing_abort)
+        {
+            timing_cv.wait(lk);
+            if(!timing_abort)
+            {
+                Tango::DevDouble max_stime = max_store_time.count();
+                Tango::DevDouble min_stime = min_store_time.count();
+                Tango::DevDouble max_ptime = max_process_time.count();
+                Tango::DevDouble min_ptime = min_process_time.count();
+                hdb_dev->push_events("AttributeMaxStoreTime", &max_stime);
+                hdb_dev->push_events("AttributeMinStoreTime", &min_stime);
+                hdb_dev->push_events("AttributeMaxProcessingTime", &max_ptime);
+                hdb_dev->push_events("AttributeMinProcessingTime", &min_ptime);
+            }
+        }
+
+    }
+    
+    auto SharedData::PeriodicEventCheck::check_periodic_event() -> bool
+    {
+        if(period < std::chrono::milliseconds::max())
+        {
+            for(const auto& signal : periods)
+            {
+                if(signal.first->is_on())
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    
+    auto SharedData::PeriodicEventCheck::check_periodic_event_timeout() -> void
+    {
+        using namespace std::chrono_literals;
+        std::unique_lock<std::mutex> lk(m);
+        while(!abort)
+        {
+            while(!check_periodic_event() && !abort)
+                cv.wait(lk);
+            while (!abort && check_periodic_event()) {
+                if(cv.wait_for(lk, period + signals.delay_periodic_event) == std::cv_status::timeout)
+                {
+                    for(const auto& signal : periods)
+                    {
+                        if(signal.second > std::chrono::milliseconds::zero())
+                        {
+                            signal.first->check_periodic_event_timeout(signal.second + signals.delay_periodic_event);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     //=============================================================================
     //=============================================================================
     SubscribeThread::SubscribeThread(HdbDevice *dev):Tango::LogAdapter(dev->_device)
@@ -1392,7 +1490,6 @@ namespace HdbEventSubscriber_ns
                 //shared->unlock();
             }
         }
-        shared->clear_signals();
         INFO_STREAM <<"SubscribeThread::"<< __func__<<": exiting..."<<endl;
         return nullptr;
     }

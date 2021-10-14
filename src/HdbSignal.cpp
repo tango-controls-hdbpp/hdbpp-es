@@ -1,29 +1,22 @@
 #include "HdbSignal.h"
 #include "HdbDevice.h"
+#include "SubscribeThread.h"
 #include <eventconsumer.h>
 
 namespace HdbEventSubscriber_ns
 {
-    // Init to 1 cause we make a division by this one
-    std::chrono::duration<double> HdbSignal::stats_window = std::chrono::seconds(1);
-    std::chrono::milliseconds HdbSignal::delay_periodic_event = std::chrono::milliseconds::zero();
-
-    std::chrono::duration<double> HdbSignal::min_process_time = std::chrono::duration<double>::max();
-    std::chrono::duration<double> HdbSignal::max_process_time = std::chrono::duration<double>::min();
-    std::chrono::duration<double> HdbSignal::min_store_time = std::chrono::duration<double>::max();
-    std::chrono::duration<double> HdbSignal::max_store_time = std::chrono::duration<double>::min();
-    std::mutex HdbSignal::static_mutex;
-
-    std::atomic_ulong HdbSignal::paused_number(0);
-    std::atomic_ulong HdbSignal::started_number(0);
-    std::atomic_ulong HdbSignal::stopped_number(0);
-    
     HdbSignal::HdbSignal(HdbDevice* dev
+            , SharedData& vec
             , const std::string& signame
             , const std::vector<std::string>& ctxts) : LogAdapter(dev->_device)
                                                        , name(signame)
                                                        , config_set(false)
+                                                       , ok_events(*this)
+                                                       , nok_events(*this)
+                                                       , okdb_events(*this)
+                                                       , nokdb_events(*this)
                                                        , dev(dev)
+                                                       , container(vec)
     {
         // on name, split device name and attrib name
         string::size_type idx = name.find_last_of('/');
@@ -44,38 +37,44 @@ namespace HdbEventSubscriber_ns
         contexts_upper = ctxts;
         for(auto &it : contexts_upper)
             std::transform(it.begin(), it.end(), it.begin(), ::toupper);
-        event_checker = std::make_unique<PeriodicEventCheck>(*this);
+        
         store_time_avg = std::chrono::duration<double>::zero();
         store_time_min = std::chrono::duration<double>::max();
         store_time_max = std::chrono::duration<double>::min();
         process_time_avg = std::chrono::duration<double>::zero();
         process_time_min = std::chrono::duration<double>::max();
         process_time_max = std::chrono::duration<double>::min();
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        using std::placeholders::_3;
 
-        stopped_number++;
+        container.stopped_number++;
     }
 
     HdbSignal::~HdbSignal()
     {
+        try
+        {
+            remove_callback();
+        }
+        catch (Tango::DevFailed &e)
+        {
+            INFO_STREAM <<"HdbSignal::"<< __func__<<": Exception unsubscribing " << name << " err=" << e.errors[0].desc << endl;
+        }
+
         ReaderLock lck(siglock);
         switch(state)
         {
             case SignalState::PAUSED:
                 {
-                    paused_number--;
+                    container.paused_number--;
                     break;
                 }
             case SignalState::RUNNING:
                 {
-                    started_number--;
+                    container.started_number--;
                     break;
                 }
             case SignalState::STOPPED:
                 {
-                    stopped_number--;
+                    container.stopped_number--;
                     break;
                 }
         }
@@ -83,8 +82,16 @@ namespace HdbEventSubscriber_ns
 
     void HdbSignal::remove_callback()
     {
-        unsubscribe_event(event_id);
-        unsubscribe_event(event_conf_id);
+        bool unsub = false;
+        {
+            ReaderLock lk(siglock);
+            unsub = archive_cb != nullptr;
+        }
+        if(unsub)
+        {
+            unsubscribe_event(event_conf_id);
+            unsubscribe_event(event_id);
+        }
 
         WriterLock lock(siglock);
         event_id = ERR;
@@ -299,17 +306,17 @@ namespace HdbEventSubscriber_ns
         {
             case SignalState::RUNNING:
                 {
-                started_number--;
+                container.started_number--;
                 break;
                 }
             case SignalState::PAUSED:
                 {
-                paused_number--;
+                container.paused_number--;
                 break;
                 }
             case SignalState::STOPPED:
                 {
-                stopped_number--;
+                container.stopped_number--;
                 break;
                 }
         }
@@ -318,21 +325,21 @@ namespace HdbEventSubscriber_ns
         {
             case SignalState::RUNNING:
                 {
-                started_number++;
+                container.started_number++;
                 break;
                 }
             case SignalState::PAUSED:
                 {
-                paused_number++;
+                container.paused_number++;
                 break;
                 }
             case SignalState::STOPPED:
                 {
-                stopped_number++;
+                container.stopped_number++;
                 break;
                 }
         }
-        event_checker->notify();
+        container.event_checker->notify();
         dev->notify_attr_states_updated();
 
         return prev_state;
@@ -349,14 +356,14 @@ namespace HdbEventSubscriber_ns
         status = "Event received";
         first_err = true;
 
-        event_checker->notify();
+        container.event_checker->notify();
         }
     }
 
     auto HdbSignal::set_nok_event() -> void
     {
         nok_events.increment();
-        event_checker->notify();
+        container.event_checker->notify();
     }
 
     auto HdbSignal::set_nok_periodic_event() -> void
@@ -398,13 +405,7 @@ namespace HdbEventSubscriber_ns
             //stat process max
             process_time_max = std::max(process_time, process_time_max);
         }
-        {
-            std::lock_guard<std::mutex> lock(HdbSignal::static_mutex);
-            min_process_time = std::min(min_process_time, process_time);
-            max_process_time = std::max(max_process_time, process_time);
-            min_store_time = std::min(min_store_time, store_time);
-            max_store_time = std::max(max_store_time, store_time);
-        }
+        container.update_timing(store_time, process_time);
         okdb_events.increment();
     }
 
@@ -427,22 +428,6 @@ namespace HdbEventSubscriber_ns
         return context.str();
     }
 
-    auto HdbSignal::PeriodicEventCheck::check_periodic_event_timeout() -> void
-    {
-        using namespace std::chrono_literals;
-        std::unique_lock<std::mutex> lk(m);
-        while(!abort)
-        {
-            while(!check_periodic_event() && !abort)
-                cv.wait(lk);
-            while (!abort && check_periodic_event()) {
-                if(cv.wait_for(lk, period + HdbSignal::delay_periodic_event) == std::cv_status::timeout)
-                {
-                    signal.set_nok_periodic_event();
-                }
-            }
-        }
-    }
 
     auto HdbSignal::get_signal_config() -> HdbSignal::SignalConfig
     {
@@ -484,4 +469,42 @@ namespace HdbEventSubscriber_ns
             //siglock.writerIn();
         }
     }
+        auto HdbSignal::set_error(const std::string& err) -> void
+        {
+            {
+                WriterLock lock(siglock);
+                evstate = Tango::ALARM;
+                status = err;
+            }
+            container.event_checker->notify();
+        }
+
+        auto HdbSignal::set_on() -> void
+        {
+            {
+                WriterLock lock(siglock);
+                evstate = Tango::ON;
+                status = "Subscribed";
+            }
+            container.event_checker->notify();
+        }
+            auto HdbSignal::EventCounter::check_timestamps_in_window() -> std::chrono::time_point<std::chrono::system_clock>
+            {
+                auto now = std::chrono::system_clock::now();
+                std::chrono::duration<double> interval = std::chrono::duration<double>::max();
+
+                std::lock_guard<mutex> lk(timestamps_mutex);
+                while(timestamps.size() > 0 && (interval = now - timestamps.front()) > signal.container.stats_window)
+                { 
+                    timestamps.pop_front();
+                }
+                return now;
+            }
+
+            double HdbSignal::EventCounter::get_freq()
+            {
+                check_timestamps_in_window();
+                std::lock_guard<mutex> lk(timestamps_mutex);
+                return timestamps.size()/signal.container.stats_window.count();
+            }
 }

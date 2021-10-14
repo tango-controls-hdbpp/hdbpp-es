@@ -84,10 +84,16 @@ class HdbDevice: public Tango::LogAdapter
     private:
         std::string current_context;
         std::chrono::time_point<std::chrono::system_clock> last_stat;
+        
         std::unique_ptr<std::thread> attr_states_events;
         std::mutex attr_states_mutex;
         std::condition_variable attr_states_cv;
         std::atomic_bool attr_states_abort;
+	
+        std::unique_ptr<std::thread> attr_number_event;
+        std::mutex attr_number_mutex;
+        std::condition_variable attr_number_cv;
+        std::atomic_bool attr_number_abort;
 	
     public:
 	//	Data members here
@@ -317,11 +323,12 @@ class HdbDevice: public Tango::LogAdapter
 	static void string_explode(const string &str, const string &separator, vector<string>& results);
 
         auto notify_attr_states_updated() -> void;
+        auto notify_attr_number_updated() -> void;
         
         template<typename T>
-        void push_events(const std::string& att_name, T* data, bool sleep = false);
+        void push_events(const std::string& att_name, T* data);
         template<typename T>
-        void push_events(const std::string& att_name, T* data, long size, bool sleep = false);
+        void push_events(const std::string& att_name, T* data, long size);
 
         auto get_record_freq() -> double;
         auto get_failure_freq() -> double;
@@ -364,6 +371,7 @@ private:
 	static auto remove_domain(const string &str) -> string;
 
         auto push_attr_states_events() -> void;
+        auto push_attr_number_event() -> void;
 };
 
 
@@ -386,7 +394,7 @@ public:
 };
 
 template<typename T>
-void HdbDevice::push_events(const std::string& attr_name, T* data, bool sleep)
+void HdbDevice::push_events(const std::string& attr_name, T* data)
 {
     try
     {
@@ -394,15 +402,10 @@ void HdbDevice::push_events(const std::string& attr_name, T* data, bool sleep)
         _device->push_archive_event(attr_name, data);
     }
     catch(Tango::DevFailed &e){}
-
-    // TODO is this needed ?
-    using namespace std::chrono_literals;
-    if(sleep)
-        usleep(std::chrono::microseconds(1ms).count());
 }
 
 template<typename T>
-void HdbDevice::push_events(const std::string& attr_name, T* data, long size, bool sleep)
+void HdbDevice::push_events(const std::string& attr_name, T* data, long size)
 {
     try
     {
@@ -410,11 +413,6 @@ void HdbDevice::push_events(const std::string& attr_name, T* data, long size, bo
         _device->push_archive_event(attr_name, data, size);
     }
     catch(Tango::DevFailed &e){}
-
-    // TODO is this needed ?
-    using namespace std::chrono_literals;
-    if(sleep)
-        usleep(std::chrono::microseconds(1ms).count());
 }
 }	// namespace_ns
 

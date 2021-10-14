@@ -12,23 +12,22 @@
 #include <atomic>
 #include <tango.h>
 
-
 namespace HdbEventSubscriber_ns
 {
     class ArchiveCB;
     class HdbDevice;
+    class SharedData;
 
     class HdbSignal : public Tango::LogAdapter
     {
+        friend class SharedData;
+
         static constexpr int ERR = -1;
 
         public:
-        static std::chrono::duration<double> stats_window;
-        static std::chrono::milliseconds delay_periodic_event;
-        
         std::string name;
 
-        explicit HdbSignal(HdbDevice* dev, const std::string& name, const std::vector<std::string>& contexts);
+        explicit HdbSignal(HdbDevice* dev, SharedData& vec, const std::string& name, const std::vector<std::string>& contexts);
 
         ~HdbSignal();
 
@@ -148,30 +147,6 @@ namespace HdbEventSubscriber_ns
             return process_time_max;
         }
         
-        static auto get_global_min_store_time() -> std::chrono::duration<double>
-        {
-            std::lock_guard<std::mutex> lk(static_mutex);
-            return min_store_time;
-        }
-        
-        static auto get_global_max_store_time() -> std::chrono::duration<double>
-        {
-            std::lock_guard<std::mutex> lk(static_mutex);
-            return max_store_time;
-        }
-        
-        static auto get_global_min_process_time() -> std::chrono::duration<double>
-        {
-            std::lock_guard<std::mutex> lk(static_mutex);
-            return min_process_time;
-        }
-        
-        static auto get_global_max_process_time() -> std::chrono::duration<double>
-        {
-            std::lock_guard<std::mutex> lk(static_mutex);
-            return max_process_time;
-        }
-
         auto get_ok_events() -> unsigned int
         {
             return get_events(ok_events);
@@ -266,21 +241,6 @@ namespace HdbEventSubscriber_ns
 
         auto get_contexts() -> std::string;
 
-        auto set_periodic_event(int p) -> void
-        {
-            WriterLock lock(siglock);
-            event_checker->set_period(std::chrono::milliseconds(p));
-        }
-
-        static auto reset_min_max() -> void
-        {
-            std::lock_guard<std::mutex> lk(static_mutex);
-            min_process_time = std::chrono::duration<double>::max();
-            max_process_time = std::chrono::duration<double>::min();
-            min_store_time = std::chrono::duration<double>::max();
-            max_store_time = std::chrono::duration<double>::min();
-        }
-
         auto reset_statistics() -> void
         {
             ok_events.reset();
@@ -341,41 +301,23 @@ namespace HdbEventSubscriber_ns
             first_err = false;
         }
 
-        auto set_error(const std::string& err) -> void
+        auto set_error(const std::string& err) -> void;
+
+        auto set_on() -> void;
+
+        auto check_periodic_event_timeout(std::chrono::milliseconds delay) -> void
         {
+            if(is_on())
             {
-                WriterLock lock(siglock);
-                evstate = Tango::ALARM;
-                status = err;
+                auto now = std::chrono::system_clock::now();
+                auto last_ev = std::max(get_last_ok_event(), get_last_nok_event());
+                if(now - last_ev > delay)
+                {
+                    set_nok_periodic_event();
+                }
             }
-            event_checker->notify();
         }
 
-        auto set_on() -> void
-        {
-            {
-                WriterLock lock(siglock);
-                evstate = Tango::ON;
-                status = "Subscribed";
-            }
-            event_checker->notify();
-        }
-
-        static auto get_started_number() -> unsigned long
-        {
-            return HdbSignal::started_number;
-        }
-        
-        static auto get_paused_number() -> unsigned long
-        {
-            return HdbSignal::paused_number;
-        }
-        
-        static auto get_stopped_number() -> unsigned long
-        {
-            return HdbSignal::stopped_number;
-        }
-        
         private:
 
         class EventCounter
@@ -386,7 +328,9 @@ namespace HdbEventSubscriber_ns
             std::deque<std::chrono::time_point<std::chrono::system_clock>> timestamps;
             mutable std::mutex timestamps_mutex;
 
-            EventCounter():counter(0)
+            const HdbSignal& signal;
+
+            EventCounter(const HdbSignal& sig):counter(0), signal(sig)
             {
             }
 
@@ -399,26 +343,10 @@ namespace HdbEventSubscriber_ns
                 timestamps.push_back(now);
             }
 
-            auto check_timestamps_in_window() -> std::chrono::time_point<std::chrono::system_clock>
-            {
-                auto now = std::chrono::system_clock::now();
-                std::chrono::duration<double> interval = std::chrono::duration<double>::max();
-
-                std::lock_guard<mutex> lk(timestamps_mutex);
-                while(timestamps.size() > 0 && (interval = now - timestamps.front()) > stats_window)
-                { 
-                    timestamps.pop_front();
-                }
-                return now;
-            }
+            auto check_timestamps_in_window() -> std::chrono::time_point<std::chrono::system_clock>;
 
             public:
-            double get_freq()
-            {
-                check_timestamps_in_window();
-                std::lock_guard<mutex> lk(timestamps_mutex);
-                return timestamps.size()/stats_window.count();
-            }
+            double get_freq();
 
             double get_freq_inst()
             {
@@ -453,70 +381,6 @@ namespace HdbEventSubscriber_ns
 
 
         };
-
-        class PeriodicEventCheck
-        {
-
-            friend class HdbSignal;
-
-            public:
-            explicit PeriodicEventCheck(HdbSignal& sig): signal(sig)
-                                                         , abort(false)
-            {
-                period = std::chrono::milliseconds::min();
-                periodic_check = std::make_unique<std::thread>(&PeriodicEventCheck::check_periodic_event_timeout, this);
-            }
-
-            ~PeriodicEventCheck()
-            {
-                abort = true;
-                cv.notify_one();
-                if(periodic_check)
-                    periodic_check->join();
-            }
-            
-            void check_periodic_event_timeout();
-
-            void notify()
-            {
-                cv.notify_one();
-            };
-
-            auto set_period(std::chrono::milliseconds p) -> void
-            {
-                {
-                    std::lock_guard<mutex> lk(m);
-                    period = p;
-                }
-                notify();
-            };
-
-            HdbSignal& signal;
-            std::unique_ptr<std::thread> periodic_check;
-            std::chrono::milliseconds period;
-            std::mutex m;
-            std::condition_variable cv;
-            std::atomic_bool abort;
-            
-            auto check_periodic_event() -> bool
-            {
-                return period > std::chrono::milliseconds::zero() && signal.is_on();
-            };
-            
-            private:
-            PeriodicEventCheck(const PeriodicEventCheck&) = delete;
-            PeriodicEventCheck& operator=(PeriodicEventCheck const&) = delete;
-        };
-
-        static std::chrono::duration<double> min_process_time;
-        static std::chrono::duration<double> max_process_time;
-        static std::chrono::duration<double> min_store_time;
-        static std::chrono::duration<double> max_store_time;
-        static std::mutex static_mutex;
-        
-        static std::atomic_ulong paused_number;
-        static std::atomic_ulong started_number;
-        static std::atomic_ulong stopped_number;
 
         ReadersWritersLock siglock;
         ReadersWritersLock dblock;
@@ -555,9 +419,8 @@ namespace HdbEventSubscriber_ns
         std::vector<std::string> contexts_upper;
         unsigned int ttl;
         
-        std::unique_ptr<PeriodicEventCheck> event_checker;
-
         HdbDevice* dev;
+        SharedData& container;
 
 
         void unsubscribe_event(const int event_id);

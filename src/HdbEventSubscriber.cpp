@@ -654,7 +654,7 @@ void HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxStoreTime) ENABLED START -----*/
         //	Set the attribute value
-        *attr_AttributeMaxStoreTime_read = HdbSignal::get_global_max_store_time().count();
+        *attr_AttributeMaxStoreTime_read = hdb_dev->shared->get_global_max_store_time().count();
         attr.set_value(attr_AttributeMaxStoreTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxStoreTime
@@ -673,7 +673,7 @@ void HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinStoreTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinStoreTime) ENABLED START -----*/
         //	Set the attribute value
-        *attr_AttributeMinStoreTime_read = HdbSignal::get_global_min_store_time().count();
+        *attr_AttributeMinStoreTime_read = hdb_dev->shared->get_global_min_store_time().count();
         attr.set_value(attr_AttributeMinStoreTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMinStoreTime
@@ -692,7 +692,7 @@ void HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMaxProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMaxProcessingTime) ENABLED START -----*/
         //	Set the attribute value
-        *attr_AttributeMaxProcessingTime_read = HdbSignal::get_global_max_process_time().count();
+        *attr_AttributeMaxProcessingTime_read = hdb_dev->shared->get_global_max_process_time().count();
         attr.set_value(attr_AttributeMaxProcessingTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMaxProcessingTime
@@ -711,7 +711,7 @@ void HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeMinProcessingTime(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeMinProcessingTime) ENABLED START -----*/
         //	Set the attribute value
-        *attr_AttributeMinProcessingTime_read = HdbSignal::get_global_min_process_time().count();
+        *attr_AttributeMinProcessingTime_read = hdb_dev->shared->get_global_min_process_time().count();
         attr.set_value(attr_AttributeMinProcessingTime_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeMinProcessingTime

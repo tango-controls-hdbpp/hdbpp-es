@@ -77,6 +77,11 @@ namespace HdbEventSubscriber_ns
         if(attr_states_events)
             attr_states_events->join();
         
+        attr_number_abort = true;
+        attr_number_cv.notify_one();
+        if(attr_number_event)
+            attr_number_event->join();
+        
         //DEBUG_STREAM << "	Stats thread Joined " << endl;
         poller_thread->join(nullptr);
         //DEBUG_STREAM << "	Polling thread Joined " << endl;
@@ -91,6 +96,7 @@ namespace HdbEventSubscriber_ns
         thread->join(nullptr);
         //DEBUG_STREAM << "	Subscribe thread Joined " << endl;
         //usleep(hundred_s_in_ms);
+        INFO_STREAM << "	HdbDevice deleted" << endl;
     }
     //=============================================================================
     //=============================================================================
@@ -100,13 +106,12 @@ namespace HdbEventSubscriber_ns
         this->period = p;
         this->poller_period = pp;
         this->stats_window = s;
-        HdbSignal::stats_window = std::chrono::seconds(s);
-        HdbSignal::delay_periodic_event = std::chrono::milliseconds(c);
         this->subscribe_change = ch;
         this->list_filename = fn;
         _device = device;
 
         attr_states_events = std::make_unique<std::thread>(&HdbDevice::push_attr_states_events, this);
+        attr_number_event = std::make_unique<std::thread>(&HdbDevice::push_attr_number_event, this);
 
         list_from_file = false;
         attribute_list_str_size = 0;
@@ -127,6 +132,13 @@ namespace HdbEventSubscriber_ns
         attribute_stopped_list_str.reserve(MAX_ATTRIBUTES);
         attribute_error_list_str.reserve(MAX_ATTRIBUTES);
         attribute_context_list_str.reserve(MAX_ATTRIBUTES);
+        
+        //	Create a thread to subscribe events
+        shared = std::make_shared<SharedData>(this
+                    , std::chrono::seconds(s)
+                    , std::chrono::milliseconds(c));
+        thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
+                , [](SubscribeThread* /*unused*/){});
     }
     //=============================================================================
     //=============================================================================
@@ -138,13 +150,8 @@ namespace HdbEventSubscriber_ns
 
         attr_AttributeNumber_read = 0;
         attr_AttributeStartedNumber_read = 0;
-        attr_AttributeStoppedNumber_read = attr_AttributeNumber_read;
-        attr_AttributePausedNumber_read = attr_AttributeNumber_read;
-
-        //	Create a thread to subscribe events
-        shared = std::make_shared<SharedData>(this);
-        thread = std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>>(new SubscribeThread(this)
-                , [](SubscribeThread* /*unused*/){});
+        attr_AttributeStoppedNumber_read = 0;
+        attr_AttributePausedNumber_read = 0;
 
         push_thread = std::unique_ptr<PushThread, std::function<void(PushThread*)>>(
                 new PushThread(this
@@ -283,7 +290,7 @@ namespace HdbEventSubscriber_ns
     {
         std::string attr_name;
         fix_tango_host(signame, attr_name);
-        shared->remove(attr_name, false);
+        shared->remove(attr_name);
     }
     //=============================================================================
     //=============================================================================
@@ -1368,15 +1375,38 @@ namespace HdbEventSubscriber_ns
             attr_states_cv.wait(lk);
             if(!attr_states_abort)
             {
-                attr_AttributePausedNumber_read = HdbSignal::get_paused_number();
-                attr_AttributeStartedNumber_read = HdbSignal::get_started_number();
-                attr_AttributeStoppedNumber_read = HdbSignal::get_stopped_number();
+                attr_AttributePausedNumber_read = shared->get_paused_number();
+                attr_AttributeStartedNumber_read = shared->get_started_number();
+                attr_AttributeStoppedNumber_read = shared->get_stopped_number();
 
                 push_events("AttributeStartedNumber", &attr_AttributeStartedNumber_read);
                 push_events("AttributePausedNumber", &attr_AttributePausedNumber_read);
                 push_events("AttributeStoppedNumber", &attr_AttributeStoppedNumber_read);
             }
         }
+
+        INFO_STREAM << "	Attr states number events exited" << endl;
+    }
+
+    auto HdbDevice::notify_attr_number_updated() -> void
+    {
+        attr_number_cv.notify_one();
+    }
+
+    auto HdbDevice::push_attr_number_event() -> void
+    {
+        std::unique_lock<std::mutex> lk(attr_number_mutex);
+        while(!attr_number_abort)
+        {
+            attr_number_cv.wait(lk);
+            if(!attr_number_abort)
+            {
+                attr_AttributeNumber_read = shared->size();
+
+                push_events("AttributeNumber", &attr_AttributeNumber_read);
+            }
+        }
+        INFO_STREAM << "	Attr number events exited" << endl;
 
     }
 

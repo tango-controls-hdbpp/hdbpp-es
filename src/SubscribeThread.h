@@ -45,6 +45,10 @@
 #include <time.h>
 #include <string>
 #include <deque>
+#include <condition_variable>
+#include <thread>
+#include <unordered_map>
+#include <atomic>
 #include "Consts.h"
 #include <mutex>
 
@@ -64,8 +68,8 @@ namespace HdbEventSubscriber_ns
 
 class ArchiveCB;
 class HdbDevice;
-class SubscribeThread;
 class HdbSignal;
+class SubscribeThread;
 
 //=========================================================
 /**
@@ -75,7 +79,93 @@ class HdbSignal;
 //class SharedData: public omni_mutex
 class SharedData: public Tango::TangoMonitor, public Tango::LogAdapter
 {
+            friend class HdbSignal;
 private:
+        class PeriodicEventCheck
+        {
+
+            friend class HdbSignal;
+
+            public:
+            explicit PeriodicEventCheck(SharedData& vec): signals(vec)
+                , abort(false)
+            {
+                period = std::chrono::milliseconds::max();
+                periodic_check = std::make_unique<std::thread>(&PeriodicEventCheck::check_periodic_event_timeout, this);
+            }
+
+            ~PeriodicEventCheck()
+            {
+                abort_periodic_check();
+            }
+            
+            auto abort_periodic_check() -> void
+            {
+                if(!abort)
+                {
+                abort = true;
+                cv.notify_one();
+                if(periodic_check)
+                    periodic_check->join();
+                }
+                periods.clear();
+            }
+
+            void check_periodic_event_timeout();
+
+            void notify()
+            {
+                cv.notify_one();
+            };
+
+            auto set_period(std::shared_ptr<HdbSignal> signal, std::chrono::milliseconds p) -> void
+            {
+                {
+                    std::lock_guard<mutex> lk(m);
+                    if(p > std::chrono::milliseconds::zero())
+                    {
+                        period = std::min(p, period);
+                    }
+                    periods.emplace(signal, p);
+                }
+                notify();
+            };
+
+            std::unique_ptr<std::thread> periodic_check;
+            std::chrono::milliseconds period;
+            SharedData& signals;
+            std::unordered_map<std::shared_ptr<HdbSignal>, std::chrono::milliseconds> periods;
+
+            std::mutex m;
+            std::condition_variable cv;
+            std::atomic_bool abort;
+            
+            auto check_periodic_event() -> bool;
+            
+            private:
+            PeriodicEventCheck(const PeriodicEventCheck&) = delete;
+            PeriodicEventCheck& operator=(PeriodicEventCheck const&) = delete;
+        };
+
+            // Init to 1 cause we make a division by this one
+            const std::chrono::duration<double> stats_window = std::chrono::seconds(1);
+            const std::chrono::milliseconds delay_periodic_event = std::chrono::milliseconds::zero();
+
+            std::chrono::duration<double> min_process_time = std::chrono::duration<double>::max();
+            std::chrono::duration<double> max_process_time = std::chrono::duration<double>::min();
+            std::chrono::duration<double> min_store_time = std::chrono::duration<double>::max();
+            std::chrono::duration<double> max_store_time = std::chrono::duration<double>::min();
+            std::mutex timing_mutex;
+            std::condition_variable timing_cv;
+            std::atomic_bool timing_abort;
+            std::unique_ptr<std::thread> timing_events;
+
+            std::unique_ptr<PeriodicEventCheck> event_checker;
+
+            std::atomic_ulong paused_number;
+            std::atomic_ulong started_number;
+            std::atomic_ulong stopped_number;
+
 	/**
 	 *	HdbDevice object
 	 */
@@ -88,11 +178,14 @@ private:
 
         auto is_same_signal_name(const std::string& name1, const std::string& name2) -> bool;
 
-        vector<std::shared_ptr<HdbSignal>>	signals;
+        std::vector<std::shared_ptr<HdbSignal>> signals;
 	ReadersWritersLock      veclock;
 	
         void add(std::shared_ptr<HdbSignal> signal, int to_do, bool start);
 	auto add(const string &signame, const vector<string>& contexts, bool start) -> std::shared_ptr<HdbSignal>;
+        auto push_timing_events() -> void;
+        auto reset_min_max() -> void;
+        auto update_timing(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void;
 public:
 	int		action;
 	//omni_condition condition;
@@ -102,7 +195,7 @@ public:
 	 * Constructor
 	 */
 	//SharedData(HdbDevice *dev):condition(this){ hdb_dev=dev; action=NOTHING; stop_it=false; initialized=false;};
-	SharedData(HdbDevice *dev);
+	SharedData(HdbDevice *dev, std::chrono::seconds window, std::chrono::milliseconds period);
 	~SharedData();
 	/**
 	 * Add a new signal.
@@ -112,11 +205,7 @@ public:
 	/**
 	 * Remove a signal in the list.
 	 */
-	void remove(const string &signame, bool stop);
-	/**
-         * Unsubscribe events for this signal
-         */
-        void unsubscribe_events(std::shared_ptr<HdbSignal>);
+	void remove(const string &signame);
 	/**
 	 * Update contexts for a signal.
 	 */
@@ -185,11 +274,6 @@ public:
 	 * Subscribe achive event for each signal
 	 */
 	void subscribe_events();
-	/**
-	 * Unsubscribe achive event for each signal
-         * and clear the signals list
-	 */
-	void clear_signals();
 	/**
 	 *	return number of signals to be subscribed
 	 */
@@ -357,6 +441,14 @@ public:
         auto get_record_freq_list(std::vector<double>& ret) -> void;
         auto get_failure_freq_list(std::vector<double>& ret) -> void;
         auto get_event_number_list(std::vector<unsigned int>& ret) -> void;
+        auto get_global_min_store_time() -> std::chrono::duration<double>;
+        auto get_global_max_store_time() -> std::chrono::duration<double>;
+        auto get_global_min_process_time() -> std::chrono::duration<double>;
+        auto get_global_max_process_time() -> std::chrono::duration<double>;
+        auto get_started_number() -> unsigned long;
+        auto get_paused_number() -> unsigned long;
+        auto get_stopped_number() -> unsigned long;
+        auto size() -> size_t;
 };
 
 
