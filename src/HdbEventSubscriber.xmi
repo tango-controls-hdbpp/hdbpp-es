@@ -250,7 +250,7 @@
       </argout>
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
     </commands>
-    <attributes name="AttributeOkNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeOkNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -260,7 +260,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="AttributeNokNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeNokNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -270,7 +270,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="AttributePendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributePendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -330,7 +330,7 @@
       <eventCriteria relChange="" absChange="0.00001" period=""/>
       <evArchiveCriteria relChange="" absChange="0.00001" period="3600000"/>
     </attributes>
-    <attributes name="AttributeRecordFreq" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeRecordFreq" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -350,7 +350,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="AttributeFailureFreq" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeFailureFreq" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:DoubleType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -370,7 +370,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="AttributeStartedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeStartedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -380,7 +380,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="AttributeStoppedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeStoppedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -390,7 +390,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="AttributeMaxPendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributeMaxPendingNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -408,7 +408,7 @@
       <status abstract="false" inherited="false" concrete="true" concreteHere="true"/>
       <properties description="Seconds elapsed since the last statistics reset" label="" unit="s" standardUnit="1" displayUnit="s" format="" maxValue="" minValue="" maxAlarm="" minAlarm="" maxWarning="" minWarning="" deltaTime="" deltaValue=""/>
     </attributes>
-    <attributes name="AttributePausedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" allocReadMember="false" isDynamic="false">
+    <attributes name="AttributePausedNumber" attType="Scalar" rwType="READ" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" allocReadMember="false" isDynamic="false">
       <dataType xsi:type="pogoDsl:UIntType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>
@@ -418,7 +418,7 @@
       <eventCriteria relChange="" absChange="1" period=""/>
       <evArchiveCriteria relChange="" absChange="1" period="3600000"/>
     </attributes>
-    <attributes name="Context" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="0" maxX="" maxY="" memorized="true" memorizedAtInit="true" allocReadMember="true" isDynamic="false">
+    <attributes name="Context" attType="Scalar" rwType="READ_WRITE" displayLevel="OPERATOR" polledPeriod="3000" maxX="" maxY="" memorized="true" memorizedAtInit="true" allocReadMember="true" isDynamic="false">
       <dataType xsi:type="pogoDsl:StringType"/>
       <changeEvent fire="true" libCheckCriteria="true"/>
       <archiveEvent fire="true" libCheckCriteria="true"/>

@@ -954,6 +954,28 @@ namespace HdbEventSubscriber_ns
         init_mutex.unlock();
     }
 
+    auto SharedData::get_record_freq_inst() -> double
+    {
+        ReaderLock lock(veclock);
+        double ret = 0.;
+        for(const auto& sig : signals)
+        {
+            ret += sig->get_ok_events_freq_inst() - sig->get_nok_db_freq_inst();
+        }
+        return ret;
+    }
+    
+    auto SharedData::get_failure_freq_inst() -> double
+    {
+        ReaderLock lock(veclock);
+        double ret = 0.;
+        for(const auto& sig : signals)
+        {
+            ret += sig->get_nok_events_freq_inst() + sig->get_nok_db_freq_inst();
+        }
+        return ret;
+    }
+
     auto SharedData::get_record_freq() -> double
     {
         ReaderLock lock(veclock);
@@ -994,6 +1016,28 @@ namespace HdbEventSubscriber_ns
         for(const auto& sig : signals)
         {
             ret.push_back(sig->get_nok_events_freq() + sig->get_nok_db_freq());
+        }
+        return true;
+    }
+
+    auto SharedData::get_record_freq_inst_list(std::vector<double>& ret) -> bool
+    {
+        ReaderLock lock(veclock);
+        ret.clear();
+        for(const auto& sig : signals)
+        {
+            ret.push_back(sig->get_ok_events_freq_inst() - sig->get_nok_db_freq_inst());
+        }
+        return true;
+    }
+
+    auto SharedData::get_failure_freq_inst_list(std::vector<double>& ret) -> bool
+    {
+        ReaderLock lock(veclock);
+        ret.clear();
+        for(const auto& sig : signals)
+        {
+            ret.push_back(sig->get_nok_events_freq_inst() + sig->get_nok_db_freq_inst());
         }
         return true;
     }

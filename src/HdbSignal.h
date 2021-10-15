@@ -203,6 +203,25 @@ namespace HdbEventSubscriber_ns
             return get_events_freq(okdb_events);
         }
 
+        auto get_ok_events_freq_inst() -> double
+        {
+            return get_events_freq_inst(ok_events);
+        }
+
+        auto get_nok_events_freq_inst() -> double
+        {
+            return get_events_freq_inst(nok_events);
+        }
+        
+        auto get_nok_db_freq_inst() -> double
+        {
+            return get_events_freq_inst(nokdb_events);
+        }
+        
+        auto get_ok_db_freq_inst() -> double
+        {
+            return get_events_freq_inst(okdb_events);
+        }
         auto set_ok_event() -> void;
 
         auto set_nok_event() -> void;
@@ -353,7 +372,7 @@ namespace HdbEventSubscriber_ns
                     auto last_val = timestamps.back();
                     auto second_last = timestamps[timestamps.size() - 2];
 
-                    return 1./(last_val - second_last).count();
+                    return 1./std::chrono::duration_cast<std::chrono::duration<double>>(last_val - second_last).count();
                 }
                 return 0.;
             }

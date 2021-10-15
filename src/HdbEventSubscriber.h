@@ -98,6 +98,8 @@ private:
 
         std::vector<double> records_freq;
         std::vector<double> failures_freq;
+        std::vector<double> records_freq_inst;
+        std::vector<double> failures_freq_inst;
         std::vector<unsigned int> events_number;
 
         size_t previous_length;
@@ -246,7 +248,7 @@ public:
  *	Attribute AttributeOkNumber related methods
  *	Description: Number of archived attributes not in error
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributeOkNumber(Tango::Attribute &attr);
@@ -255,7 +257,7 @@ public:
  *	Attribute AttributeNokNumber related methods
  *	Description: Number of archived attributes in error
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributeNokNumber(Tango::Attribute &attr);
@@ -264,7 +266,7 @@ public:
  *	Attribute AttributePendingNumber related methods
  *	Description: Number of attributes waiting to be archived
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributePendingNumber(Tango::Attribute &attr);
@@ -273,7 +275,7 @@ public:
  *	Attribute AttributeNumber related methods
  *	Description: Number of configured attributes
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributeNumber(Tango::Attribute &attr);
@@ -354,7 +356,7 @@ public:
  *	Attribute AttributeStartedNumber related methods
  *	Description: Number of archived attributes started
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributeStartedNumber(Tango::Attribute &attr);
@@ -363,7 +365,7 @@ public:
  *	Attribute AttributeStoppedNumber related methods
  *	Description: Number of archived attributes stopped
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributeStoppedNumber(Tango::Attribute &attr);
@@ -372,7 +374,7 @@ public:
  *	Attribute AttributeMaxPendingNumber related methods
  *	Description: Max number of attributes waiting to be archived
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributeMaxPendingNumber(Tango::Attribute &attr);
@@ -390,7 +392,7 @@ public:
  *	Attribute AttributePausedNumber related methods
  *	Description: Number of archived attributes paused
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 	virtual void read_AttributePausedNumber(Tango::Attribute &attr);
@@ -499,7 +501,7 @@ public:
  *	Attribute AttributeEventNumberList related methods
  *	Description: Returns the list of numbers of events received
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Spectrum max = 10000
  */
 	virtual void read_AttributeEventNumberList(Tango::Attribute &attr);

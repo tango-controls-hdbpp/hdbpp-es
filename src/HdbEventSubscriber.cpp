@@ -105,10 +105,10 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //================================================================
 //  Attributes managed are:
 //================================================================
-//  AttributeOkNumber             |  Tango::DevLong	Scalar
-//  AttributeNokNumber            |  Tango::DevLong	Scalar
-//  AttributePendingNumber        |  Tango::DevLong	Scalar
-//  AttributeNumber               |  Tango::DevLong	Scalar
+//  AttributeOkNumber             |  Tango::DevULong	Scalar
+//  AttributeNokNumber            |  Tango::DevULong	Scalar
+//  AttributePendingNumber        |  Tango::DevULong	Scalar
+//  AttributeNumber               |  Tango::DevULong	Scalar
 //  AttributeMaxStoreTime         |  Tango::DevDouble	Scalar
 //  AttributeMinStoreTime         |  Tango::DevDouble	Scalar
 //  AttributeMaxProcessingTime    |  Tango::DevDouble	Scalar
@@ -117,11 +117,11 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeRecordFreqInst       |  Tango::DevDouble	Scalar
 //  AttributeFailureFreq          |  Tango::DevDouble	Scalar
 //  AttributeFailureFreqInst      |  Tango::DevDouble	Scalar
-//  AttributeStartedNumber        |  Tango::DevLong	Scalar
-//  AttributeStoppedNumber        |  Tango::DevLong	Scalar
-//  AttributeMaxPendingNumber     |  Tango::DevLong	Scalar
+//  AttributeStartedNumber        |  Tango::DevULong	Scalar
+//  AttributeStoppedNumber        |  Tango::DevULong	Scalar
+//  AttributeMaxPendingNumber     |  Tango::DevULong	Scalar
 //  StatisticsResetTime           |  Tango::DevDouble	Scalar
-//  AttributePausedNumber         |  Tango::DevLong	Scalar
+//  AttributePausedNumber         |  Tango::DevULong	Scalar
 //  Context                       |  Tango::DevString	Scalar
 //  AttributeList                 |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeOkList               |  Tango::DevString	Spectrum  ( max = 10000)
@@ -133,7 +133,7 @@ static const char *RcsId = "$Id: HdbEventSubscriber.cpp,v 1.8 2014-03-07 14:05:5
 //  AttributeFailureFreqInstList  |  Tango::DevDouble	Spectrum  ( max = 10000)
 //  AttributeStartedList          |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeStoppedList          |  Tango::DevString	Spectrum  ( max = 10000)
-//  AttributeEventNumberList      |  Tango::DevLong	Spectrum  ( max = 10000)
+//  AttributeEventNumberList      |  Tango::DevULong	Spectrum  ( max = 10000)
 //  AttributeErrorList            |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributePausedList           |  Tango::DevString	Spectrum  ( max = 10000)
 //  AttributeStrategyList         |  Tango::DevString	Spectrum  ( max = 10000)
@@ -258,7 +258,9 @@ void HdbEventSubscriber::init_device()
 	
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
 	attr_Context_read = new Tango::DevString[1];
-	attr_ContextsList_read = new Tango::DevString[MAX_ATTRIBUTES];
+	attr_ContextsList_read = new Tango::DevString[1000];
+	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
+        attr_ContextsList_read = new Tango::DevString[MAX_ATTRIBUTES];
 
         attr_AttributeMaxStoreTime_read = new Tango::DevDouble[1];
         attr_AttributeMinStoreTime_read = new Tango::DevDouble[1];
@@ -266,6 +268,8 @@ void HdbEventSubscriber::init_device()
         attr_AttributeMinProcessingTime_read = new Tango::DevDouble[1];
         attr_AttributeFailureFreq_read = new Tango::DevDouble[1];
         attr_AttributeRecordFreq_read = new Tango::DevDouble[1];
+        attr_AttributeFailureFreqInst_read = new Tango::DevDouble[1];
+        attr_AttributeRecordFreqInst_read = new Tango::DevDouble[1];
 
         attr_AttributeMaxPendingNumber_read = new Tango::DevULong[1];
         attr_AttributePendingNumber_read = new Tango::DevULong[1];
@@ -281,9 +285,9 @@ void HdbEventSubscriber::init_device()
         previous_started_length = 0;
         previous_paused_length = 0;
         previous_stopped_length = 0;
-	attr_AttributeStartedList_read = new Tango::DevString[MAX_ATTRIBUTES];
-	attr_AttributePausedList_read = new Tango::DevString[MAX_ATTRIBUTES];
-	attr_AttributeStoppedList_read = new Tango::DevString[MAX_ATTRIBUTES];
+        attr_AttributeStartedList_read = new Tango::DevString[MAX_ATTRIBUTES];
+        attr_AttributePausedList_read = new Tango::DevString[MAX_ATTRIBUTES];
+        attr_AttributeStoppedList_read = new Tango::DevString[MAX_ATTRIBUTES];
 
         attr_AttributeErrorList_read = new Tango::DevString[MAX_ATTRIBUTES];        
         attr_AttributePendingList_read = new Tango::DevString[MAX_ATTRIBUTES];        
@@ -303,7 +307,7 @@ void HdbEventSubscriber::init_device()
         attr_AttributeStrategyList_read = new Tango::DevString[MAX_ATTRIBUTES];
         attr_AttributeList_read = new Tango::DevString[MAX_ATTRIBUTES];
 
-	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
+
         //	Initialize device
         initialized = false;
         set_state(Tango::MOVING);
@@ -618,7 +622,7 @@ void HdbEventSubscriber::write_attr_hardware(TANGO_UNUSED(vector<long> &attr_lis
  *	Read attribute AttributeOkNumber related method
  *	Description: Number of archived attributes not in error
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -642,7 +646,7 @@ void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
  *	Read attribute AttributeNokNumber related method
  *	Description: Number of archived attributes in error
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -666,7 +670,7 @@ void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
  *	Read attribute AttributePendingNumber related method
  *	Description: Number of attributes waiting to be archived
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -686,7 +690,7 @@ void HdbEventSubscriber::read_AttributePendingNumber(Tango::Attribute &attr)
  *	Read attribute AttributeNumber related method
  *	Description: Number of configured attributes
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -791,12 +795,7 @@ void HdbEventSubscriber::read_AttributeRecordFreq(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreq) ENABLED START -----*/
         //	Set the attribute value
         *attr_AttributeRecordFreq_read = hdb_dev->get_record_freq();
-        if(*attr_AttributeRecordFreq_read == 0)
-            attr.set_quality(Tango::ATTR_INVALID);
-        else
-        {
-            set_value_date_quality(attr, attr_AttributeRecordFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
-        }
+        set_value_date_quality(attr, attr_AttributeRecordFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreq
 }
@@ -814,7 +813,8 @@ void HdbEventSubscriber::read_AttributeRecordFreqInst(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqInst(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqInst) ENABLED START -----*/
 	//	Set the attribute value
-	attr.set_value(attr_AttributeRecordFreqInst_read);
+        *attr_AttributeRecordFreqInst_read = hdb_dev->shared->get_record_freq_inst();
+        set_value_date_quality(attr, attr_AttributeRecordFreqInst_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqInst
 }
@@ -833,12 +833,7 @@ void HdbEventSubscriber::read_AttributeFailureFreq(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreq) ENABLED START -----*/
         //	Set the attribute value
         *attr_AttributeFailureFreq_read = hdb_dev->get_failure_freq();
-        if(*attr_AttributeFailureFreq_read == 0)
-            attr.set_quality(Tango::ATTR_INVALID);
-        else
-        {
-            set_value_date_quality(attr, attr_AttributeFailureFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
-        }
+        set_value_date_quality(attr, attr_AttributeFailureFreq_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreq
 }
 //--------------------------------------------------------
@@ -855,7 +850,8 @@ void HdbEventSubscriber::read_AttributeFailureFreqInst(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqInst(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqInst) ENABLED START -----*/
 	//	Set the attribute value
-	attr.set_value(attr_AttributeFailureFreqInst_read);
+        *attr_AttributeFailureFreqInst_read = hdb_dev->shared->get_failure_freq_inst();
+        set_value_date_quality(attr, attr_AttributeFailureFreqInst_read, hdb_dev->get_last_stat(), Tango::ATTR_VALID);
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqInst
 }
@@ -864,7 +860,7 @@ void HdbEventSubscriber::read_AttributeFailureFreqInst(Tango::Attribute &attr)
  *	Read attribute AttributeStartedNumber related method
  *	Description: Number of archived attributes started
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -887,7 +883,7 @@ void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
  *	Read attribute AttributeStoppedNumber related method
  *	Description: Number of archived attributes stopped
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -909,7 +905,7 @@ void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
  *	Read attribute AttributeMaxPendingNumber related method
  *	Description: Max number of attributes waiting to be archived
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -948,7 +944,7 @@ void HdbEventSubscriber::read_StatisticsResetTime(Tango::Attribute &attr)
  *	Read attribute AttributePausedNumber related method
  *	Description: Number of archived attributes paused
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Scalar
  */
 //--------------------------------------------------------
@@ -1125,13 +1121,8 @@ void HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqList) ENABLED START -----*/
-        if(hdb_dev->get_record_freq() == 0)
-            attr.set_quality(Tango::ATTR_INVALID);
-        else
-        {
-            hdb_dev->get_record_freq_list(records_freq);
-            set_value_date_quality(attr, records_freq.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, records_freq.size());
-        }
+        hdb_dev->get_record_freq_list(records_freq);
+        set_value_date_quality(attr, records_freq.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, records_freq.size());
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqList
 }
@@ -1149,7 +1140,8 @@ void HdbEventSubscriber::read_AttributeRecordFreqInstList(Tango::Attribute &attr
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeRecordFreqInstList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeRecordFreqInstList) ENABLED START -----*/
 	//	Set the attribute value
-	attr.set_value(attr_AttributeRecordFreqInstList_read, 10000);
+        hdb_dev->shared->get_record_freq_inst_list(records_freq_inst);
+        set_value_date_quality(attr, records_freq_inst.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, records_freq_inst.size());
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeRecordFreqInstList
 }
@@ -1166,13 +1158,8 @@ void HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr)
 {
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqList) ENABLED START -----*/
-        if(hdb_dev->get_failure_freq() == 0)
-            attr.set_quality(Tango::ATTR_INVALID);
-        else
-        {
-            hdb_dev->get_failure_freq_list(failures_freq);
-            set_value_date_quality(attr, failures_freq.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, failures_freq.size());
-        }
+        hdb_dev->get_failure_freq_list(failures_freq);
+        set_value_date_quality(attr, failures_freq.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, failures_freq.size());
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqList
 }
 //--------------------------------------------------------
@@ -1189,7 +1176,8 @@ void HdbEventSubscriber::read_AttributeFailureFreqInstList(Tango::Attribute &att
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeFailureFreqInstList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeFailureFreqInstList) ENABLED START -----*/
 	//	Set the attribute value
-	attr.set_value(attr_AttributeFailureFreqInstList_read, 10000);
+        hdb_dev->shared->get_failure_freq_inst_list(failures_freq_inst);
+        set_value_date_quality(attr, failures_freq_inst.data(), hdb_dev->get_last_stat(), Tango::ATTR_VALID, failures_freq_inst.size());
 	
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeFailureFreqInstList
 }
@@ -1243,7 +1231,7 @@ void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
  *	Read attribute AttributeEventNumberList related method
  *	Description: Returns the list of numbers of events received
  *
- *	Data type:	Tango::DevLong
+ *	Data type:	Tango::DevULong
  *	Attr type:	Spectrum max = 10000
  */
 //--------------------------------------------------------

@@ -484,8 +484,12 @@ public:
 
         auto get_record_freq() -> double;
         auto get_failure_freq() -> double;
+        auto get_record_freq_inst() -> double;
+        auto get_failure_freq_inst() -> double;
         auto get_record_freq_list(std::vector<double>& ret) -> bool;
         auto get_failure_freq_list(std::vector<double>& ret) -> bool;
+        auto get_record_freq_inst_list(std::vector<double>& ret) -> bool;
+        auto get_failure_freq_inst_list(std::vector<double>& ret) -> bool;
         auto get_event_number_list(std::vector<unsigned int>& ret) -> bool;
         auto get_global_min_store_time() -> std::chrono::duration<double>;
         auto get_global_max_store_time() -> std::chrono::duration<double>;

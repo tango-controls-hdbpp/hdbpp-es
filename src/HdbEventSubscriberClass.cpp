@@ -1038,7 +1038,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributeoknumber_prop.set_archive_event_abs_change("1");
 	
 	attributeoknumber->set_default_properties(attributeoknumber_prop);
-	//	Not Polled
+	attributeoknumber->set_polling_period(3000);
 	attributeoknumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributeoknumber->set_change_event(true, true);
@@ -1067,7 +1067,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributenoknumber_prop.set_archive_event_abs_change("1");
 	
 	attributenoknumber->set_default_properties(attributenoknumber_prop);
-	//	Not Polled
+	attributenoknumber->set_polling_period(3000);
 	attributenoknumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributenoknumber->set_change_event(true, true);
@@ -1096,7 +1096,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributependingnumber_prop.set_archive_event_abs_change("2");
 	
 	attributependingnumber->set_default_properties(attributependingnumber_prop);
-	//	Not Polled
+	attributependingnumber->set_polling_period(3000);
 	attributependingnumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributependingnumber->set_change_event(true, true);
@@ -1270,7 +1270,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributerecordfreq_prop.set_archive_event_abs_change("1");
 	
 	attributerecordfreq->set_default_properties(attributerecordfreq_prop);
-	//	Not Polled
+	attributerecordfreq->set_polling_period(3000);
 	attributerecordfreq->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributerecordfreq->set_change_event(true, true);
@@ -1328,7 +1328,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributefailurefreq_prop.set_archive_event_abs_change("1");
 	
 	attributefailurefreq->set_default_properties(attributefailurefreq_prop);
-	//	Not Polled
+	attributefailurefreq->set_polling_period(3000);
 	attributefailurefreq->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributefailurefreq->set_change_event(true, true);
@@ -1386,7 +1386,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributestartednumber_prop.set_archive_event_abs_change("1");
 	
 	attributestartednumber->set_default_properties(attributestartednumber_prop);
-	//	Not Polled
+	attributestartednumber->set_polling_period(3000);
 	attributestartednumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributestartednumber->set_change_event(true, true);
@@ -1415,7 +1415,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributestoppednumber_prop.set_archive_event_abs_change("1");
 	
 	attributestoppednumber->set_default_properties(attributestoppednumber_prop);
-	//	Not Polled
+	attributestoppednumber->set_polling_period(3000);
 	attributestoppednumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributestoppednumber->set_change_event(true, true);
@@ -1444,7 +1444,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributemaxpendingnumber_prop.set_archive_event_abs_change("1");
 	
 	attributemaxpendingnumber->set_default_properties(attributemaxpendingnumber_prop);
-	//	Not Polled
+	attributemaxpendingnumber->set_polling_period(3000);
 	attributemaxpendingnumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributemaxpendingnumber->set_change_event(true, true);
@@ -1497,7 +1497,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	attributepausednumber_prop.set_archive_event_abs_change("1");
 	
 	attributepausednumber->set_default_properties(attributepausednumber_prop);
-	//	Not Polled
+	attributepausednumber->set_polling_period(3000);
 	attributepausednumber->set_disp_level(Tango::OPERATOR);
 	//	Not Memorized
 	attributepausednumber->set_change_event(true, true);
@@ -1523,7 +1523,7 @@ void HdbEventSubscriberClass::attribute_factory(vector<Tango::Attr *> &att_list)
 	//	delta_val	not set for Context
 	
 	context->set_default_properties(context_prop);
-	//	Not Polled
+	context->set_polling_period(3000);
 	context->set_disp_level(Tango::OPERATOR);
 	context->set_memorized();
 	context->set_memorized_init(true);
