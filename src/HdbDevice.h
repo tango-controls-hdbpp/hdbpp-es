@@ -85,11 +85,6 @@ class HdbDevice: public Tango::LogAdapter
         std::string current_context;
         std::chrono::time_point<std::chrono::system_clock> last_stat;
         
-        std::unique_ptr<std::thread> attr_states_events;
-        std::mutex attr_states_mutex;
-        std::condition_variable attr_states_cv;
-        std::atomic_bool attr_states_abort;
-	
         std::unique_ptr<std::thread> attr_number_event;
         std::mutex attr_number_mutex;
         std::condition_variable attr_number_cv;
@@ -100,7 +95,6 @@ class HdbDevice: public Tango::LogAdapter
 	//-----------------------------------------
 	std::unique_ptr<SubscribeThread, std::function<void(SubscribeThread*)>> thread;
 	std::unique_ptr<PushThread, std::function<void(PushThread*)>> push_thread;
-	std::unique_ptr<PollerThread, std::function<void(PollerThread*)>> poller_thread;
 	int					period;
 	int					poller_period;
 	int					stats_window;
@@ -115,44 +109,6 @@ class HdbDevice: public Tango::LogAdapter
 	std::shared_ptr<SharedData> shared;
 	Tango::DeviceImpl *_device;
         std::map<std::string, std::string> domain_map;
-
-	Tango::DevULong	attr_AttributeOkNumber_read;
-	Tango::DevULong	attr_AttributeNokNumber_read;
-	Tango::DevULong	attr_AttributeNumber_read;
-	Tango::DevULong	attr_AttributeStartedNumber_read;
-	Tango::DevULong	attr_AttributePausedNumber_read;
-	Tango::DevULong	attr_AttributeStoppedNumber_read;
-
-	Tango::DevString	attr_AttributeList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributeOkList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributeNokList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributePendingList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributeStartedList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributePausedList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributeStoppedList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributeErrorList_read[MAX_ATTRIBUTES];
-	Tango::DevString	attr_AttributeContextList_read[MAX_ATTRIBUTES];
-
-	Tango::DevULong		attr_AttributeTTLList_read[MAX_ATTRIBUTES];
-
-	vector<string> attribute_list_str;
-	size_t attribute_list_str_size;
-	vector<string> attribute_ok_list_str;
-	size_t attribute_ok_list_str_size;
-	vector<string> attribute_nok_list_str;
-	size_t attribute_nok_list_str_size;
-	vector<string> attribute_pending_list_str;
-	size_t attribute_pending_list_str_size;
-	vector<string> attribute_started_list_str;
-	size_t attribute_started_list_str_size;
-	vector<string> attribute_paused_list_str;
-	size_t attribute_paused_list_str_size;
-	vector<string> attribute_stopped_list_str;
-	size_t attribute_stopped_list_str_size;
-	vector<string> attribute_error_list_str;
-	size_t attribute_error_list_str_size;
-	vector<string> attribute_context_list_str;
-	size_t attribute_context_list_str_size;
 
 	map<string,string> contexts_map;
 	map<string,string> contexts_map_upper;
@@ -203,19 +159,11 @@ class HdbDevice: public Tango::LogAdapter
 	/**
 	 *	Return the list of signals on error
 	 */
-	void get_sig_on_error_list(vector<string> &);
+	auto get_sig_on_error_list(vector<string> &) -> bool;
 	/**
 	 *	Return the list of signals not on error
 	 */
-	void get_sig_not_on_error_list(vector<string> &);
-	/**
-	 *	Return the list of signals started
-	 */
-	void get_sig_started_list(vector<string> &);
-	/**
-	 *	Return the list of signals not_started
-	 */
-	void get_sig_not_started_list(vector<string> &);
+	auto get_sig_not_on_error_list(vector<string> &) -> bool;
 	/**
 	 *	Return the list errors
 	 */
@@ -223,7 +171,7 @@ class HdbDevice: public Tango::LogAdapter
 	/**
 	 *	Populate the list of event received numbers
 	 */
-	auto get_event_number_list(std::vector<unsigned int>& ret) -> void;
+	auto get_event_number_list(std::vector<unsigned int>& ret) -> bool;
 	/**
 	 *	Return the number of signals on error
 	 */
@@ -232,14 +180,6 @@ class HdbDevice: public Tango::LogAdapter
 	 *	Return the number of signals not on error
 	 */
 	int  get_sig_not_on_error_num();
-	/**
-	 *	Return the number of signals started
-	 */
-	int  get_sig_started_num();
-	/**
-	 *	Return the number of signals not started
-	 */
-	int  get_sig_not_started_num();
 	/**
 	 *	Return the status of specified signal
 	 */
@@ -322,9 +262,9 @@ class HdbDevice: public Tango::LogAdapter
 	 */
 	static void string_explode(const string &str, const string &separator, vector<string>& results);
 
-        auto notify_attr_states_updated() -> void;
         auto notify_attr_number_updated() -> void;
-        
+        auto notify_context_updated() -> void;
+
         template<typename T>
         void push_events(const std::string& att_name, T* data);
         template<typename T>
@@ -332,8 +272,8 @@ class HdbDevice: public Tango::LogAdapter
 
         auto get_record_freq() -> double;
         auto get_failure_freq() -> double;
-        auto get_record_freq_list(std::vector<double>& ret) -> void;
-        auto get_failure_freq_list(std::vector<double>& ret) -> void;
+        auto get_record_freq_list(std::vector<double>& ret) -> bool;
+        auto get_failure_freq_list(std::vector<double>& ret) -> bool;
 
 protected :	
 	/**
@@ -370,7 +310,6 @@ private:
 	 */
 	static auto remove_domain(const string &str) -> string;
 
-        auto push_attr_states_events() -> void;
         auto push_attr_number_event() -> void;
 };
 

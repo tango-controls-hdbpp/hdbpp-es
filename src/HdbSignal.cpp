@@ -8,13 +8,15 @@ namespace HdbEventSubscriber_ns
     HdbSignal::HdbSignal(HdbDevice* dev
             , SharedData& vec
             , const std::string& signame
-            , const std::vector<std::string>& ctxts) : LogAdapter(dev->_device)
+            , const std::vector<std::string>& ctxts
+            , unsigned int ttl) : LogAdapter(dev->_device)
                                                        , name(signame)
                                                        , config_set(false)
                                                        , ok_events(*this)
                                                        , nok_events(*this)
                                                        , okdb_events(*this)
                                                        , nokdb_events(*this)
+                                                       , ttl(ttl)
                                                        , dev(dev)
                                                        , container(vec)
     {
@@ -45,7 +47,7 @@ namespace HdbEventSubscriber_ns
         process_time_min = std::chrono::duration<double>::max();
         process_time_max = std::chrono::duration<double>::min();
 
-        container.stopped_number++;
+        container.register_signal(SignalState::STOPPED, get_contexts(), name);
     }
 
     HdbSignal::~HdbSignal()
@@ -59,25 +61,7 @@ namespace HdbEventSubscriber_ns
             INFO_STREAM <<"HdbSignal::"<< __func__<<": Exception unsubscribing " << name << " err=" << e.errors[0].desc << endl;
         }
 
-        ReaderLock lck(siglock);
-        switch(state)
-        {
-            case SignalState::PAUSED:
-                {
-                    container.paused_number--;
-                    break;
-                }
-            case SignalState::RUNNING:
-                {
-                    container.started_number--;
-                    break;
-                }
-            case SignalState::STOPPED:
-                {
-                    container.stopped_number--;
-                    break;
-                }
-        }
+        container.unregister_signal(state, name);
     }
 
     void HdbSignal::remove_callback()
@@ -121,6 +105,7 @@ namespace HdbEventSubscriber_ns
                 Tango::Except::print_exception(e);
                 status = e.errors[0].desc;
                 event_conf_id = ERR;
+                container.update_errors(name);
             }
 
             // Subscribe att_event
@@ -165,6 +150,7 @@ namespace HdbEventSubscriber_ns
                 Tango::Except::print_exception(e);
                 status = e.errors[0].desc;
                 event_id = ERR;
+                container.update_errors(name);
             }
 
         }
@@ -188,19 +174,22 @@ namespace HdbEventSubscriber_ns
 
     auto HdbSignal::init() -> void
     {
-        WriterLock lock(siglock);
-        event_id = ERR;
-        event_conf_id = ERR;
-        evstate = Tango::ALARM;
-        isZMQ = false;
-        ok_events.reset();
-        nok_events.reset();
-        first_err = true;
-        ttl = DEFAULT_TTL;
+        {
+            WriterLock lock(siglock);
+            event_id = ERR;
+            event_conf_id = ERR;
+            evstate = Tango::ALARM;
+            isZMQ = false;
+            ok_events.reset();
+            nok_events.reset();
+            first_err = true;
+        }
+        container.update_error_state(name);
     }
 
     auto HdbSignal::start() -> void
     {
+        {
         WriterLock lock(siglock);
         status = "NOT connected";
         //DEBUG_STREAM << "created proxy to " << signame << endl;
@@ -210,7 +199,7 @@ namespace HdbEventSubscriber_ns
             attr = std::make_unique<Tango::AttributeProxy>(name);	//TODO: OK out of siglock? accessed only inside the same thread?
             DEBUG_STREAM << "SharedData::"<<__func__<<": signame="<<name<<" created proxy"<< endl;
         }
-        
+
         try
         {
             get_signal_config();
@@ -219,20 +208,34 @@ namespace HdbEventSubscriber_ns
         {
             status = e.errors[0].desc;
             INFO_STREAM <<"HdbSignal::"<<__func__<< " ERROR for " << name << " in get_config err=" << e.errors[0].desc << endl;
+        }
         }        
+        container.update_errors(name);
     }
     auto HdbSignal::update_contexts(const std::vector<std::string>& ctxts) -> void
     {
-        WriterLock lock(siglock);
-        contexts.clear();
-        contexts = ctxts;
-        contexts_upper = ctxts;
+        {
+            WriterLock lock(siglock);
+            contexts.clear();
+            contexts = ctxts;
+            contexts_upper = ctxts;
 
-        for(auto& context : contexts_upper)
-            std::transform(context.begin(), context.end(), context.begin(), ::toupper);
+            for(auto& context : contexts_upper)
+                std::transform(context.begin(), context.end(), context.begin(), ::toupper);
+        }
+        container.update_contexts(name, get_contexts());
     }
 
-    auto HdbSignal::get_config() -> std::string
+    auto HdbSignal::set_ttl(unsigned int ttl) -> void
+    {
+        {
+            WriterLock lock(siglock);
+            this->ttl = ttl;
+        }
+        container.update_ttl(name, ttl);
+    }
+
+    auto HdbSignal::get_config() const -> std::string
     {
         ReaderLock lock(siglock);
         std::string context = get_contexts();
@@ -241,7 +244,7 @@ namespace HdbEventSubscriber_ns
         return conf_string.str();
     }
 
-    auto HdbSignal::get_error() -> std::string
+    auto HdbSignal::get_error() const -> std::string
     {
         ReaderLock lock(siglock);
 
@@ -302,45 +305,8 @@ namespace HdbEventSubscriber_ns
             prev_state = state;
             state = new_state;
         }
-        switch(prev_state)
-        {
-            case SignalState::RUNNING:
-                {
-                container.started_number--;
-                break;
-                }
-            case SignalState::PAUSED:
-                {
-                container.paused_number--;
-                break;
-                }
-            case SignalState::STOPPED:
-                {
-                container.stopped_number--;
-                break;
-                }
-        }
-
-        switch(new_state)
-        {
-            case SignalState::RUNNING:
-                {
-                container.started_number++;
-                break;
-                }
-            case SignalState::PAUSED:
-                {
-                container.paused_number++;
-                break;
-                }
-            case SignalState::STOPPED:
-                {
-                container.stopped_number++;
-                break;
-                }
-        }
+        container.switch_state(prev_state, new_state, name);
         container.event_checker->notify();
-        dev->notify_attr_states_updated();
 
         return prev_state;
     }
@@ -355,9 +321,9 @@ namespace HdbEventSubscriber_ns
         evstate = Tango::ON;
         status = "Event received";
         first_err = true;
-
-        container.event_checker->notify();
         }
+        container.event_checker->notify();
+        container.update_error_state(name);
     }
 
     auto HdbSignal::set_nok_event() -> void
@@ -368,9 +334,12 @@ namespace HdbEventSubscriber_ns
 
     auto HdbSignal::set_nok_periodic_event() -> void
     {
+        {
         WriterLock lock(siglock);
         evstate = Tango::ALARM;
         status = "Timeout on periodic event";
+        }
+        container.update_error_state(name);
     }
 
     auto HdbSignal::set_nok_db(const std::string& error) -> void
@@ -383,6 +352,7 @@ namespace HdbEventSubscriber_ns
         if(error.length() > 0)
             dberror += ": " + error;
         }
+        container.update_error_state(name);
     }
 
     auto HdbSignal::set_ok_db(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void
@@ -406,10 +376,11 @@ namespace HdbEventSubscriber_ns
             process_time_max = std::max(process_time, process_time_max);
         }
         container.update_timing(store_time, process_time);
+        container.update_error_state(name);
         okdb_events.increment();
     }
 
-    auto HdbSignal::get_contexts() -> std::string
+    auto HdbSignal::get_contexts() const -> std::string
     {
         ReaderLock lock(siglock);
         std::stringstream context;
@@ -477,6 +448,7 @@ namespace HdbEventSubscriber_ns
                 status = err;
             }
             container.event_checker->notify();
+            container.update_error_state(name);
         }
 
         auto HdbSignal::set_on() -> void
@@ -487,6 +459,7 @@ namespace HdbEventSubscriber_ns
                 status = "Subscribed";
             }
             container.event_checker->notify();
+            container.update_error_state(name);
         }
             auto HdbSignal::EventCounter::check_timestamps_in_window() -> std::chrono::time_point<std::chrono::system_clock>
             {

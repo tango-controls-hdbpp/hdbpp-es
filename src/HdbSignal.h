@@ -27,7 +27,7 @@ namespace HdbEventSubscriber_ns
         public:
         std::string name;
 
-        explicit HdbSignal(HdbDevice* dev, SharedData& vec, const std::string& name, const std::vector<std::string>& contexts);
+        explicit HdbSignal(HdbDevice* dev, SharedData& vec, const std::string& name, const std::vector<std::string>& contexts, unsigned int ttl);
 
         ~HdbSignal();
 
@@ -57,91 +57,87 @@ namespace HdbEventSubscriber_ns
 
         auto update_contexts(const std::vector<std::string>& ctxts) -> void;
 
-        auto get_ttl() -> unsigned int
+        auto get_ttl() const -> unsigned int
         {
             ReaderLock lock(siglock);
             return ttl;
         }
 
-        auto set_ttl(unsigned int ttl) -> void
-        {
-            WriterLock lock(siglock);
-            this->ttl = ttl;
-        }
+        auto set_ttl(unsigned int ttl) -> void;
 
-        auto is_running() -> bool
+        auto is_running() const -> bool
         {
             ReaderLock lock(siglock);
             return state == SignalState::RUNNING; 
         }
 
-        auto is_not_subscribed() -> bool
+        auto is_not_subscribed() const -> bool
         {
             ReaderLock lock(siglock);
             return event_id == ERR && !is_stopped();
         }
 
-        auto get_config() -> std::string;
+        auto get_config() const -> std::string;
 
-        auto is_ZMQ() -> bool
+        auto is_ZMQ() const -> bool
         {
             ReaderLock lock(siglock);
             return isZMQ;
         }
 
-        auto is_on_error() -> bool
+        auto is_on_error() const -> bool
         {
             ReaderLock lock(siglock);
             ReaderLock lk(dblock);
             return (evstate == Tango::ALARM && is_running()) || dbstate == Tango::ALARM;
         }
 
-        auto is_on() -> bool
+        auto is_on() const -> bool
         {
             ReaderLock lock(siglock);
             return evstate == Tango::ON && is_running();
         }
 
-        auto is_not_on_error() -> bool
+        auto is_not_on_error() const -> bool
         {
             ReaderLock lock(siglock);
             ReaderLock lk(dblock);
             return (evstate == Tango::ON || (evstate == Tango::ALARM && !is_running())) && dbstate != Tango::ALARM;
         }
 
-        auto get_error() -> std::string;
+        auto get_error() const -> std::string;
 
-        auto get_avg_store_time() -> std::chrono::duration<double>
+        auto get_avg_store_time() const -> std::chrono::duration<double>
         {
             ReaderLock lock(dblock);
             return store_time_avg;
         }
 
-        auto get_min_store_time() -> std::chrono::duration<double>
+        auto get_min_store_time() const -> std::chrono::duration<double>
         {
             ReaderLock lock(dblock);
             return store_time_min;
         }
 
-        auto get_max_store_time() -> std::chrono::duration<double>
+        auto get_max_store_time() const -> std::chrono::duration<double>
         {
             ReaderLock lock(dblock);
             return store_time_max;
         }
 
-        auto get_avg_process_time() -> std::chrono::duration<double>
+        auto get_avg_process_time() const -> std::chrono::duration<double>
         {
             ReaderLock lock(dblock);
             return process_time_avg;
         }
 
-        auto get_min_process_time() -> std::chrono::duration<double>
+        auto get_min_process_time() const -> std::chrono::duration<double>
         {
             ReaderLock lock(dblock);
             return process_time_min;
         }
 
-        auto get_max_process_time() -> std::chrono::duration<double>
+        auto get_max_process_time() const -> std::chrono::duration<double>
         {
             ReaderLock lock(dblock);
             return process_time_max;
@@ -217,7 +213,7 @@ namespace HdbEventSubscriber_ns
         
         auto set_ok_db(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void;
 
-        auto get_status() -> std::string
+        auto get_status() const -> std::string
         {
             ReaderLock lock(siglock);
             ReaderLock lk(dblock);
@@ -230,7 +226,7 @@ namespace HdbEventSubscriber_ns
             return ret.str();
         }
 
-        auto get_state() -> Tango::DevState
+        auto get_state() const -> Tango::DevState
         {
             ReaderLock lock(siglock);
             ReaderLock lk(dblock);
@@ -239,7 +235,7 @@ namespace HdbEventSubscriber_ns
             return evstate;
         }
 
-        auto get_contexts() -> std::string;
+        auto get_contexts() const -> std::string;
 
         auto reset_statistics() -> void
         {
@@ -259,13 +255,13 @@ namespace HdbEventSubscriber_ns
 
         auto get_signal_config() -> SignalConfig;
 
-        auto is_paused() -> bool
+        auto is_paused() const -> bool
         {
             ReaderLock lock(siglock);
             return state == SignalState::PAUSED; 
         }
 
-        auto is_stopped() -> bool
+        auto is_stopped() const -> bool
         {
             ReaderLock lock(siglock);
             return state == SignalState::STOPPED; 
@@ -277,13 +273,13 @@ namespace HdbEventSubscriber_ns
 
         auto set_stopped() -> void;
 
-        auto is_first() -> bool
+        auto is_first() const -> bool
         {
             ReaderLock lock(siglock);
             return first;
         }
 
-        auto is_first_err() -> bool
+        auto is_first_err() const -> bool
         {
             ReaderLock lock(siglock);
             return first_err;
@@ -382,8 +378,8 @@ namespace HdbEventSubscriber_ns
 
         };
 
-        ReadersWritersLock siglock;
-        ReadersWritersLock dblock;
+        mutable ReadersWritersLock siglock;
+        mutable ReadersWritersLock dblock;
         
         std::string devname;
         std::string attname;

@@ -51,7 +51,8 @@
 
 
 #include <tango.h>
-#include <HdbDevice.h>
+#include "HdbDevice.h"
+#include <unordered_set>
 
 
 
@@ -99,6 +100,18 @@ private:
         std::vector<double> failures_freq;
         std::vector<unsigned int> events_number;
 
+        size_t previous_length;
+        size_t previous_ok_length;
+        size_t previous_nok_length;
+        size_t ttl_length;
+        size_t contexts_length;
+        size_t source_length;
+        size_t error_length;
+        size_t pending_length;
+
+        size_t previous_started_length;
+        size_t previous_paused_length;
+        size_t previous_stopped_length;
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::Data Members
 
 //	Device property data members
@@ -688,7 +701,9 @@ public:
 	//	Additional Method prototypes
 protected :
 
-        template <class T>
+        auto update_context(const std::string& new_context) -> void;
+       
+        template <typename T>
         void set_value_date_quality(Tango::Attribute &attr, T* dat,const std::chrono::time_point<std::chrono::system_clock>& time, Tango::AttrQuality qual, long x = 1)
         {
             auto time_epoch = time.time_since_epoch();
@@ -697,13 +712,18 @@ protected :
             t.tv_sec = time_epoch_s.count();
             t.tv_usec = std::chrono::duration_cast<std::chrono::microseconds>(time_epoch-time_epoch_s).count();
             attr.set_value_date_quality(dat, t, qual, x);
-        }
+        };
+    
+        auto update_array(const std::unordered_set<std::string>& in, size_t& prev_size, Tango::DevString* out, Tango::DevULong& out_size) -> void;
+        auto update_array(const std::vector<std::string>& in, size_t& prev_size, Tango::DevString* out) -> void;
+        auto update_array(const std::vector<unsigned int>& in, size_t& prev_size, Tango::DevULong* out) -> void;
+        auto update_infos(const std::map<std::string, std::tuple<std::string, unsigned int>>& in, size_t& prev_size) -> void;
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::Additional Method prototypes
 };
 
 /*----- PROTECTED REGION ID(HdbEventSubscriber::Additional Classes Definitions) ENABLED START -----*/
 
-	//	Additional Classes definitions
+        //	Additional Classes definitions
 
 	/*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::Additional Classes Definitions
 

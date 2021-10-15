@@ -53,7 +53,6 @@
 #include <HdbEventSubscriber.h>
 #include <sys/time.h>
 #include <netdb.h> //for getaddrinfo
-#include "PollerThread.h"
 #include "PushThread.h"
 #include "SubscribeThread.h"
 #include "HdbSignal.h"
@@ -70,12 +69,6 @@ namespace HdbEventSubscriber_ns
     {
         INFO_STREAM << "	Deleting HdbDevice" << endl;
         DEBUG_STREAM << "	Stopping stats thread" << endl;
-        poller_thread->abort();
-        
-        attr_states_abort = true;
-        attr_states_cv.notify_one();
-        if(attr_states_events)
-            attr_states_events->join();
         
         attr_number_abort = true;
         attr_number_cv.notify_one();
@@ -83,7 +76,6 @@ namespace HdbEventSubscriber_ns
             attr_number_event->join();
         
         //DEBUG_STREAM << "	Stats thread Joined " << endl;
-        poller_thread->join(nullptr);
         //DEBUG_STREAM << "	Polling thread Joined " << endl;
         DEBUG_STREAM << "	Stopping push thread" << endl;
         push_thread->abort();
@@ -110,28 +102,10 @@ namespace HdbEventSubscriber_ns
         this->list_filename = fn;
         _device = device;
 
-        attr_states_events = std::make_unique<std::thread>(&HdbDevice::push_attr_states_events, this);
         attr_number_event = std::make_unique<std::thread>(&HdbDevice::push_attr_number_event, this);
+        attr_number_abort = false;
 
         list_from_file = false;
-        attribute_list_str_size = 0;
-        attribute_ok_list_str_size = 0;
-        attribute_nok_list_str_size = 0;
-        attribute_pending_list_str_size = 0;
-        attribute_started_list_str_size = 0;
-        attribute_paused_list_str_size = 0;
-        attribute_stopped_list_str_size = 0;
-        attribute_error_list_str_size = 0;
-        attribute_context_list_str_size = 0;
-        attribute_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_ok_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_nok_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_pending_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_started_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_paused_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_stopped_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_error_list_str.reserve(MAX_ATTRIBUTES);
-        attribute_context_list_str.reserve(MAX_ATTRIBUTES);
         
         //	Create a thread to subscribe events
         shared = std::make_shared<SharedData>(this
@@ -148,23 +122,15 @@ namespace HdbEventSubscriber_ns
         vector<string>	list;
         get_hdb_signal_list(list);
 
-        attr_AttributeNumber_read = 0;
-        attr_AttributeStartedNumber_read = 0;
-        attr_AttributeStoppedNumber_read = 0;
-        attr_AttributePausedNumber_read = 0;
-
         push_thread = std::unique_ptr<PushThread, std::function<void(PushThread*)>>(
                 new PushThread(this
                     , Tango::Util::instance()->get_ds_inst_name()
                     , (dynamic_cast<HdbEventSubscriber *>(_device))->libConfiguration)
                 , [](PushThread* /*unused*/){});
-        poller_thread = std::unique_ptr<PollerThread, std::function<void(PollerThread*)>>(new PollerThread(this)
-                , [](PollerThread* /*unused*/){});
 
         build_signal_vector(list, defaultStrategy);
 
         push_thread->start();
-        poller_thread->start();
         thread->start();
 
         //	Wait end of first subscribing loop
@@ -319,12 +285,12 @@ namespace HdbEventSubscriber_ns
         return shared->get_failure_freq();
     }
 
-    auto HdbDevice::get_record_freq_list(std::vector<double>& ret) -> void
+    auto HdbDevice::get_record_freq_list(std::vector<double>& ret) -> bool
     {
         return shared->get_record_freq_list(ret);
     }
 
-    auto HdbDevice::get_failure_freq_list(std::vector<double>& ret) -> void
+    auto HdbDevice::get_failure_freq_list(std::vector<double>& ret) -> bool
     {
         return shared->get_failure_freq_list(ret);
     }
@@ -496,37 +462,13 @@ namespace HdbEventSubscriber_ns
     }
     //=============================================================================
     //=============================================================================
-    void HdbDevice::get_sig_on_error_list(vector<string> &sig_list)
-    {
-        shared->get_sig_on_error_list(sig_list);
-    }
-    //=============================================================================
-    //=============================================================================
-    void HdbDevice::get_sig_not_on_error_list(vector<string> & sig_list)
-    {
-        shared->get_sig_not_on_error_list(sig_list);
-    }
-    //=============================================================================
-    //=============================================================================
-    void  HdbDevice::get_sig_started_list(vector<string> & list)
-    {
-        return shared->get_sig_started_list(list);
-    }
-    //=============================================================================
-    //=============================================================================
-    void HdbDevice::get_sig_not_started_list(vector<string> & list)
-    {
-        shared->get_sig_not_started_list(list);
-    }
-    //=============================================================================
-    //=============================================================================
     auto HdbDevice::get_error_list(vector<string> & error_list) -> bool
     {
         return shared->get_error_list(error_list);
     }
     //=============================================================================
     //=============================================================================
-    auto HdbDevice::get_event_number_list(std::vector<unsigned int>& ret) -> void
+    auto HdbDevice::get_event_number_list(std::vector<unsigned int>& ret) -> bool
     {
         return shared->get_event_number_list(ret);
     }
@@ -541,18 +483,6 @@ namespace HdbEventSubscriber_ns
     auto HdbDevice::get_sig_not_on_error_num() -> int
     {
         return shared->get_sig_not_on_error_num();
-    }
-    //=============================================================================
-    //=============================================================================
-    auto HdbDevice::get_sig_started_num() -> int
-    {
-        return shared->get_sig_started_num();
-    }
-    //=============================================================================
-    //=============================================================================
-    auto HdbDevice::get_sig_not_started_num() -> int
-    {
-        return shared->get_sig_not_started_num();
     }
     //=============================================================================
     //=============================================================================
@@ -583,12 +513,6 @@ namespace HdbEventSubscriber_ns
     void HdbDevice::reset_statistics()
     {
         shared->reset_statistics();
-    }
-    //=============================================================================
-    //=============================================================================
-    auto HdbDevice::get_lists(vector<string> &_list, vector<string> &_start_list, vector<string> &_pause_list, vector<string> &_stop_list, vector<string> &_context_list, Tango::DevULong *ttl_list) -> bool
-    {
-        return shared->get_lists(_list, _start_list, _pause_list, _stop_list, _context_list, ttl_list);
     }
     //=============================================================================
     //=============================================================================
@@ -1362,30 +1286,8 @@ namespace HdbEventSubscriber_ns
         }
     }
 
-    auto HdbDevice::notify_attr_states_updated() -> void
+    auto HdbDevice::notify_context_updated() -> void
     {
-        attr_states_cv.notify_one();
-    }
-
-    auto HdbDevice::push_attr_states_events() -> void
-    {
-        std::unique_lock<std::mutex> lk(attr_states_mutex);
-        while(!attr_states_abort)
-        {
-            attr_states_cv.wait(lk);
-            if(!attr_states_abort)
-            {
-                attr_AttributePausedNumber_read = shared->get_paused_number();
-                attr_AttributeStartedNumber_read = shared->get_started_number();
-                attr_AttributeStoppedNumber_read = shared->get_stopped_number();
-
-                push_events("AttributeStartedNumber", &attr_AttributeStartedNumber_read);
-                push_events("AttributePausedNumber", &attr_AttributePausedNumber_read);
-                push_events("AttributeStoppedNumber", &attr_AttributeStoppedNumber_read);
-            }
-        }
-
-        INFO_STREAM << "	Attr states number events exited" << endl;
     }
 
     auto HdbDevice::notify_attr_number_updated() -> void
@@ -1401,9 +1303,10 @@ namespace HdbEventSubscriber_ns
             attr_number_cv.wait(lk);
             if(!attr_number_abort)
             {
-                attr_AttributeNumber_read = shared->size();
+                HdbEventSubscriber* ev = dynamic_cast<HdbEventSubscriber *>(_device);
+                *(ev->attr_AttributeNumber_read) = shared->size();
 
-                push_events("AttributeNumber", &attr_AttributeNumber_read);
+                push_events("AttributeNumber", ev->attr_AttributeNumber_read);
             }
         }
         INFO_STREAM << "	Attr number events exited" << endl;

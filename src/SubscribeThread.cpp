@@ -58,9 +58,6 @@ namespace HdbEventSubscriber_ns
         hdb_dev=dev;
         action=NOTHING;
         stop_it=false;
-        paused_number = 0;
-        started_number = 0;
-        stopped_number = 0;
         timing_events = std::make_unique<std::thread>(&SharedData::push_timing_events, this);
         event_checker = std::make_unique<PeriodicEventCheck>(*this);
     }
@@ -333,7 +330,7 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void SharedData::add(const string& signame, const vector<string> & contexts, unsigned int ttl)
     {
-        auto signal = add(signame, contexts, false);
+        auto signal = add(signame, contexts, ttl, false);
         add(signal, NOTHING, false);
         hdb_dev->push_thread->updatettl(*signal, ttl);
     }
@@ -372,14 +369,14 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     void SharedData::add(const string &signame, const vector<string> & contexts, int data_type, int data_format, int write_type, int to_do, bool start)
     {
-        auto signal = add(signame, contexts, start);
+        auto signal = add(signame, contexts, DEFAULT_TTL, start);
 
         hdb_dev->push_thread->add_attr(*signal, data_type, data_format, write_type);
 
         add(signal, to_do, start);
     }
 
-    std::shared_ptr<HdbSignal> SharedData::add(const string& signame, const vector<string> & contexts, bool start)
+    std::shared_ptr<HdbSignal> SharedData::add(const string& signame, const vector<string> & contexts, unsigned int ttl, bool start)
     {
         DEBUG_STREAM << "SharedData::"<<__func__<<": Adding " << signame << " start="<<(start ? "Y" : "N")<< endl;
 
@@ -403,8 +400,8 @@ namespace HdbEventSubscriber_ns
 
         if (!found)
         {
-            signal = std::make_shared<HdbSignal>(hdb_dev, *this, signame, contexts);
             veclock.writerIn();
+            signal = std::make_shared<HdbSignal>(hdb_dev, *this, signame, contexts, ttl);
             
             // Add in vector
             signals.push_back(signal);
@@ -573,30 +570,30 @@ namespace HdbEventSubscriber_ns
      * Return the list of signals
      */
     //=============================================================================
-    void SharedData::get_sig_list(vector<string> &list)
+    auto SharedData::get_sig_list(vector<string> &list) -> bool
     {
-        ReaderLock lock(veclock);
-        list.clear();
-        for(const auto& signal : signals)
-        {
-            string signame(signal->name);
-            list.push_back(signame);
-        }
+        std::function<std::string(const HdbSignal&)> f = &HdbSignal::name;
+        return populate_vector(list, signals_number_changed, f);
+    }
+    auto SharedData::get_sig_contexts_list(vector<string> &list) -> bool
+    {
+        std::function<std::string(const HdbSignal&)> f = &HdbSignal::get_contexts;
+        return populate_vector(list, signals_context_changed, f);
+    }
+    auto SharedData::get_sig_ttl_list(vector<unsigned int> &list) -> bool
+    {
+        std::function<unsigned int(const HdbSignal&)> f = &HdbSignal::get_ttl;
+        return populate_vector(list, signals_ttl_changed, f);
     }
     //=============================================================================
     /**
      * Return the list of sources
      */
     //=============================================================================
-    auto SharedData::get_sig_source_list() -> vector<bool>
+    auto SharedData::get_sig_source_list(vector<bool> &list) -> bool
     {
-        ReaderLock lock(veclock);
-        vector<bool> list;
-        for(const auto& signal : signals)
-        {
-            list.push_back(signal->is_ZMQ());
-        }
-        return list;
+        std::function<bool(const HdbSignal&)> f = &HdbSignal::is_ZMQ;
+        return populate_vector(list, signals_source_changed, f);
     }
     //=============================================================================
     /**
@@ -614,119 +611,43 @@ namespace HdbEventSubscriber_ns
      * Return the list of signals on error
      */
     //=============================================================================
-    void SharedData::get_sig_on_error_list(vector<string> &list)
+    auto SharedData::get_sig_on_error_list(std::unordered_set<std::string> &list, bool force) -> bool
     {
-        ReaderLock lock(veclock);
-        list.clear();
-        for(const auto& signal : signals)
-        {
-            if(signal->is_on_error())
-            {
-                list.push_back(signal->name);
-            }
-        }
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        bool ret = build_sig_on_error_lists();
+        list.insert(on_error_signals.begin(), on_error_signals.end());
+
+        return ret;
     }
     //=============================================================================
     /**
      * Return the number of signals on error
      */
     //=============================================================================
-    auto SharedData::get_sig_on_error_num() -> int
+    auto SharedData::get_sig_on_error_num() -> size_t
     {
-        ReaderLock lock(veclock);
-        int num = 0;
-        for(const auto& signal : signals)
-        {
-            if(signal->is_on_error())
-                ++num;
-        }
-        return num;
+        std::lock_guard<std::mutex> lk(signals_info_mutex);
+        bool ret = build_sig_on_error_lists();
+        
+        return on_error_signals.size();
     }
-    //=============================================================================
-    /**
-     * Return the list of signals not on error
-     */
-    //=============================================================================
-    void SharedData::get_sig_not_on_error_list(vector<string> &list)
+    
+    auto SharedData::get_sig_not_on_error_list(std::unordered_set<std::string> &list) -> bool
     {
-        ReaderLock lock(veclock);
-        list.clear();
-        for(const auto& signal : signals)
-        {
-            if(signal->is_not_on_error())
-            {
-                list.push_back(signal->name);
-            }
-        }
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        bool ret = build_sig_on_error_lists();
+        list.insert(not_on_error_signals.begin(), not_on_error_signals.end());
+
+        return ret;
     }
-    //=============================================================================
-    /**
-     * Return the number of signals not on error
-     */
-    //=============================================================================
-    auto SharedData::get_sig_not_on_error_num() -> int
+    
+    auto SharedData::get_sig_not_on_error_num() -> size_t
     {
-        ReaderLock lock(veclock);
-        int num = 0;
-        for(const auto& signal : signals)
-        {
-            if(signal->is_not_on_error())
-                ++num;
-        }
-        return num;
+        std::lock_guard<std::mutex> lk(signals_info_mutex);
+        bool ret = build_sig_on_error_lists();
+        return not_on_error_signals.size();
     }
-    //=============================================================================
-    /**
-     * Return the list of signals started
-     */
-    //=============================================================================
-    void SharedData::get_sig_started_list(vector<string> & list)
-    {
-        ReaderLock lock(veclock);
-        list.clear();
-        for(const auto& signal : signals)
-        {
-            if (signal->is_running())
-            {
-                list.push_back(signal->name);
-            }
-        }
-    }
-    //=============================================================================
-    /**
-     * Return the number of signals started
-     */
-    //=============================================================================
-    auto SharedData::get_sig_started_num() -> int
-    {
-        ReaderLock lock(veclock);
-        int num = 0;
-        for(const auto& signal : signals)
-        {
-            if (signal->is_running())
-            {
-                ++num;
-            }
-        }
-        return num;
-    }
-    //=============================================================================
-    /**
-     * Return the list of signals not started
-     */
-    //=============================================================================
-    void SharedData::get_sig_not_started_list(vector<string> &list)
-    {
-        ReaderLock lock(veclock);
-        list.clear();
-        for(const auto& signal : signals)
-        {
-            if (!signal->is_running())
-            {
-                list.push_back(signal->name);
-            }
-        }
-    }
+    
     //=============================================================================
     /**
      * Return the list of errors
@@ -734,222 +655,9 @@ namespace HdbEventSubscriber_ns
     //=============================================================================
     auto SharedData::get_error_list(vector<string> &list) -> bool
     {
-        bool changed=false;
-        ReaderLock lock(veclock);
-        size_t old_size = list.size();
-        size_t i = 0;
-        for (i=0 ; i<signals.size() && i < old_size ; i++)
-        {
-            string err = (signals)[i]->get_error();
-
-            if(err != list[i])
-            {
-                list[i] = err;
-                changed = true;
-            }
-        }
-        if(signals.size() < old_size)
-        {
-            list.erase(list.begin()+i, list.begin()+old_size);
-            changed = true;
-        }
-        else
-        {
-            for (size_t i=old_size ; i<signals.size() ; i++)
-            {
-                string err = (signals)[i]->get_error();
-
-                list.push_back(err);
-                changed = true;
-            }
-        }
-        return changed;
+        std::function<std::string(const HdbSignal&)> f = &HdbSignal::get_error;
+        return populate_vector(list, signals_error_changed, f);
     }
-    //=============================================================================
-    /**
-     * Return the list of errors
-     */
-    //=============================================================================
-    void SharedData::get_ev_counter_list(vector<uint32_t> &list)
-    {
-        ReaderLock lock(veclock);
-        list.clear();
-        for(const auto& signal : signals)
-        {
-            list.push_back(signal->get_total_events());
-        }
-    }
-    //=============================================================================
-    /**
-     * Return the number of signals not started
-     */
-    //=============================================================================
-    auto SharedData::get_sig_not_started_num() -> int
-    {
-        ReaderLock lock(veclock);
-        int num = 0;
-        for(const auto& signal : signals)
-        {
-            if (!signal->is_running())
-            {
-                ++num;
-            }
-        }
-        return num;
-    }
-    //=============================================================================
-    /**
-     * Return the complete, started and stopped lists of signals
-     */
-    //=============================================================================
-    auto SharedData::get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list, Tango::DevULong *ttl_list) -> bool
-    {
-        bool changed = false;
-        ReaderLock lock(veclock);
-        size_t old_s_list_size = s_list.size();
-        size_t old_s_start_list_size = s_start_list.size();
-        size_t old_s_pause_list_size = s_pause_list.size();
-        size_t old_s_stop_list_size = s_stop_list.size();
-        vector<string> tmp_start_list;
-        vector<string> tmp_pause_list;
-        vector<string> tmp_stop_list;
-        //update list and context
-        size_t i = 0;
-        for (i=0 ; i<signals.size() && i< old_s_list_size; i++)
-        {
-            string signame((signals)[i]->name);
-            if(signame != s_list[i])
-            {
-                s_list[i] = signame;
-                changed = true;
-            }
-
-            auto ttl = (signals)[i]->get_ttl();
-            if(ttl_list[i] != ttl)
-            {
-                ttl_list[i] = ttl;
-                changed = true;
-            }
-
-            std::string context = (signals)[i]->get_contexts();
-
-            if(context != s_context_list[i])
-            {
-                s_context_list[i] = context;
-                changed = true;
-            }
-        }
-
-        if(signals.size() < old_s_list_size)
-        {
-            s_list.erase(s_list.begin()+i, s_list.begin()+old_s_list_size);
-            s_context_list.erase(s_context_list.begin()+i, s_context_list.begin()+old_s_list_size);
-            changed = true;
-        }
-        else
-        {
-            for (i=old_s_list_size ; i<signals.size() ; i++)
-            {
-                changed = true;
-                string signame((signals)[i]->name);
-                s_list.push_back(signame);
-
-                string context = (signals)[i]->get_contexts();;
-                s_context_list.push_back(context);
-            }
-        }
-
-        for(const auto& signal : signals)
-        {
-            string signame(signal->name);
-            if (signal->is_running())
-            {
-                tmp_start_list.push_back(signame);
-            }
-            else if(signal->is_paused())
-            {
-                tmp_pause_list.push_back(signame);
-            }
-            else if(signal->is_stopped())
-            {
-                tmp_stop_list.push_back(signame);
-            }
-        }
-        //update start list
-        for (i=0 ; i<tmp_start_list.size() && i< old_s_start_list_size; i++)
-        {
-            string signame(tmp_start_list[i]);
-            if(signame != s_start_list[i])
-            {
-                s_start_list[i] = signame;
-                changed = true;
-            }
-        }
-        if(tmp_start_list.size() < old_s_start_list_size)
-        {
-            s_start_list.erase(s_start_list.begin()+i, s_start_list.begin()+old_s_start_list_size);
-            changed = true;
-        }
-        else
-        {
-            for (size_t i=old_s_start_list_size ; i<tmp_start_list.size() ; i++)
-            {
-                changed = true;
-                string signame(tmp_start_list[i]);
-                s_start_list.push_back(signame);
-            }
-        }
-        //update pause list
-        for (i=0 ; i<tmp_pause_list.size() && i< old_s_pause_list_size; i++)
-        {
-            string signame(tmp_pause_list[i]);
-            if(signame != s_pause_list[i])
-            {
-                s_pause_list[i] = signame;
-                changed = true;
-            }
-        }
-        if(tmp_pause_list.size() < old_s_pause_list_size)
-        {
-            s_pause_list.erase(s_pause_list.begin()+i, s_pause_list.begin()+old_s_pause_list_size);
-            changed = true;
-        }
-        else
-        {
-            for (size_t i=old_s_pause_list_size ; i<tmp_pause_list.size() ; i++)
-            {
-                changed = true;
-                string signame(tmp_pause_list[i]);
-                s_pause_list.push_back(signame);
-            }
-        }
-        //update stop list
-        for (i=0 ; i<tmp_stop_list.size() && i< old_s_stop_list_size; i++)
-        {
-            string signame(tmp_stop_list[i]);
-            if(signame != s_stop_list[i])
-            {
-                s_stop_list[i] = signame;
-                changed = true;
-            }
-        }
-        if(tmp_stop_list.size() < old_s_stop_list_size)
-        {
-            s_stop_list.erase(s_stop_list.begin()+i, s_stop_list.begin()+old_s_stop_list_size);
-            changed = true;
-        }
-        else
-        {
-            for (size_t i=old_s_stop_list_size ; i<tmp_stop_list.size() ; i++)
-            {
-                changed = true;
-                string signame(tmp_stop_list[i]);
-                s_stop_list.push_back(signame);
-            }
-        }
-        return changed;
-    }
-
     //=============================================================================
     /**
      * Get the ok counter of event rx
@@ -1268,7 +976,7 @@ namespace HdbEventSubscriber_ns
         return ret;
     }
 
-    auto SharedData::get_record_freq_list(std::vector<double>& ret) -> void
+    auto SharedData::get_record_freq_list(std::vector<double>& ret) -> bool
     {
         ReaderLock lock(veclock);
         ret.clear();
@@ -1276,9 +984,10 @@ namespace HdbEventSubscriber_ns
         {
             ret.push_back(sig->get_ok_events_freq() - sig->get_nok_db_freq());
         }
+        return true;
     }
 
-    auto SharedData::get_failure_freq_list(std::vector<double>& ret) -> void
+    auto SharedData::get_failure_freq_list(std::vector<double>& ret) -> bool
     {
         ReaderLock lock(veclock);
         ret.clear();
@@ -1286,9 +995,10 @@ namespace HdbEventSubscriber_ns
         {
             ret.push_back(sig->get_nok_events_freq() + sig->get_nok_db_freq());
         }
+        return true;
     }
 
-    auto SharedData::get_event_number_list(std::vector<unsigned int>& ret) -> void
+    auto SharedData::get_event_number_list(std::vector<unsigned int>& ret) -> bool
     {
         ReaderLock lock(veclock);
         ret.clear();
@@ -1296,6 +1006,7 @@ namespace HdbEventSubscriber_ns
         {
             ret.push_back(sig->get_ok_events() + sig->get_nok_events());
         }
+        return true;
     }
     
     auto SharedData::get_global_min_store_time() -> std::chrono::duration<double>
@@ -1322,35 +1033,153 @@ namespace HdbEventSubscriber_ns
         return max_process_time;
     }
 
-    auto SharedData::get_started_number() -> unsigned long
+    auto SharedData::get_sig_started_num() -> size_t
     {
-        return started_number;
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        return started_signals.size();
     }
 
-    auto SharedData::get_paused_number() -> unsigned long
+    auto SharedData::get_sig_paused_num() -> size_t
     {
-        return paused_number;
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        return paused_signals.size();
     }
 
-    auto SharedData::get_stopped_number() -> unsigned long
+    auto SharedData::get_sig_stopped_num() -> size_t
     {
-        return stopped_number;
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        return stopped_signals.size();
     }
     
+    auto SharedData::get_sig_started_list(std::unordered_set<std::string>& list) -> bool
+    {
+        return populate_set(list, signals_info_mutex, started_signals_changed, started_signals);
+    }
+    
+    auto SharedData::get_sig_paused_list(std::unordered_set<std::string>& list) -> bool
+    {
+        return populate_set(list, signals_info_mutex, paused_signals_changed, paused_signals);
+    }
+    
+    auto SharedData::get_sig_stopped_list(std::unordered_set<std::string>& list) -> bool
+    {
+        return populate_set(list, signals_info_mutex, stopped_signals_changed, stopped_signals);
+    }
+        
+    auto SharedData::register_signal(const HdbSignal::SignalState& state, std::string&& ctxts, const std::string& name) -> void
+    {
+        {
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        _register_state(state, name);
+        }
+        hdb_dev->notify_attr_number_updated();
+        signals_number_changed = true;
+        signals_ttl_changed = true;
+        signals_context_changed = true;
+    }
+
+    auto SharedData::_register_state(const HdbSignal::SignalState& state, const std::string& name) -> void
+    {
+        switch(state)
+        {
+            case HdbSignal::SignalState::PAUSED:
+                {
+                    paused_signals.insert(name);
+                    paused_signals_changed = true;
+                    break;
+                }
+            case HdbSignal::SignalState::RUNNING:
+                {
+                    started_signals.insert(name);
+                    started_signals_changed = true;
+                    break;
+                }
+            case HdbSignal::SignalState::STOPPED:
+                {
+                    stopped_signals.insert(name);
+                    stopped_signals_changed = true;
+                    break;
+                }
+        }
+    }
+        
+    auto SharedData::unregister_signal(const HdbSignal::SignalState& state, const std::string& name) -> void
+    {
+        {
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        _unregister_state(state, name);
+        }
+        hdb_dev->notify_attr_number_updated();
+        signals_number_changed = true;
+    }
+    
+    auto SharedData::_unregister_state(const HdbSignal::SignalState& state, const std::string& name) -> void
+    {
+        switch(state)
+        {
+            case HdbSignal::SignalState::PAUSED:
+                {
+                    paused_signals.erase(name);
+                    paused_signals_changed = true;
+                    break;
+                }
+            case HdbSignal::SignalState::RUNNING:
+                {
+                    started_signals.erase(name);
+                    started_signals_changed = true;
+                    break;
+                }
+            case HdbSignal::SignalState::STOPPED:
+                {
+                    stopped_signals.erase(name);
+                    stopped_signals_changed = true;
+                    break;
+                }
+        }
+    }
+        
+    auto SharedData::switch_state(const HdbSignal::SignalState& prev_state, const HdbSignal::SignalState& new_state, const std::string& name) -> void
+    {
+        std::lock_guard<std::mutex> lock(signals_info_mutex);
+        _unregister_state(prev_state, name);
+        _register_state(new_state, name);
+    }
+    
+    auto SharedData::update_ttl(const std::string& name, unsigned int ttl) -> void
+    {
+        signals_ttl_changed = true;
+    }
+
+    auto SharedData::update_contexts(const std::string& name, std::string&& ctxts) -> void
+    {
+        signals_context_changed = true;
+    }
+    
+    auto SharedData::update_error_state(const std::string& name) -> void
+    {
+        signals_on_error_changed = true;
+        signals_error_changed = true;
+    }
+    
+    auto SharedData::update_errors(const std::string& name) -> void
+    {
+        signals_error_changed = true;
+    }
+        
+    auto SharedData::reset_min_max() -> void
+    {
+        std::lock_guard<std::mutex> lk(timing_mutex);
+        min_process_time = std::chrono::duration<double>::max();
+        max_process_time = std::chrono::duration<double>::min();
+        min_store_time = std::chrono::duration<double>::max();
+        max_store_time = std::chrono::duration<double>::min();
+    }
+
     auto SharedData::size() -> size_t
     {
-        ReaderLock lock(veclock);
+        ReaderLock lk(veclock);
         return signals.size();
     }
-    
-            auto SharedData::reset_min_max() -> void
-            {
-                std::lock_guard<std::mutex> lk(timing_mutex);
-                min_process_time = std::chrono::duration<double>::max();
-                max_process_time = std::chrono::duration<double>::min();
-                min_store_time = std::chrono::duration<double>::max();
-                max_store_time = std::chrono::duration<double>::min();
-            }
 
     auto SharedData::update_timing(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void
     {
@@ -1402,7 +1231,7 @@ namespace HdbEventSubscriber_ns
         }
 
     }
-    
+
     auto SharedData::PeriodicEventCheck::check_periodic_event() -> bool
     {
         if(period < std::chrono::milliseconds::max())
@@ -1440,7 +1269,40 @@ namespace HdbEventSubscriber_ns
             }
         }
     }
-    
+   
+    auto SharedData::populate_set(std::unordered_set<std::string>& out, std::mutex& m, std::atomic_bool& flag, const std::unordered_set<std::string>& in, bool force) -> bool
+    {
+        bool ret = flag.exchange(false);
+        if(force || ret)
+        {
+            std::lock_guard<std::mutex> lk(m);
+            out.clear();
+            out.insert(in.begin(), in.end());    
+        }
+        return ret;
+    }
+
+    auto SharedData::build_sig_on_error_lists() -> bool
+    {
+        bool ret = signals_on_error_changed.exchange(false);
+        if(signals_number_changed || ret)
+        {
+            ReaderLock lk(veclock);
+            for(const auto& signal : signals)
+            {
+                if(signal->is_on_error())
+                {
+                    on_error_signals.insert(signal->name);
+                }
+                if(signal->is_not_on_error())
+                {
+                    not_on_error_signals.insert(signal->name);
+                }
+            }
+        }
+        return ret;
+    }
+
     //=============================================================================
     //=============================================================================
     SubscribeThread::SubscribeThread(HdbDevice *dev):Tango::LogAdapter(dev->_device)

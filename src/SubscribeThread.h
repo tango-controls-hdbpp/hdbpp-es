@@ -48,8 +48,10 @@
 #include <condition_variable>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <atomic>
 #include "Consts.h"
+#include "HdbSignal.h"
 #include <mutex>
 
 /**
@@ -68,7 +70,6 @@ namespace HdbEventSubscriber_ns
 
 class ArchiveCB;
 class HdbDevice;
-class HdbSignal;
 class SubscribeThread;
 
 //=========================================================
@@ -162,9 +163,22 @@ private:
 
             std::unique_ptr<PeriodicEventCheck> event_checker;
 
-            std::atomic_ulong paused_number;
-            std::atomic_ulong started_number;
-            std::atomic_ulong stopped_number;
+            std::mutex signals_info_mutex;
+            std::unordered_set<std::string> paused_signals;
+            std::atomic_bool paused_signals_changed;
+            std::unordered_set<std::string> started_signals;
+            std::atomic_bool started_signals_changed;
+            std::unordered_set<std::string> stopped_signals;
+            std::atomic_bool stopped_signals_changed;
+            std::unordered_set<std::string> on_error_signals;
+            std::unordered_set<std::string> not_on_error_signals;
+            std::atomic_bool signals_on_error_changed;
+
+            std::atomic_bool signals_number_changed;
+            std::atomic_bool signals_source_changed;
+            std::atomic_bool signals_ttl_changed;
+            std::atomic_bool signals_context_changed;
+            std::atomic_bool signals_error_changed;
 
 	/**
 	 *	HdbDevice object
@@ -182,10 +196,16 @@ private:
 	ReadersWritersLock      veclock;
 	
         void add(std::shared_ptr<HdbSignal> signal, int to_do, bool start);
-	auto add(const string &signame, const vector<string>& contexts, bool start) -> std::shared_ptr<HdbSignal>;
+	auto add(const string &signame, const vector<string>& contexts, unsigned int ttl, bool start) -> std::shared_ptr<HdbSignal>;
         auto push_timing_events() -> void;
         auto reset_min_max() -> void;
         auto update_timing(std::chrono::duration<double> store_time, std::chrono::duration<double> process_time) -> void;
+        auto _register_state(const HdbSignal::SignalState& state, const std::string& name) -> void;
+        auto _unregister_state(const HdbSignal::SignalState& state, const std::string& name) -> void;
+        auto populate_set(std::unordered_set<std::string>& out, std::mutex& m, std::atomic_bool& flag, const std::unordered_set<std::string>& in, bool force = false) -> bool;
+        template<typename T>
+        auto populate_vector(std::vector<T>& out, std::atomic_bool& flag, std::function<T(const HdbSignal&)>& call, bool force = false) -> bool;
+        auto build_sig_on_error_lists() -> bool;
 public:
 	int		action;
 	//omni_condition condition;
@@ -283,61 +303,87 @@ public:
 	 */
 	void put_signal_property();
 	/**
-	 *	Return the list of signals
+	 *	Get the list of signals
+         *	return true if the list changed inbetween last call
+         *	and populate the list. Do nothing otherwise…
 	 */
-	void get_sig_list(vector<string> &);
+	auto get_sig_list(vector<string> &) -> bool;
 	/**
-	 *	Return the list of sources
+	 *	Get the list of contexts for the signals
+         *	return true if the list changed inbetween last call
+         *	and populate the list. Do nothing otherwise…
 	 */
-	auto get_sig_source_list() -> vector<bool>;
+	auto get_sig_contexts_list(vector<string> &) -> bool;
+	/**
+	 *	Get the list of ttl for the signals
+         *	return true if the list changed inbetween last call
+         *	and populate the list. Do nothing otherwise…
+	 */
+	auto get_sig_ttl_list(vector<unsigned int> &) -> bool;
+	/**
+	 *      Get the list of sources
+         *      return true if the list changed inbetween last call
+         *      and populate the list. Do nothing otherwise…
+	 */
+	auto get_sig_source_list(vector<bool>&) -> bool;
 	/**
 	 *	Return the source of specified signal
 	 */
 	auto get_sig_source(const string &signame) -> bool;
 	/**
 	 *	Return the list of signals on error
+         *      return true if the list changed inbetween last call
+         *      and populate the list. Do nothing otherwise…
 	 */
-	void get_sig_on_error_list(vector<string> &);
+	auto get_sig_on_error_list(std::unordered_set<std::string>  &, bool force = false) -> bool;
 	/**
 	 *	Return the list of signals not on error
+         *      return true if the list changed inbetween last call
+         *      and populate the list. Do nothing otherwise…
 	 */
-	void get_sig_not_on_error_list(vector<string> &);
-	/**
-	 *	Return the list of signals started
-	 */
-	void get_sig_started_list(vector<string> &);
-	/**
-	 *	Return the list of signals not started
-	 */
-	void get_sig_not_started_list(vector<string> &);
+	auto get_sig_not_on_error_list(std::unordered_set<std::string> &) -> bool;
+        /**
+         *      Return the list of signals started
+         *      return true if the list changed inbetween last call
+         *      and populate the list. Do nothing otherwise…
+         */
+        auto get_sig_started_list(std::unordered_set<std::string> &) -> bool;
+        /**
+         *      Return the list of signals paused
+         *      return true if the list changed inbetween last call
+         *      and populate the list. Do nothing otherwise…
+         */
+        auto get_sig_paused_list(std::unordered_set<std::string> &) -> bool;
+        /**
+         *      Return the list of signals stopped
+         *      return true if the list changed inbetween last call
+         *      and populate the list. Do nothing otherwise…
+         */
+        auto get_sig_stopped_list(std::unordered_set<std::string> &) -> bool;
 	/**
 	 *	Return the list of errors
 	 */
 	auto get_error_list(vector<string> &) -> bool;
 	/**
-	 *	Return the list of event received
-	 */
-	void get_ev_counter_list(vector<uint32_t> &);
-	/**
 	 *	Return the number of signals on error
 	 */
-	auto  get_sig_on_error_num() -> int;
+	auto  get_sig_on_error_num() -> size_t;
 	/**
 	 *	Return the number of signals not on error
 	 */
-	auto  get_sig_not_on_error_num() -> int;
-	/**
-	 *	Return the number of signals started
-	 */
-	auto  get_sig_started_num() -> int;
-	/**
-	 *	Return the number of signals not started
-	 */
-	auto  get_sig_not_started_num() -> int;
-	/**
-	 *	Return the complete, started and stopped lists of signals
-	 */
-	auto  get_lists(vector<string> &s_list, vector<string> &s_start_list, vector<string> &s_pause_list, vector<string> &s_stop_list, vector<string> &s_context_list, Tango::DevULong *ttl_list) -> bool;
+	auto  get_sig_not_on_error_num() -> size_t;
+        /**
+         *  *Return the number of signals started
+         */
+        auto  get_sig_started_num() -> size_t;
+        /**
+         *  *Return the number of signals paused
+         */
+        auto  get_sig_paused_num() -> size_t;
+        /**
+         *  *Return the number of signals stopped
+         */
+        auto  get_sig_stopped_num() -> size_t;
 	/**
 	 *	Get the ok counter of event rx
 	 */
@@ -438,21 +484,41 @@ public:
 
         auto get_record_freq() -> double;
         auto get_failure_freq() -> double;
-        auto get_record_freq_list(std::vector<double>& ret) -> void;
-        auto get_failure_freq_list(std::vector<double>& ret) -> void;
-        auto get_event_number_list(std::vector<unsigned int>& ret) -> void;
+        auto get_record_freq_list(std::vector<double>& ret) -> bool;
+        auto get_failure_freq_list(std::vector<double>& ret) -> bool;
+        auto get_event_number_list(std::vector<unsigned int>& ret) -> bool;
         auto get_global_min_store_time() -> std::chrono::duration<double>;
         auto get_global_max_store_time() -> std::chrono::duration<double>;
         auto get_global_min_process_time() -> std::chrono::duration<double>;
         auto get_global_max_process_time() -> std::chrono::duration<double>;
-        auto get_started_number() -> unsigned long;
-        auto get_paused_number() -> unsigned long;
-        auto get_stopped_number() -> unsigned long;
+        
+        auto register_signal(const HdbSignal::SignalState& state, std::string&& ctxts, const std::string& name) -> void;
+        auto unregister_signal(const HdbSignal::SignalState& state, const std::string& name) -> void;
+        auto switch_state(const HdbSignal::SignalState& prev_state, const HdbSignal::SignalState& new_state, const std::string& name) -> void;
+        auto update_ttl(const std::string& name, unsigned int ttl) -> void;
+        auto update_contexts(const std::string& name, std::string&& ctxts) -> void;
+        auto update_error_state(const std::string& name) -> void;
+        auto update_errors(const std::string& name) -> void;
         auto size() -> size_t;
 };
 
 
 
+template<typename T>
+auto SharedData::populate_vector(std::vector<T>& out, std::atomic_bool& flag, std::function<T(const HdbSignal&)>& call, bool force) -> bool
+{
+    bool ret = signals_number_changed || flag.exchange(false);
+    if(force || ret)
+    {
+        ReaderLock lock(veclock);
+        out.clear();
+        for(const auto& signal : signals)
+        {
+            out.push_back(call(*signal));
+        }
+    }
+    return ret;
+}
 
 
 

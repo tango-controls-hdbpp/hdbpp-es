@@ -212,6 +212,24 @@ void HdbEventSubscriber::delete_device()
         delete[] attr_AttributeMaxPendingNumber_read;
         delete[] attr_AttributePendingNumber_read;
 
+        delete[] attr_AttributeStartedList_read;
+        delete[] attr_AttributePausedList_read;
+        delete[] attr_AttributeStoppedList_read;
+        delete[] attr_AttributeStartedNumber_read;
+        delete[] attr_AttributePausedNumber_read;
+        delete[] attr_AttributeStoppedNumber_read;
+        
+        delete[] attr_AttributeNokList_read;
+        delete[] attr_AttributeNokNumber_read;
+        delete[] attr_AttributeOkList_read;
+        delete[] attr_AttributeOkNumber_read;
+
+        delete[] attr_AttributeNumber_read;
+        delete[] attr_AttributeErrorList_read;        
+        delete[] attr_AttributePendingList_read;        
+        delete[] attr_AttributeTTLList_read;
+        delete[] attr_AttributeStrategyList_read;
+        delete[] attr_AttributeList_read;
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::delete_device
 	delete[] attr_StatisticsResetTime_read;
 	delete[] attr_Context_read;
@@ -240,7 +258,7 @@ void HdbEventSubscriber::init_device()
 	
 	attr_StatisticsResetTime_read = new Tango::DevDouble[1];
 	attr_Context_read = new Tango::DevString[1];
-	attr_ContextsList_read = new Tango::DevString[1000];
+	attr_ContextsList_read = new Tango::DevString[MAX_ATTRIBUTES];
 
         attr_AttributeMaxStoreTime_read = new Tango::DevDouble[1];
         attr_AttributeMinStoreTime_read = new Tango::DevDouble[1];
@@ -251,6 +269,39 @@ void HdbEventSubscriber::init_device()
 
         attr_AttributeMaxPendingNumber_read = new Tango::DevULong[1];
         attr_AttributePendingNumber_read = new Tango::DevULong[1];
+        attr_AttributeNumber_read = new Tango::DevULong[1];
+        
+        attr_AttributeStartedNumber_read = new Tango::DevULong[1];
+        attr_AttributePausedNumber_read = new Tango::DevULong[1];
+        attr_AttributeStoppedNumber_read = new Tango::DevULong[1];
+        *attr_AttributeStartedNumber_read = 0;
+        *attr_AttributePausedNumber_read = 0;
+        *attr_AttributeStoppedNumber_read = 0;
+        *attr_AttributeNumber_read = 0;
+        previous_started_length = 0;
+        previous_paused_length = 0;
+        previous_stopped_length = 0;
+	attr_AttributeStartedList_read = new Tango::DevString[MAX_ATTRIBUTES];
+	attr_AttributePausedList_read = new Tango::DevString[MAX_ATTRIBUTES];
+	attr_AttributeStoppedList_read = new Tango::DevString[MAX_ATTRIBUTES];
+
+        attr_AttributeErrorList_read = new Tango::DevString[MAX_ATTRIBUTES];        
+        attr_AttributePendingList_read = new Tango::DevString[MAX_ATTRIBUTES];        
+        attr_AttributeNokList_read = new Tango::DevString[MAX_ATTRIBUTES];
+        attr_AttributeOkList_read = new Tango::DevString[MAX_ATTRIBUTES];
+        attr_AttributeOkNumber_read = new Tango::DevULong[1];
+        attr_AttributeNokNumber_read = new Tango::DevULong[1];
+        
+        previous_length = 0;
+        previous_nok_length = 0;
+        previous_ok_length = 0;
+        ttl_length = 0;
+        contexts_length = 0;
+        source_length = 0;
+        pending_length = 0;
+        attr_AttributeTTLList_read = new Tango::DevULong[MAX_ATTRIBUTES];
+        attr_AttributeStrategyList_read = new Tango::DevString[MAX_ATTRIBUTES];
+        attr_AttributeList_read = new Tango::DevString[MAX_ATTRIBUTES];
 
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::init_device) ENABLED START -----*/
         //	Initialize device
@@ -298,8 +349,7 @@ void HdbEventSubscriber::init_device()
         auto it = hdb_dev->contexts_map_upper.find(defaultStrategy_upper);
         if(it != hdb_dev->contexts_map_upper.end())
         {
-            context_read = it->second;
-            *attr_Context_read = const_cast<char*>(context_read.c_str());
+            update_context(it->second);
             context_set = it->first;
         }
         else
@@ -578,7 +628,12 @@ void HdbEventSubscriber::read_AttributeOkNumber(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkNumber) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeOkNumber_read);
+        std::unordered_set<std::string> ok;
+        if(hdb_dev->shared->get_sig_not_on_error_list(ok))
+        {
+            update_array(ok, previous_ok_length, attr_AttributeOkList_read, *attr_AttributeOkNumber_read);
+        }
+        attr.set_value(attr_AttributeOkNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeOkNumber
 }
@@ -597,7 +652,12 @@ void HdbEventSubscriber::read_AttributeNokNumber(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokNumber) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeNokNumber_read);
+        std::unordered_set<std::string> nok;
+        if(hdb_dev->shared->get_sig_on_error_list(nok))
+        {
+            update_array(nok, previous_nok_length, attr_AttributeNokList_read, *attr_AttributeNokNumber_read);
+        }
+        attr.set_value(attr_AttributeNokNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeNokNumber
 }
@@ -636,7 +696,7 @@ void HdbEventSubscriber::read_AttributeNumber(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNumber) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeNumber_read);
+        attr.set_value(attr_AttributeNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeNumber
 }
@@ -813,7 +873,12 @@ void HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedNumber) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeStartedNumber_read);
+        std::unordered_set<std::string> started;
+        if(hdb_dev->shared->get_sig_started_list(started))
+        {
+            update_array(started, previous_started_length, attr_AttributeStartedList_read, *attr_AttributeStartedNumber_read);
+        }
+        attr.set_value(attr_AttributeStartedNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStartedNumber
 }
@@ -831,7 +896,12 @@ void HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedNumber) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributeStoppedNumber_read);
+        std::unordered_set<std::string> stopped;
+        if(hdb_dev->shared->get_sig_stopped_list(stopped))
+        {
+            update_array(stopped, previous_stopped_length, attr_AttributeStoppedList_read, *attr_AttributeStoppedNumber_read);
+        }
+        attr.set_value(attr_AttributeStoppedNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStoppedNumber
 }
 //--------------------------------------------------------
@@ -887,7 +957,12 @@ void HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedNumber(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedNumber) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(&hdb_dev->attr_AttributePausedNumber_read);
+        std::unordered_set<std::string> paused;
+        if(hdb_dev->shared->get_sig_paused_list(paused))
+        {
+            update_array(paused, previous_paused_length, attr_AttributePausedList_read, *attr_AttributePausedNumber_read);
+        }
+        attr.set_value(attr_AttributePausedNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedNumber
 }
 //--------------------------------------------------------
@@ -936,9 +1011,8 @@ void HdbEventSubscriber::write_Context(Tango::WAttribute &attr)
                     (const char *)__func__);
         }
         context_set = itmap->first;
-        context_read = itmap->second;
-        *attr_Context_read = const_cast<char*>(context_read.c_str());
-
+        update_context(itmap->second);
+        
         hdb_dev->set_context_and_start_attributes(context_set);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::write_Context
@@ -958,7 +1032,12 @@ void HdbEventSubscriber::read_AttributeList(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeList) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeList_read, hdb_dev->attribute_list_str_size);
+        std::vector<std::string> signals;
+        if(hdb_dev->shared->get_sig_list(signals))
+        {
+            update_array(signals, previous_length, attr_AttributeList_read);
+        }
+        attr.set_value(attr_AttributeList_read, previous_length);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeList
 }
@@ -977,7 +1056,12 @@ void HdbEventSubscriber::read_AttributeOkList(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeOkList) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeOkList_read, hdb_dev->attribute_ok_list_str_size);
+        std::unordered_set<std::string> ok;
+        if(hdb_dev->shared->get_sig_not_on_error_list(ok))
+        {
+            update_array(ok, previous_ok_length, attr_AttributeOkList_read, *attr_AttributeOkNumber_read);
+        }
+        attr.set_value(attr_AttributeOkList_read, previous_ok_length);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeOkList
 }
@@ -996,7 +1080,12 @@ void HdbEventSubscriber::read_AttributeNokList(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeNokList) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeNokList_read, hdb_dev->attribute_nok_list_str_size);
+        std::unordered_set<std::string> nok;
+        if(hdb_dev->shared->get_sig_on_error_list(nok))
+        {
+            update_array(nok, previous_nok_length, attr_AttributeNokList_read, *attr_AttributeNokNumber_read);
+        }
+        attr.set_value(attr_AttributeNokList_read, previous_nok_length);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeNokList
 }
@@ -1015,7 +1104,11 @@ void HdbEventSubscriber::read_AttributePendingList(Tango::Attribute &attr)
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePendingList) ENABLED START -----*/
 
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributePendingList_read, hdb_dev->attribute_pending_list_str_size);
+        std::vector<std::string> pending;
+        hdb_dev->get_sig_list_waiting(pending);
+        update_array(pending, pending_length, attr_AttributePendingList_read);
+        
+        attr.set_value(attr_AttributePendingList_read, pending_length);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePendingList
 }
@@ -1114,7 +1207,12 @@ void HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStartedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStartedList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeStartedList_read, hdb_dev->attribute_started_list_str_size);
+        std::unordered_set<std::string> started;
+        if(hdb_dev->shared->get_sig_started_list(started))
+        {
+            update_array(started, previous_started_length, attr_AttributeStartedList_read, *attr_AttributeStartedNumber_read);
+        }
+        attr.set_value(attr_AttributeStartedList_read, *attr_AttributeStartedNumber_read);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStartedList
 }
@@ -1132,7 +1230,12 @@ void HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStoppedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStoppedList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeStoppedList_read, hdb_dev->attribute_stopped_list_str_size);
+        std::unordered_set<std::string> stopped;
+        if(hdb_dev->shared->get_sig_stopped_list(stopped))
+        {
+            update_array(stopped, previous_stopped_length, attr_AttributeStoppedList_read, *attr_AttributeStoppedNumber_read);
+        }
+        attr.set_value(attr_AttributeStoppedList_read, *attr_AttributeStoppedNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStoppedList
 }
 //--------------------------------------------------------
@@ -1168,7 +1271,12 @@ void HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeErrorList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeErrorList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeErrorList_read, hdb_dev->attribute_error_list_str_size);
+        std::vector<std::string> errors;
+        if(hdb_dev->shared->get_error_list(errors))
+        {
+            update_array(errors, error_length, attr_AttributeErrorList_read);
+        }
+        attr.set_value(attr_AttributeErrorList_read, error_length);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeErrorList
 }
 //--------------------------------------------------------
@@ -1185,7 +1293,12 @@ void HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributePausedList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributePausedList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributePausedList_read, hdb_dev->attribute_paused_list_str_size);
+        std::unordered_set<std::string> paused;
+        if(hdb_dev->shared->get_sig_paused_list(paused))
+        {
+            update_array(paused, previous_paused_length, attr_AttributePausedList_read, *attr_AttributePausedNumber_read);
+        }
+        attr.set_value(attr_AttributePausedList_read, *attr_AttributePausedNumber_read);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributePausedList
 }
 //--------------------------------------------------------
@@ -1202,7 +1315,13 @@ void HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeStrategyList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeStrategyList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeContextList_read, hdb_dev->attribute_context_list_str_size);
+        
+        std::vector<std::string> contexts;
+        if(hdb_dev->shared->get_sig_contexts_list(contexts))
+        {
+            update_array(contexts, contexts_length, attr_AttributeStrategyList_read);
+        }
+        attr.set_value(attr_AttributeStrategyList_read, contexts_length);
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeStrategyList
 }
 //--------------------------------------------------------
@@ -1237,7 +1356,12 @@ void HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr)
 	DEBUG_STREAM << "HdbEventSubscriber::read_AttributeTTLList(Tango::Attribute &attr) entering... " << endl;
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::read_AttributeTTLList) ENABLED START -----*/
         //	Set the attribute value
-        attr.set_value(hdb_dev->attr_AttributeTTLList_read, hdb_dev->attr_AttributeNumber_read);
+        std::vector<unsigned int> ttl;
+        if(hdb_dev->shared->get_sig_ttl_list(ttl))
+        {
+            update_array(ttl, ttl_length, attr_AttributeTTLList_read);
+        }
+        attr.set_value(attr_AttributeTTLList_read, ttl_length);
 
         /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::read_AttributeTTLList
 }
@@ -1854,8 +1978,8 @@ void HdbEventSubscriber::stop_faulty()
 	/*----- PROTECTED REGION ID(HdbEventSubscriber::stop_faulty) ENABLED START -----*/
 
         //	Add your own code
-        vector<string> att_list_tmp;
-        hdb_dev->get_sig_on_error_list(att_list_tmp);
+        std::unordered_set<std::string> att_list_tmp;
+        hdb_dev->shared->get_sig_on_error_list(att_list_tmp, true);
         for (const auto& att : att_list_tmp)
         {
             stop_attribute(att);
@@ -1946,6 +2070,16 @@ void HdbEventSubscriber::add_dynamic_commands()
 
     //	Additional Methods
 
+    
+    auto HdbEventSubscriber::update_context(const std::string& new_context) -> void
+    {
+        context_read = new_context;
+        // Do we really need this ? context_read is reassigned, the pointer shouldn't change
+        *attr_Context_read = const_cast<char*>(context_read.c_str());
+
+        hdb_dev->notify_context_updated();
+    }
+    
     void HdbEventSubscriber::stop_attribute(const std::string& attribute)
     {
         hdb_dev->stop_attribute(attribute);
@@ -1981,7 +2115,50 @@ void HdbEventSubscriber::add_dynamic_commands()
         }
         return "YYYY-MM-DD HH:MM:SS.UUUUUU";
     }
+    
+    void HdbEventSubscriber::update_array(const std::unordered_set<std::string>& in, size_t& prev_size, Tango::DevString* out, Tango::DevULong& out_size)
+    {
+        for(size_t i = 0; i != prev_size;++i)
+        {
+            Tango::string_free(out[i]);
+        }
+        
+        size_t i = 0;
+        for (const auto& val : in)
+        {
+            out[i] = Tango::string_dup(const_cast<char*>(val.c_str()));
+            ++i;
+        }
+        out_size = in.size();
+        prev_size = in.size();
+    }
+        
+    auto HdbEventSubscriber::update_array(const std::vector<std::string>& in, size_t& prev_size, Tango::DevString* out) -> void
+    {
+        for(size_t i = 0; i != prev_size;++i)
+        {
+            Tango::string_free(out[i]);
+        }
 
+        size_t i = 0;
+        for (const auto& val : in)
+        {
+            out[i] = Tango::string_dup(const_cast<char*>(val.c_str()));
+            ++i;
+        }
+        prev_size = in.size();
+    }
+    
+    auto HdbEventSubscriber::update_array(const std::vector<unsigned int>& in, size_t& prev_size, Tango::DevULong* out) -> void
+    {
+        size_t i = 0;
+        for (const auto& val : in)
+        {
+            out[i] = val;
+            ++i;
+        }
+        prev_size = in.size();
+    }
 
     /*----- PROTECTED REGION END -----*/	//	HdbEventSubscriber::namespace_ending
 } //	namespace
