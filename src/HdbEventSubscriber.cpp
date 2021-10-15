@@ -296,6 +296,8 @@ void HdbEventSubscriber::init_device()
         attr_AttributeOkNumber_read = new Tango::DevULong[1];
         attr_AttributeNokNumber_read = new Tango::DevULong[1];
         
+        *attr_AttributeNokNumber_read = 0;
+        *attr_AttributeOkNumber_read = 0;
         previous_length = 0;
         previous_nok_length = 0;
         previous_ok_length = 0;

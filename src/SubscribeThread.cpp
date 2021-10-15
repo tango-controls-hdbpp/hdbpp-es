@@ -1332,6 +1332,8 @@ namespace HdbEventSubscriber_ns
         if(signals_number_changed || ret)
         {
             ReaderLock lk(veclock);
+            on_error_signals.clear();
+            not_on_error_signals.clear();
             for(const auto& signal : signals)
             {
                 if(signal->is_on_error())
