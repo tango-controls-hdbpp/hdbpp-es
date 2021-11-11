@@ -1041,7 +1041,7 @@ namespace HdbEventSubscriber_ns
         }
         else
         {
-            get_tango_host_and_signal_name(attr, facility, attr_name);
+            get_tango_host_and_signal_name(fixed, facility, attr_name);
             modify = true;
         }
         if(modify)
