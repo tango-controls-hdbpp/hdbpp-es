@@ -1659,7 +1659,7 @@ namespace HdbEventSubscriber_ns
         string applied_strategy;
         if(argin->length() > 0)
         {
-            signame = string((*argin)[0]);
+            hdb_dev->fix_tango_host(string((*argin)[0]), signame);
         }
         for(size_t i = 0; i < argin->length() -1; i++)
         {
