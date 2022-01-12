@@ -89,7 +89,7 @@ namespace HdbEventSubscriber_ns
         {
             ReaderLock lock(siglock);
             ReaderLock lk(dblock);
-            return (evstate == Tango::ALARM && is_running()) || dbstate == Tango::ALARM;
+            return (evstate != Tango::ON && is_running()) || dbstate == Tango::ALARM;
         }
 
         auto is_on() const -> bool
@@ -100,9 +100,7 @@ namespace HdbEventSubscriber_ns
 
         auto is_not_on_error() const -> bool
         {
-            ReaderLock lock(siglock);
-            ReaderLock lk(dblock);
-            return (evstate == Tango::ON || (evstate == Tango::ALARM && !is_running())) && dbstate != Tango::ALARM;
+            return !is_on_error();
         }
 
         auto get_error() const -> std::string;
