@@ -202,6 +202,9 @@ namespace HdbEventSubscriber_ns
             }
             pos = signals.begin();
             
+            if(!stop)
+                veclock.writerOut();
+            
             if (!found)
                 Tango::Except::throw_exception(
                         (const char *)"BadSignalName",
